@@ -1,8 +1,6 @@
 #include "wlr.h"
-#include <vector>
 
 struct Toplevel {
-    std::vector<Toplevel*> link;
     wlr_xdg_toplevel *xdg_toplevel;
     wlr_scene_tree *scene_tree;
     wl_listener map;

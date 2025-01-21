@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <wayland-client-protocol.h>
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
@@ -101,7 +102,7 @@ Server::Server() {
             Server *server = wl_container_of(toplevel, server, toplevels);
             if (toplevel == server->grabbed_toplevel)
                 server->reset_cursor_mode();
-            toplevel->link.clear();
+            server->toplevels.erase(std::remove(server->toplevels.begin(), server->toplevels.end(), toplevel), server->toplevels.end());
         };
         wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &toplevel->unmap);
         toplevel->commit.notify = [](wl_listener *listener, void *data) {
@@ -287,7 +288,6 @@ Server::Server() {
 Server::~Server() {
     wl_display_destroy_clients(display);
 
-	wl_list_remove(&new_xdg_toplevel.link);
 	wl_list_remove(&new_xdg_popup.link);
 
 	wl_list_remove(&cursor_motion.link);
@@ -325,7 +325,7 @@ void Server::focus_toplevel(Toplevel *toplevel) {
     wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
 
     wlr_scene_node_raise_to_top(&toplevel->scene_tree->node);
-    toplevel->link.clear();
+    toplevels.erase(std::remove(toplevels.begin(), toplevels.end(), toplevel), toplevels.end());
     toplevels.emplace_back(toplevel);
     wlr_xdg_toplevel_set_activated(toplevel->xdg_toplevel, true);
 

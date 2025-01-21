@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "wlr.h"
 #include "Output.h"
 #include "Toplevel.h"

@@ -1,0 +1,3 @@
+.cache/
+build
+include/xdg-shell-protocol.h

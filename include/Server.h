@@ -1,4 +1,4 @@
-#include <vector>
+#include <list>
 
 #include "wlr.h"
 #include "Output.h"
@@ -22,7 +22,7 @@ class Server {
     wlr_xdg_shell *xdg_shell;
 	wl_listener new_xdg_toplevel;
 	wl_listener new_xdg_popup;
-	std::vector<Toplevel*> toplevels;
+	wl_list toplevels;
 
 	wlr_cursor *cursor;
 	wlr_xcursor_manager *cursor_mgr;
@@ -36,7 +36,7 @@ class Server {
 	wl_listener new_input;
 	wl_listener request_cursor;
 	wl_listener request_set_selection;
-	std::vector<Keyboard*> keyboards;
+	wl_list keyboards;
 	cursor_mode mode;
 	Toplevel *grabbed_toplevel;
 	double grab_x, grab_y;
@@ -44,7 +44,7 @@ class Server {
 	uint32_t resize_edges;
 
 	wlr_output_layout *output_layout;
-	std::vector<Output*> outputs;
+	wl_list outputs;
 	wl_listener output_new;
 public:
 	Server();

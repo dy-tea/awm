@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <wayland-client-protocol.h>
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
@@ -33,6 +32,7 @@ Server::Server() {
     wlr_subcompositor_create(display);
     wlr_data_device_manager_create(display);
 
+    wl_list_init(&outputs);
     output_layout = wlr_output_layout_create(display);
     output_new.notify = [](wl_listener *listener, void *data) {
         wlr_output *out = (wlr_output*)data;
@@ -68,7 +68,7 @@ Server::Server() {
         };
         wl_signal_add(&out->events.destroy, &output->destroy);
 
-        server->outputs.emplace_back(output);
+        wl_list_insert(&server->outputs, &output->link);
 
         wlr_output_layout_output *l_output = wlr_output_layout_add_auto(server->output_layout, out);
         wlr_scene_output *scene_output = wlr_scene_output_create(server->scene, out);
@@ -79,6 +79,7 @@ Server::Server() {
     scene = wlr_scene_create();
     scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
 
+    wl_list_init(&toplevels);
     xdg_shell = wlr_xdg_shell_create(display, 3);
     new_xdg_toplevel.notify = [](wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_xdg_toplevel);
@@ -93,7 +94,7 @@ Server::Server() {
         toplevel->map.notify = [](wl_listener *listener, void *data) {
             Toplevel *toplevel = wl_container_of(listener, toplevel, map);
             Server *server = wl_container_of(toplevel, server, toplevels);
-            server->toplevels.emplace_back(toplevel);
+            wl_list_insert(&server->toplevels, &toplevel->link);
             server->focus_toplevel(toplevel);
         };
         wl_signal_add(&xdg_toplevel->base->surface->events.map, &toplevel->map);
@@ -102,7 +103,7 @@ Server::Server() {
             Server *server = wl_container_of(toplevel, server, toplevels);
             if (toplevel == server->grabbed_toplevel)
                 server->reset_cursor_mode();
-            server->toplevels.erase(std::remove(server->toplevels.begin(), server->toplevels.end(), toplevel), server->toplevels.end());
+            wl_list_remove(&toplevel->link);
         };
         wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &toplevel->unmap);
         toplevel->commit.notify = [](wl_listener *listener, void *data) {
@@ -114,6 +115,7 @@ Server::Server() {
 
         toplevel->destroy.notify = [](wl_listener *listener, void *data) {
             Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
+            wl_list_remove(&toplevel->link);
             wl_list_remove(&toplevel->map.link);
             wl_list_remove(&toplevel->unmap.link);
             wl_list_remove(&toplevel->commit.link);
@@ -176,6 +178,7 @@ Server::Server() {
 
         popup->destroy.notify = [](wl_listener *listener, void *data) {
             Popup *popup = wl_container_of(listener, popup, destroy);
+            wl_list_remove(&popup->link);
             wl_list_remove(&popup->commit.link);
             wl_list_remove(&popup->destroy.link);
             delete popup;
@@ -232,7 +235,7 @@ Server::Server() {
     };
     wl_signal_add(&cursor->events.frame, &cursor_frame);
 
-    keyboards = std::vector<Keyboard*>();
+    wl_list_init(&keyboards);
     new_input.notify = [](wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_input);
         wlr_input_device *device = (wlr_input_device*)data;
@@ -248,7 +251,7 @@ Server::Server() {
         }
 
         uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
-        if (server->keyboards.size())
+        if (!wl_list_empty(&server->keyboards))
             caps |= WL_SEAT_CAPABILITY_KEYBOARD;
         wlr_seat_set_capabilities(server->seat, caps);
     };
@@ -278,7 +281,7 @@ Server::Server() {
     setenv("WAYLAND_DISPLAY", socket, true);
 
     if (fork() == 0) {
-        execl("/bin/sh", "/bin/sh", "-c", "foot", (void *)NULL);
+        execl("/bin/sh", "/bin/sh", "-c", "foot", nullptr);
     }
 
     wlr_log(WLR_INFO, "Running on WAYLAND_DISPLAY=%s", socket);
@@ -325,8 +328,8 @@ void Server::focus_toplevel(Toplevel *toplevel) {
     wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
 
     wlr_scene_node_raise_to_top(&toplevel->scene_tree->node);
-    toplevels.erase(std::remove(toplevels.begin(), toplevels.end(), toplevel), toplevels.end());
-    toplevels.emplace_back(toplevel);
+    wl_list_remove(&toplevel->link);
+    wl_list_insert(&toplevels, &toplevel->link);
     wlr_xdg_toplevel_set_activated(toplevel->xdg_toplevel, true);
 
     if (keyboard != NULL)
@@ -338,27 +341,6 @@ bool Server::handle_keybinding(xkb_keysym_t sym) {
     case XKB_KEY_Escape:
         wl_display_terminate(display);
         break;
-    case XKB_KEY_F1: {
-        if (toplevels.size() < 2) break;
-
-        wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
-        if (prev_surface == NULL) return false;
-        wlr_xdg_toplevel *prev_toplevel = wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
-
-        bool flag = false;
-        for (Toplevel *t : toplevels) {
-            if (flag) {
-                focus_toplevel(t);
-                break;
-            }
-            if (t->xdg_toplevel == prev_toplevel)
-                flag = true;
-        }
-        if (!flag)
-            focus_toplevel(toplevels[0]);
-
-        break;
-    }
     default:
         return false;
     }
@@ -406,6 +388,19 @@ void Server::new_keyboard(wlr_input_device *device) {
             wlr_seat_keyboard_notify_key(seat, event->time_msec, event->keycode, event->state);
         }
     };
+    wl_signal_add(&wlr_keyboard->events.key, &keyboard->key);
+    keyboard->destroy.notify = [](wl_listener *listener, void *data) {
+        Keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
+        wl_list_remove(&keyboard->modifiers.link);
+        wl_list_remove(&keyboard->key.link);
+        wl_list_remove(&keyboard->destroy.link);
+        wl_list_remove(&keyboard->link);
+        delete keyboard;
+    };
+    wl_signal_add(&device->events.destroy, &keyboard->destroy);
+
+    wlr_seat_set_keyboard(seat, wlr_keyboard);
+    wl_list_insert(&keyboards, &keyboard->link);
 }
 
 void Server::new_pointer(wlr_input_device *device) {

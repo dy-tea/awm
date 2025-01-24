@@ -1,9 +1,11 @@
 #include "wlr.h"
 
 struct Keyboard {
-    wl_list link;
-    wlr_keyboard keyboard;
-    wl_listener modifiers;
-    wl_listener key;
-    wl_listener destroy;
+	struct wl_list link;
+	struct Server *server;
+	struct wlr_keyboard *wlr_keyboard;
+
+	struct wl_listener modifiers;
+	struct wl_listener key;
+	struct wl_listener destroy;
 };

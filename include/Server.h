@@ -1,63 +1,54 @@
-#include <list>
+#include <unistd.h>
+#include <cassert>
 
 #include "wlr.h"
 #include "Output.h"
 #include "Toplevel.h"
+#include "Popup.h"
 #include "Keyboard.h"
 
-enum cursor_mode {
-    passthrough,
-    move,
-    resize
+enum CursorMode {
+	TINYWL_CURSOR_PASSTHROUGH,
+	TINYWL_CURSOR_MOVE,
+	TINYWL_CURSOR_RESIZE,
 };
 
-class Server {
-    wl_display *display;
-    wlr_backend *backend;
-    wlr_renderer *renderer;
-    wlr_allocator *allocator;
-    wlr_scene *scene;
-    wlr_scene_output_layout *scene_layout;
+struct Server {
+	struct wl_display *wl_display;
+	struct wlr_backend *backend;
+	struct wlr_renderer *renderer;
+	struct wlr_allocator *allocator;
+	struct wlr_scene *scene;
+	struct wlr_scene_output_layout *scene_layout;
 
-    wlr_xdg_shell *xdg_shell;
-	wl_listener new_xdg_toplevel;
-	wl_listener new_xdg_popup;
-	wl_list toplevels;
+	struct wlr_xdg_shell *xdg_shell;
+	struct wl_listener new_xdg_toplevel;
+	struct wl_listener new_xdg_popup;
+	struct wl_list toplevels;
 
-	wlr_cursor *cursor;
-	wlr_xcursor_manager *cursor_mgr;
-	wl_listener cursor_motion;
-	wl_listener cursor_motion_absolute;
-	wl_listener cursor_button;
-	wl_listener cursor_axis;
-	wl_listener cursor_frame;
+	struct wlr_cursor *cursor;
+	struct wlr_xcursor_manager *cursor_mgr;
+	struct wl_listener cursor_motion;
+	struct wl_listener cursor_motion_absolute;
+	struct wl_listener cursor_button;
+	struct wl_listener cursor_axis;
+	struct wl_listener cursor_frame;
 
-	wlr_seat *seat;
-	wl_listener new_input;
-	wl_listener request_cursor;
-	wl_listener request_set_selection;
-	wl_list keyboards;
-	cursor_mode mode;
-	Toplevel *grabbed_toplevel;
+	struct wlr_seat *seat;
+	struct wl_listener new_input;
+	struct wl_listener request_cursor;
+	struct wl_listener request_set_selection;
+	struct wl_list keyboards;
+	enum CursorMode cursor_mode;
+	struct Toplevel *grabbed_toplevel;
 	double grab_x, grab_y;
-	wlr_box grab_geobox;
+	struct wlr_box grab_geobox;
 	uint32_t resize_edges;
 
-	wlr_output_layout *output_layout;
-	wl_list outputs;
-	wl_listener output_new;
-public:
-	Server();
-	~Server();
+	struct wlr_output_layout *output_layout;
+	struct wl_list outputs;
+	struct wl_listener new_output;
 
-	void focus_toplevel(Toplevel *toplevel);
-	bool handle_keybinding(xkb_keysym_t sym);
-	void new_keyboard(wlr_input_device *device);
-	void new_pointer(wlr_input_device *device);
-	Toplevel *desktop_toplevel_at(double lx, double ly, wlr_surface **surface, double *sx, double *sy);
-	void reset_cursor_mode();
-	void process_cursor_move();
-	void process_cursor_resize();
-	void process_cursor_motion(uint32_t time);
-	void begin_interactive(Toplevel *toplevel, cursor_mode mode, uint32_t edges);
+	Server(const char* startup_cmd);
+	~Server();
 };

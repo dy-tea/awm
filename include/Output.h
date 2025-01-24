@@ -1,9 +1,10 @@
 #include "wlr.h"
 
 struct Output {
-    wl_list link;
-    wlr_output* output;
-    wl_listener frame;
-    wl_listener request_state;
-    wl_listener destroy;
+	struct wl_list link;
+	struct Server *server;
+	struct wlr_output *wlr_output;
+	struct wl_listener frame;
+	struct wl_listener request_state;
+	struct wl_listener destroy;
 };

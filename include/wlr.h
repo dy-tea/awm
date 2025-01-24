@@ -18,6 +18,7 @@
 #include <wayland-util.h>
 #include <xcb/xcb.h>
 #include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
 
 // Rename fields which use reserved names
 #define class class_
@@ -45,7 +46,6 @@ extern "C" {
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
-
 #include <wlr/util/log.h>
 #include <wlr/util/region.h>
 

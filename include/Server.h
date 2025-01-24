@@ -51,4 +51,13 @@ struct Server {
 
 	Server(const char* startup_cmd);
 	~Server();
+
+	void new_keyboard(struct wlr_input_device *device);
+	void new_pointer(struct wlr_input_device *device);
+	void reset_cursor_mode();
+	void process_cursor_move();
+	void process_cursor_resize();
+	void process_cursor_motion(uint32_t time);
 };
+
+void focus_toplevel(struct Toplevel *toplevel); // TODO: move to toplevel

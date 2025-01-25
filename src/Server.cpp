@@ -17,32 +17,26 @@ void Server::new_pointer(struct wlr_input_device *device) {
 	wlr_cursor_attach_input_device(cursor, device);
 }
 
-// TODO: maybe move to toplevel
-static struct Toplevel *desktop_toplevel_at(
-		struct Server *server, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy) {
+struct Toplevel *Server::desktop_toplevel_at(double lx, double ly, struct wlr_surface **surface, double *sx, double *sy) {
 	/* This returns the topmost node in the scene at the given layout coords.
 	 * We only care about surface nodes as we are specifically looking for a
 	 * surface in the surface tree of a Toplevel. */
-	struct wlr_scene_node *node = wlr_scene_node_at(
-		&server->scene->tree.node, lx, ly, sx, sy);
-	if (node == NULL || node->type != WLR_SCENE_NODE_BUFFER) {
+	struct wlr_scene_node *node = wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
+	if (node == NULL || node->type != WLR_SCENE_NODE_BUFFER)
 		return NULL;
-	}
+
 	struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
-	struct wlr_scene_surface *scene_surface =
-		wlr_scene_surface_try_from_buffer(scene_buffer);
-	if (!scene_surface) {
+	struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+	if (!scene_surface)
 		return NULL;
-	}
 
 	*surface = scene_surface->surface;
 	/* Find the node corresponding to the Toplevel at the root of this
 	 * surface tree, it is the only one for which we set the data field. */
 	struct wlr_scene_tree *tree = node->parent;
-	while (tree != NULL && tree->node.data == NULL) {
+	while (tree != NULL && tree->node.data == NULL)
 		tree = tree->node.parent;
-	}
+
 	return (Toplevel*)tree->node.data;
 }
 
@@ -115,7 +109,7 @@ void Server::process_cursor_motion(uint32_t time) {
 	/* Otherwise, find the toplevel under the pointer and send the event along. */
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
-	struct Toplevel *toplevel = desktop_toplevel_at(this, cursor->x, cursor->y, &surface, &sx, &sy);
+	struct Toplevel *toplevel = desktop_toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
 	if (!toplevel) {
 		/* If there's no toplevel under the cursor, set the cursor image to a
 		 * default. This is what makes the cursor image appear when you move it
@@ -140,37 +134,6 @@ void Server::process_cursor_motion(uint32_t time) {
 		/* Clear pointer focus so future button events and such are not sent to
 		 * the last client to have the cursor over it. */
 		wlr_seat_pointer_clear_focus(seat);
-	}
-}
-
-void begin_interactive(struct Toplevel *toplevel,
-		enum CursorMode mode, uint32_t edges) {
-	/* This function sets up an interactive move or resize operation, where the
-	 * compositor stops propegating pointer events to clients and instead
-	 * consumes them itself, to move or resize windows. */
-	struct Server *server = toplevel->server;
-
-	server->grabbed_toplevel = toplevel;
-	server->cursor_mode = mode;
-
-	if (mode == CURSORMODE_MOVE) {
-		server->grab_x = server->cursor->x - toplevel->scene_tree->node.x;
-		server->grab_y = server->cursor->y - toplevel->scene_tree->node.y;
-	} else {
-		struct wlr_box *geo_box = &toplevel->xdg_toplevel->base->geometry;
-
-		double border_x = (toplevel->scene_tree->node.x + geo_box->x) +
-			((edges & WLR_EDGE_RIGHT) ? geo_box->width : 0);
-		double border_y = (toplevel->scene_tree->node.y + geo_box->y) +
-			((edges & WLR_EDGE_BOTTOM) ? geo_box->height : 0);
-		server->grab_x = server->cursor->x - border_x;
-		server->grab_y = server->cursor->y - border_y;
-
-		server->grab_geobox = *geo_box;
-		server->grab_geobox.x += toplevel->scene_tree->node.x;
-		server->grab_geobox.y += toplevel->scene_tree->node.y;
-
-		server->resize_edges = edges;
 	}
 }
 
@@ -236,7 +199,7 @@ Server::Server(const char* startup_cmd) {
 		 * monitor) becomes available. */
 		struct Server *server =
 			wl_container_of(listener, server, new_output);
-		struct wlr_output *wlr_output = data;
+		struct wlr_output *wlr_output = static_cast<struct wlr_output*>(data);
 
 		/* Configures the output created by the backend to use our allocator
 		 * and our renderer. Must be done once, before commiting the output */
@@ -479,8 +442,7 @@ Server::Server(const char* startup_cmd) {
 			/* Focus that client if the button was _pressed_ */
 			double sx, sy;
 			struct wlr_surface *surface = NULL;
-			struct Toplevel *toplevel = desktop_toplevel_at(server,
-					server->cursor->x, server->cursor->y, &surface, &sx, &sy);
+			struct Toplevel *toplevel = server->desktop_toplevel_at(server->cursor->x, server->cursor->y, &surface, &sx, &sy);
 			toplevel->focus();
 		}
 	};

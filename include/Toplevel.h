@@ -1,4 +1,5 @@
 #include "wlr.h"
+#include "CursorMode.h"
 
 struct Toplevel {
 	struct wl_list link;
@@ -18,4 +19,5 @@ struct Toplevel {
 	~Toplevel();
 
 	void focus();
+	void begin_interactive(enum CursorMode mode, uint32_t edges);
 };

@@ -7,12 +7,6 @@
 #include "Popup.h"
 #include "Keyboard.h"
 
-enum CursorMode {
-	CURSORMODE_PASSTHROUGH,
-	CURSORMODE_MOVE,
-	CURSORMODE_RESIZE,
-};
-
 struct Server {
 	struct wl_display *wl_display;
 	struct wlr_backend *backend;
@@ -54,10 +48,11 @@ struct Server {
 
 	void new_keyboard(struct wlr_input_device *device);
 	void new_pointer(struct wlr_input_device *device);
+
 	void reset_cursor_mode();
 	void process_cursor_move();
 	void process_cursor_resize();
 	void process_cursor_motion(uint32_t time);
-};
 
-void begin_interactive(struct Toplevel *toplevel, enum CursorMode mode, uint32_t edges);;
+	struct Toplevel *desktop_toplevel_at(double lx, double ly, struct wlr_surface **surface, double *sx, double *sy);
+};

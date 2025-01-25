@@ -65,7 +65,7 @@ Toplevel::Toplevel(struct Server *server, struct wlr_xdg_toplevel* xdg_toplevel)
 		 * provided serial against a list of button press serials sent to this
 		 * client, to prevent the client from requesting this whenever they want. */
 		struct Toplevel *toplevel = wl_container_of(listener, toplevel, request_move);
-		begin_interactive(toplevel, CURSORMODE_MOVE, 0);
+		toplevel->begin_interactive(CURSORMODE_MOVE, 0);
 	};
 	wl_signal_add(&xdg_toplevel->events.request_move, &request_move);
 
@@ -78,7 +78,7 @@ Toplevel::Toplevel(struct Server *server, struct wlr_xdg_toplevel* xdg_toplevel)
 		 * client, to prevent the client from requesting this whenever they want. */
 		struct wlr_xdg_toplevel_resize_event *event = (wlr_xdg_toplevel_resize_event*)data;
 		struct Toplevel *toplevel = wl_container_of(listener, toplevel, request_resize);
-		begin_interactive(toplevel, CURSORMODE_RESIZE, event->edges);
+		toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
 	};
 	wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
 
@@ -161,5 +161,33 @@ void Toplevel::focus() {
 	if (keyboard != NULL) {
 		wlr_seat_keyboard_notify_enter(seat, surface,
 			keyboard->keycodes, keyboard->num_keycodes, &keyboard->modifiers);
+	}
+}
+
+void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
+	/* This function sets up an interactive move or resize operation, where the
+	 * compositor stops propegating pointer events to clients and instead
+	 * consumes them itself, to move or resize windows. */
+	server->grabbed_toplevel = this;
+	server->cursor_mode = mode;
+
+	if (mode == CURSORMODE_MOVE) {
+		server->grab_x = server->cursor->x - scene_tree->node.x;
+		server->grab_y = server->cursor->y - scene_tree->node.y;
+	} else {
+		struct wlr_box *geo_box = &xdg_toplevel->base->geometry;
+
+		double border_x = (scene_tree->node.x + geo_box->x) +
+			((edges & WLR_EDGE_RIGHT) ? geo_box->width : 0);
+		double border_y = (scene_tree->node.y + geo_box->y) +
+			((edges & WLR_EDGE_BOTTOM) ? geo_box->height : 0);
+		server->grab_x = server->cursor->x - border_x;
+		server->grab_y = server->cursor->y - border_y;
+
+		server->grab_geobox = *geo_box;
+		server->grab_geobox.x += scene_tree->node.x;
+		server->grab_geobox.y += scene_tree->node.y;
+
+		server->resize_edges = edges;
 	}
 }

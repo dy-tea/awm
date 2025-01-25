@@ -37,12 +37,7 @@ Output::Output(struct Server *server, struct wlr_output* wlr_output) {
 	/* Sets up a listener for the destroy event. */
 	destroy.notify = [](struct wl_listener *listener, void *data) {
 		struct Output *output = wl_container_of(listener, output, destroy);
-
-		wl_list_remove(&output->frame.link);
-		wl_list_remove(&output->request_state.link);
-		wl_list_remove(&output->destroy.link);
-		wl_list_remove(&output->link);
-		free(output);
+		delete output;
 	};
 	wl_signal_add(&wlr_output->events.destroy, &destroy);
 
@@ -61,4 +56,11 @@ Output::Output(struct Server *server, struct wlr_output* wlr_output) {
 		wlr_output);
 	struct wlr_scene_output *scene_output = wlr_scene_output_create(server->scene, wlr_output);
 	wlr_scene_output_layout_add_output(server->scene_layout, l_output, scene_output);;
+}
+
+Output::~Output() {
+    wl_list_remove(&frame.link);
+	wl_list_remove(&request_state.link);
+	wl_list_remove(&destroy.link);
+	wl_list_remove(&link);
 }

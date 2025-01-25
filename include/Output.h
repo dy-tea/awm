@@ -9,4 +9,5 @@ struct Output {
 	struct wl_listener destroy;
 
 	Output(struct Server *server, struct wlr_output* wlr_output);
+	~Output();
 };

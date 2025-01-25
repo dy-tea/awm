@@ -52,6 +52,7 @@ executable(
     'src/Keyboard.cpp',
     'src/Toplevel.cpp',
     'src/Output.cpp',
+    'src/Popup.cpp',
     protocol_sources
   ],
   cpp_args: ['-fpermissive'],

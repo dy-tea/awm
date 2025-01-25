@@ -13,4 +13,9 @@ struct Toplevel {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
+
+	Toplevel(struct Server *server, struct wlr_xdg_toplevel* wlr_xdg_toplevel);
+	~Toplevel();
+
+	void focus();
 };

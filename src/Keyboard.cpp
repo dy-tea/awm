@@ -19,7 +19,7 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
 		}
 		struct Toplevel *next_toplevel =
 			wl_container_of(server->toplevels.prev, next_toplevel, link);
-		focus_toplevel(next_toplevel);
+		next_toplevel->focus();
 		break;
 	}
 	case XKB_KEY_Left:

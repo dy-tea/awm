@@ -8,9 +8,9 @@
 #include "Keyboard.h"
 
 enum CursorMode {
-	TINYWL_CURSOR_PASSTHROUGH,
-	TINYWL_CURSOR_MOVE,
-	TINYWL_CURSOR_RESIZE,
+	CURSORMODE_PASSTHROUGH,
+	CURSORMODE_MOVE,
+	CURSORMODE_RESIZE,
 };
 
 struct Server {
@@ -60,4 +60,4 @@ struct Server {
 	void process_cursor_motion(uint32_t time);
 };
 
-void focus_toplevel(struct Toplevel *toplevel); // TODO: move to toplevel
+void begin_interactive(struct Toplevel *toplevel, enum CursorMode mode, uint32_t edges);;

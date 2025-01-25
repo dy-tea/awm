@@ -6,11 +6,11 @@ LayerShell::LayerShell(struct wl_display *wl_display) {
 
   // new_surface
   new_shell_surface.notify = [](struct wl_listener *listener, void *data) {
-    LayerShell *shell = wl_container_of(listener, shell, pending);
+    LayerShell *shell = wl_container_of(listener, shell, new_shell_surface);
     wlr_layer_surface_v1 *shell_surface =
         static_cast<wlr_layer_surface_v1 *>(data);
 
-    LayerSurface *layer_surface = new LayerSurface(shell_surface->surface);
+    LayerSurface *layer_surface = new LayerSurface(shell_surface);
 
     shell->pending.emplace_back(layer_surface);
     wlr_log(WLR_ERROR, "New shell surface created");

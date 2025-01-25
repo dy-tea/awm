@@ -55,7 +55,7 @@ Output::Output(struct Server *server, struct wlr_output* wlr_output) {
 	struct wlr_output_layout_output *l_output = wlr_output_layout_add_auto(server->output_layout,
 		wlr_output);
 	struct wlr_scene_output *scene_output = wlr_scene_output_create(server->scene, wlr_output);
-	wlr_scene_output_layout_add_output(server->scene_layout, l_output, scene_output);;
+	wlr_scene_output_layout_add_output(server->scene_layout, l_output, scene_output);
 }
 
 Output::~Output() {

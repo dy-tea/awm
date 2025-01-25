@@ -6,6 +6,7 @@
 #include "Toplevel.h"
 #include "Popup.h"
 #include "Keyboard.h"
+#include "LayerShell.h"
 
 struct Server {
 	struct wl_display *wl_display;
@@ -42,6 +43,8 @@ struct Server {
 	struct wlr_output_layout *output_layout;
 	struct wl_list outputs;
 	struct wl_listener new_output;
+
+	struct LayerShell *layer_shell;
 
 	Server(const char* startup_cmd);
 	~Server();

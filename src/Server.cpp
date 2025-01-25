@@ -229,6 +229,9 @@ Server::Server(const char* startup_cmd) {
 	};
 	wl_signal_add(&backend->events.new_output, &new_output);
 
+	// create layer shell
+	layer_shell = new LayerShell(wl_display);
+
 	/* Create a scene graph. This is a wlroots abstraction that handles all
 	 * rendering and damage tracking. All the compositor author needs to do
 	 * is add things that should be rendered to the scene graph at the proper
@@ -262,7 +265,6 @@ Server::Server(const char* startup_cmd) {
 		struct wlr_xdg_popup *xdg_popup = (wlr_xdg_popup*)data;
 
 		struct Popup *popup = new Popup(xdg_popup);
-
 	};
 	wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 

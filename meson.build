@@ -46,7 +46,14 @@ libs = [
 
 executable(
   'compositor',
-  ['src/main.cpp', 'src/Server.cpp', 'src/Keyboard.cpp', 'src/Toplevel.cpp', protocol_sources],
+  [
+    'src/main.cpp',
+    'src/Server.cpp',
+    'src/Keyboard.cpp',
+    'src/Toplevel.cpp',
+    'src/Output.cpp',
+    protocol_sources
+  ],
   cpp_args: ['-fpermissive'],
   include_directories: include,
   dependencies: libs

@@ -37,9 +37,8 @@ protocols_wlr_unstable = [
     'wlr-layer-shell-unstable-v1'
 ]
 
-wlr_protocols_dir = run_command(pkg_config, '--variable=pkgdatadir', 'wlr-protocols').stdout().replace('\n', '')
 foreach protocol : protocols_wlr_unstable
-    path = wlr_protocols_dir / 'unstable' / '@0@.xml'.format(protocol)
+    path = 'protocols' / '@0@.xml'.format(protocol)
 
     out_h = '@0@-protocol.h'.format(protocol)
 

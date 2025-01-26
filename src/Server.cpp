@@ -43,7 +43,7 @@ struct Toplevel *Server::desktop_toplevel_at(double lx, double ly, struct wlr_su
 struct Output *Server::get_output(uint32_t index) {
     wl_list *out = &outputs;
 
-    for (int i = 0; i != index && out->next != nullptr; ++i)
+    for (uint32_t i = 0; i != index && out->next != nullptr; ++i)
         out = out->next;
 
     Output *o = wl_container_of(out, o, link);

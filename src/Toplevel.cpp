@@ -39,13 +39,12 @@ Toplevel::Toplevel(struct Server *server, struct wlr_xdg_toplevel* xdg_toplevel)
 		/* Called when a new surface state is committed. */
 		struct Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
 
-		if (toplevel->xdg_toplevel->base->initial_commit) {
+		if (toplevel->xdg_toplevel->base->initial_commit)
 			/* When an xdg_surface performs an initial commit, the compositor must
 			 * reply with a configure so the client can map the surface. tinywl
 			 * configures the xdg_toplevel with 0,0 size to let the client pick the
 			 * dimensions itself. */
 			wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, 0, 0);
-		}
 	};
 	wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 
@@ -124,16 +123,16 @@ Toplevel::~Toplevel() {
 
 void Toplevel::focus() {
     /* Note: this function only deals with keyboard focus. */
-	if (this == nullptr) {
+	if (xdg_toplevel == nullptr)
 		return;
-	}
+
 	struct wlr_seat *seat = server->seat;
 	struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
 	struct wlr_surface *surface = xdg_toplevel->base->surface;
-	if (prev_surface == surface) {
+	if (prev_surface == surface)
 		/* Don't re-focus an already focused surface. */
 		return;
-	}
+
 	if (prev_surface) {
 		/*
 		 * Deactivate the previously focused surface. This lets the client know
@@ -158,10 +157,9 @@ void Toplevel::focus() {
 	 * track of this and automatically send key events to the appropriate
 	 * clients without additional work on your part.
 	 */
-	if (keyboard != NULL) {
+	if (keyboard != NULL)
 		wlr_seat_keyboard_notify_enter(seat, surface,
 			keyboard->keycodes, keyboard->num_keycodes, &keyboard->modifiers);
-	}
 }
 
 void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {

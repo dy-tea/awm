@@ -12,6 +12,7 @@ wayland_scanner = find_program('wayland-scanner')
 pkg_config = find_program('pkg-config')
 
 protocol_sources = []
+protocol_code = []
 
 protocols_wl_stable = [
     'xdg-shell'
@@ -22,15 +23,22 @@ foreach protocol : protocols_wl_stable
     path = wl_protocols_dir / 'stable' / protocol / '@0@.xml'.format(protocol)
 
     out_h = '@0@-protocol.h'.format(protocol)
-
     header = custom_target(
         out_h,
         output: out_h,
         input: path,
         command: [ wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@' ],
     )
-
     protocol_sources += [header]
+
+    out_c = '@0@-protocol.c'.format(protocol)
+    code = custom_target(
+        out_c,
+        output: out_c,
+        input: path,
+        command: [ wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@' ],
+    )
+    protocol_code += [code]
 endforeach
 
 protocols_wlr_unstable = [
@@ -41,15 +49,22 @@ foreach protocol : protocols_wlr_unstable
     path = 'protocols' / '@0@.xml'.format(protocol)
 
     out_h = '@0@-protocol.h'.format(protocol)
-
     header = custom_target(
         out_h,
         output: out_h,
         input: path,
         command: [ wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@' ]
     )
-
     protocol_sources += [header]
+
+    out_c = '@0@-protocol.c'.format(protocol)
+    code = custom_target(
+        out_c,
+        output: out_c,
+        input: path,
+        command: [ wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@' ]
+    )
+    protocol_code += [code]
 endforeach
 
 include = include_directories(
@@ -78,8 +93,9 @@ executable(
         'src/LayerShell.cpp',
         'src/LayerSurface.cpp',
         protocol_sources,
+        protocol_code,
     ],
     cpp_args: ['-fpermissive'],
     include_directories: include,
-    dependencies: libs
+    dependencies: libs,
 )

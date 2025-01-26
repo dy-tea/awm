@@ -21,4 +21,5 @@ int main(int argc, char *argv[]) {
 	}
 
 	struct Server *server = new Server(startup_cmd);
+	delete server;
 }

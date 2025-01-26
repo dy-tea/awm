@@ -57,5 +57,6 @@ struct Server {
 	void process_cursor_resize();
 	void process_cursor_motion(uint32_t time);
 
+	struct Output *get_output(uint32_t index);
 	struct Toplevel *desktop_toplevel_at(double lx, double ly, struct wlr_surface **surface, double *sx, double *sy);
 };

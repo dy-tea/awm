@@ -1,4 +1,6 @@
 #include "Server.h"
+#include <cstdlib>
+#include <wayland-util.h>
 
 void Server::new_keyboard(struct wlr_input_device *device) {
 	struct Keyboard *keyboard = new Keyboard(this, device);
@@ -38,6 +40,16 @@ struct Toplevel *Server::desktop_toplevel_at(double lx, double ly, struct wlr_su
 		tree = tree->node.parent;
 
 	return (Toplevel*)tree->node.data;
+}
+
+struct Output *Server::get_output(uint32_t index) {
+    wl_list *out = &outputs;
+
+    for (int i = 0; i != index && out->next != nullptr; ++i)
+        out = out->next;
+
+    Output *o = wl_container_of(out, o, link);
+    return o;
 }
 
 void Server::reset_cursor_mode() {
@@ -229,9 +241,6 @@ Server::Server(const char* startup_cmd) {
 	};
 	wl_signal_add(&backend->events.new_output, &new_output);
 
-	// create layer shell
-	layer_shell = new LayerShell(wl_display);
-
 	/* Create a scene graph. This is a wlroots abstraction that handles all
 	 * rendering and damage tracking. All the compositor author needs to do
 	 * is add things that should be rendered to the scene graph at the proper
@@ -240,6 +249,9 @@ Server::Server(const char* startup_cmd) {
 	 */
 	scene = wlr_scene_create();
 	scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
+
+	// create layer shell
+	layer_shell = new LayerShell(wl_display, scene);
 
 	/* Set up xdg-shell version 3. The xdg-shell is a Wayland protocol which is
 	 * used for application windows. For more detail on shells, refer to
@@ -502,6 +514,8 @@ Server::~Server() {
 	wl_list_remove(&request_set_selection.link);
 
 	wl_list_remove(&new_output.link);
+
+	delete layer_shell;
 
 	wlr_scene_node_destroy(&scene->tree.node);
 	wlr_xcursor_manager_destroy(cursor_mgr);

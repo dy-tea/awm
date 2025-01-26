@@ -10,4 +10,5 @@ struct Keyboard {
 	struct wl_listener destroy;
 
 	Keyboard(struct Server *server, struct wlr_input_device *device);
+	~Keyboard();
 };

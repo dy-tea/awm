@@ -27,7 +27,7 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
 	break;
 	case XKB_KEY_space:
 		if (fork() == 0) {
-			execl("/bin/sh", "/bin/sh", "-c", "rofi -drun", (void *)NULL);
+			execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", (void *)NULL);
 		}
 	break;
 	default:
@@ -37,10 +37,8 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
 }
 
 Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
-    struct wlr_keyboard *wlr_keyboard = wlr_keyboard_from_input_device(device);
-
     this->server = server;
-	this->wlr_keyboard = wlr_keyboard;
+	this->wlr_keyboard = wlr_keyboard_from_input_device(device);
 
 	/* We need to prepare an XKB keymap and assign it to the keyboard. This
 	 * assumes the defaults (e.g. layout = "us"). */
@@ -118,11 +116,14 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
 		 */
 		struct Keyboard *keyboard =
 			wl_container_of(listener, keyboard, destroy);
-		wl_list_remove(&keyboard->modifiers.link);
-		wl_list_remove(&keyboard->key.link);
-		wl_list_remove(&keyboard->destroy.link);
-		wl_list_remove(&keyboard->link);
-		free(keyboard);
+		delete keyboard;
 	};
 	wl_signal_add(&device->events.destroy, &destroy);
+}
+
+Keyboard::~Keyboard() {
+    wl_list_remove(&modifiers.link);
+	wl_list_remove(&key.link);
+	wl_list_remove(&destroy.link);
+	wl_list_remove(&link);
 }

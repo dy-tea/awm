@@ -1,5 +1,12 @@
-Build instructions:
+### Dependencies
+- wlroots **0.19** (wlroots-git)
+- xkbcommon
+- wayland-server
+- wayland-protocols
+- pixman
+
+### Build
 ```sh
-meson build
+meson setup build
 ninja -C build
 ```

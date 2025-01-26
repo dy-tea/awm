@@ -1,8 +1,4 @@
 #include "Server.h"
-#include "wlr-layer-shell-unstable-v1-protocol.h"
-#include "wlr.h"
-#include "wlr/util/log.h"
-#include <wayland-util.h>
 
 LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1* wlr_layer_surface) {
     this->wlr_layer_surface = wlr_layer_surface;

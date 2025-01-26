@@ -1,6 +1,4 @@
 #include "Server.h"
-#include <cstdlib>
-#include <wayland-util.h>
 
 void Server::new_keyboard(struct wlr_input_device *device) {
 	struct Keyboard *keyboard = new Keyboard(this, device);

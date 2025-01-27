@@ -50,7 +50,8 @@ foreach protocol : protocols_wl_stable
 endforeach
 
 protocols_wlr_unstable = [
-    'wlr-layer-shell-unstable-v1'
+    'wlr-layer-shell-unstable-v1',
+    'wlr-foreign-toplevel-management-unstable-v1'
 ]
 
 foreach protocol : protocols_wlr_unstable

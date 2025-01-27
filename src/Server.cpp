@@ -248,9 +248,6 @@ Server::Server(const char* startup_cmd) {
 	scene = wlr_scene_create();
 	scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
 
-	// create layer shell
-	layer_shell = new LayerShell(wl_display, scene);
-
 	/* Set up xdg-shell version 3. The xdg-shell is a Wayland protocol which is
 	 * used for application windows. For more detail on shells, refer to
 	 * https://drewdevault.com/2018/07/29/Wayland-shells.html.
@@ -462,6 +459,9 @@ Server::Server(const char* startup_cmd) {
 	};
 	wl_signal_add(&seat->events.request_set_selection,
 			&request_set_selection);
+
+	// create layer shell
+	layer_shell = new LayerShell(wl_display, scene, seat);
 
 	/* Add a Unix socket to the Wayland display. */
 	const char *socket = wl_display_add_socket_auto(wl_display);

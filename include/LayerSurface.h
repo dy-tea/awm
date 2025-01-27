@@ -2,6 +2,7 @@
 
 struct LayerSurface {
     struct wl_list link;
+    struct LayerShell *layer_shell;
     struct wlr_layer_surface_v1 *wlr_layer_surface;
     struct wlr_scene_layer_surface_v1 *scene_layer_surface;
     struct wl_listener map;
@@ -12,4 +13,6 @@ struct LayerSurface {
 
     LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1* wlr_layer_surface);
     ~LayerSurface();
+
+    void handle_focus();
 };

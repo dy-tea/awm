@@ -17,7 +17,7 @@ void Server::new_pointer(struct wlr_input_device *device) {
 	wlr_cursor_attach_input_device(cursor, device);
 }
 
-struct Toplevel *Server::desktop_toplevel_at(double lx, double ly, struct wlr_surface **surface, double *sx, double *sy) {
+struct Toplevel *Server::toplevel_at(double lx, double ly, struct wlr_surface **surface, double *sx, double *sy) {
 	/* This returns the topmost node in the scene at the given layout coords.
 	 * We only care about surface nodes as we are specifically looking for a
 	 * surface in the surface tree of a Toplevel. */
@@ -34,10 +34,39 @@ struct Toplevel *Server::desktop_toplevel_at(double lx, double ly, struct wlr_su
 	/* Find the node corresponding to the Toplevel at the root of this
 	 * surface tree, it is the only one for which we set the data field. */
 	struct wlr_scene_tree *tree = node->parent;
+
+	if (tree->node.type != WLR_SCENE_NODE_TREE)
+	   return NULL;
+
 	while (tree != NULL && tree->node.data == NULL)
 		tree = tree->node.parent;
 
-	return (Toplevel*)tree->node.data;
+	if (tree == NULL)
+	    return NULL;
+
+    return (Toplevel*)tree->node.data;
+}
+
+struct LayerSurface *Server::layer_surface_at(double lx, double ly, struct wlr_surface **surface, double *sx, double *sy) {
+    struct wlr_scene_node *node = wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
+    if (node == NULL || node->type != WLR_SCENE_NODE_BUFFER)
+        return NULL;
+
+    struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
+    struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+    if (!scene_surface)
+        return NULL;
+
+    *surface = scene_surface->surface;
+
+    struct wlr_scene_tree *tree = node->parent;
+    while (tree != NULL && tree->node.data == NULL)
+        tree = tree->node.parent;
+
+    if (!tree)
+        return NULL;
+
+    return (LayerSurface*)tree->node.data;
 }
 
 struct Output *Server::get_output(uint32_t index) {
@@ -116,35 +145,37 @@ void Server::process_cursor_motion(uint32_t time) {
 		return;
 	}
 
-	/* Otherwise, find the toplevel under the pointer and send the event along. */
 	double sx, sy;
 	struct wlr_surface *surface = NULL;
-	struct Toplevel *toplevel = desktop_toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
-	if (!toplevel) {
-		/* If there's no toplevel under the cursor, set the cursor image to a
-		 * default. This is what makes the cursor image appear when you move it
-		 * around the screen, not over any toplevels. */
-		wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
-	}
-	if (surface) {
-		/*
-		 * Send pointer enter and motion events.
-		 *
-		 * The enter event gives the surface "pointer focus", which is distinct
-		 * from keyboard focus. You get pointer focus by moving the pointer over
-		 * a window.
-		 *
-		 * Note that wlroots will avoid sending duplicate enter/motion events if
-		 * the surface has already has pointer focus or if the client is already
-		 * aware of the coordinates passed.
-		 */
-		wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-		wlr_seat_pointer_notify_motion(seat, time, sx, sy);
-	} else {
-		/* Clear pointer focus so future button events and such are not sent to
-		 * the last client to have the cursor over it. */
-		wlr_seat_pointer_clear_focus(seat);
-	}
+	struct Toplevel *toplevel = toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
+	if (toplevel)
+        if (surface) {
+            /*
+            * Send pointer enter and motion events.
+            *
+            * The enter event gives the surface "pointer focus", which is distinct
+            * from keyboard focus. You get pointer focus by moving the pointer over
+            * a window.
+            *
+            * Note that wlroots will avoid sending duplicate enter/motion events if
+            * the surface has already has pointer focus or if the client is already
+            * aware of the coordinates passed.
+            */
+            wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+            wlr_seat_pointer_notify_motion(seat, time, sx, sy);
+            return;
+        }
+
+	struct LayerSurface *layer_surface = layer_surface_at(cursor->x, cursor->y, &surface, &sx, &sy);
+	if (layer_surface)
+	    if (surface) {
+			wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+			wlr_seat_pointer_notify_motion(seat, time, sx, sy);
+			return;
+		}
+
+	wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
+	wlr_seat_pointer_clear_focus(seat);
 }
 
 Server::Server(const char* startup_cmd) {
@@ -353,8 +384,9 @@ Server::Server(const char* startup_cmd) {
 			/* Focus that client if the button was _pressed_ */
 			double sx, sy;
 			struct wlr_surface *surface = NULL;
-			struct Toplevel *toplevel = server->desktop_toplevel_at(server->cursor->x, server->cursor->y, &surface, &sx, &sy);
-			toplevel->focus();
+			struct Toplevel *toplevel = server->toplevel_at(server->cursor->x, server->cursor->y, &surface, &sx, &sy);
+			if (toplevel != NULL)
+			    toplevel->focus();
 		}
 	};
 	wl_signal_add(&cursor->events.button, &cursor_button);

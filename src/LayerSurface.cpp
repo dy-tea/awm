@@ -64,7 +64,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1
 
     // new_popup
     new_popup.notify = [](struct wl_listener *listener, void *data) {
-        LayerSurface *layer_surface = wl_container_of(listener, layer_surface, wlr_layer_surface);
+        LayerSurface *layer_surface = wl_container_of(listener, layer_surface, new_popup);
 
         struct Popup *popup = new Popup((wlr_xdg_popup*)data);
         wl_list_insert(&layer_surface->popups, &popup->link);
@@ -73,7 +73,6 @@ LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1
 
     // destroy
     destroy.notify = [](struct wl_listener *listener, void *data) {
-        wlr_log(WLR_DEBUG, "Destroy called");
         LayerSurface *surface = wl_container_of(listener, surface, destroy);
         delete surface;
     };
@@ -81,6 +80,11 @@ LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1
 }
 
 LayerSurface::~LayerSurface() {
+    struct Popup *popup, *tmp;
+    wl_list_for_each_safe(popup, tmp, &popups, link)
+        delete popup;
+
+    wl_list_remove(&link);
     wl_list_remove(&map.link);
     wl_list_remove(&unmap.link);
     wl_list_remove(&commit.link);
@@ -95,5 +99,6 @@ void LayerSurface::handle_focus() {
     struct wlr_surface *surface = wlr_layer_surface->surface;
     struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(layer_shell->seat);
 
-    wlr_seat_keyboard_notify_enter(layer_shell->seat, surface, keyboard->keycodes, keyboard->num_keycodes, &keyboard->modifiers);;
+    if (keyboard != NULL)
+        wlr_seat_keyboard_notify_enter(layer_shell->seat, surface, keyboard->keycodes, keyboard->num_keycodes, &keyboard->modifiers);
 }

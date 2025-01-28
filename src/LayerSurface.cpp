@@ -1,10 +1,10 @@
 #include "Server.h"
-#include "wlr.h"
 
 LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1* wlr_layer_surface) {
     layer_shell = shell;
     this->wlr_layer_surface = wlr_layer_surface;
     wl_list_insert(&shell->layer_surfaces, &link);
+    wl_list_init(&popups);
 
     scene_layer_surface = wlr_scene_layer_surface_v1_create(&shell->scene->tree, wlr_layer_surface);
 
@@ -67,11 +67,13 @@ LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1
         LayerSurface *layer_surface = wl_container_of(listener, layer_surface, wlr_layer_surface);
 
         struct Popup *popup = new Popup((wlr_xdg_popup*)data);
+        wl_list_insert(&layer_surface->popups, &popup->link);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 
     // destroy
     destroy.notify = [](struct wl_listener *listener, void *data) {
+        wlr_log(WLR_DEBUG, "Destroy called");
         LayerSurface *surface = wl_container_of(listener, surface, destroy);
         delete surface;
     };
@@ -81,9 +83,9 @@ LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1
 LayerSurface::~LayerSurface() {
     wl_list_remove(&map.link);
     wl_list_remove(&unmap.link);
+    wl_list_remove(&commit.link);
     wl_list_remove(&new_popup.link);
     wl_list_remove(&destroy.link);
-    wlr_layer_surface_v1_destroy(wlr_layer_surface);
 }
 
 void LayerSurface::handle_focus() {

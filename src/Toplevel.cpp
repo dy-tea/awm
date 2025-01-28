@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server, struct wlr_xdg_toplevel* xdg_toplevel) {
     this->server = server;
@@ -123,7 +122,7 @@ Toplevel::~Toplevel() {
 
 void Toplevel::focus() {
     /* Note: this function only deals with keyboard focus. */
-	if (xdg_toplevel == nullptr)
+	if (xdg_toplevel == NULL)
 		return;
 
 	struct wlr_seat *seat = server->seat;

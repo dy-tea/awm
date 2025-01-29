@@ -150,17 +150,6 @@ void Server::process_cursor_motion(uint32_t time) {
 	struct Toplevel *toplevel = toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
 	if (toplevel)
         if (surface) {
-            /*
-            * Send pointer enter and motion events.
-            *
-            * The enter event gives the surface "pointer focus", which is distinct
-            * from keyboard focus. You get pointer focus by moving the pointer over
-            * a window.
-            *
-            * Note that wlroots will avoid sending duplicate enter/motion events if
-            * the surface has already has pointer focus or if the client is already
-            * aware of the coordinates passed.
-            */
             wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
             wlr_seat_pointer_notify_motion(seat, time, sx, sy);
             return;
@@ -384,6 +373,13 @@ Server::Server(const char* startup_cmd) {
 			/* Focus that client if the button was _pressed_ */
 			double sx, sy;
 			struct wlr_surface *surface = NULL;
+			struct LayerSurface *layer_surface = server->layer_surface_at(server->cursor->x, server->cursor->y, &surface, &sx, &sy);
+			if (layer_surface)
+			    if (surface) {
+					layer_surface->handle_focus();
+					return;
+				}
+
 			struct Toplevel *toplevel = server->toplevel_at(server->cursor->x, server->cursor->y, &surface, &sx, &sy);
 			if (toplevel != NULL)
 			    toplevel->focus();

@@ -13,6 +13,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1
         return;
     }
 
+    scene_layer_surface->tree->node.data = this;
     wlr_layer_surface->data = this;
 
     wlr_layer_surface->current.keyboard_interactive = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND;
@@ -32,7 +33,6 @@ LayerSurface::LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1
     unmap.notify = [](struct wl_listener *listener, void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, unmap);
         wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node, false);
-        wlr_log(WLR_DEBUG, "Unmapped wlr_layer_surface_v1");
     };
     wl_signal_add(&wlr_layer_surface->surface->events.unmap, &unmap);
 

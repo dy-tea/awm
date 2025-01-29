@@ -1,5 +1,5 @@
 project(
-    'compositor',
+    'awm',
     'cpp',
     'c',
     default_options: [
@@ -99,7 +99,7 @@ libs = [
 ]
 
 executable(
-    'compositor',
+    'awm',
     [
         'src/main.cpp',
         'src/Server.cpp',

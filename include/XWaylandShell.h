@@ -15,16 +15,13 @@ enum AtomName {
     ATOM_LAST,
 };
 
-struct XWayland {
-    struct wlr_xwayland *xwayland;
-    xcb_atom_t atoms[ATOM_LAST];
+struct XWaylandShell {
+    struct wlr_xwayland_shell_v1 *xwayland_shell;
     struct wl_list surfaces;
 
     struct wl_listener destroy;
-    struct wl_listener ready;
     struct wl_listener new_surface;
-    struct wl_listener remove_startup_info;
 
-    XWayland(struct wl_display *display, struct wlr_compositor *compositor);
-    ~XWayland();
+    XWaylandShell(struct wl_display *display);
+    ~XWaylandShell();
 };

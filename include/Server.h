@@ -6,8 +6,7 @@
 #include "Output.h"
 #include "Popup.h"
 #include "Toplevel.h"
-#include "XWayland.h"
-#include "wlr.h"
+#include "XWaylandShell.h"
 
 struct Server {
     struct wl_display *wl_display;
@@ -46,7 +45,7 @@ struct Server {
     struct wl_list outputs;
     struct wl_listener new_output;
 
-    struct XWayland *xwayland;
+    struct XWaylandShell *xwayland_shell;
     struct LayerShell *layer_shell;
 
     Server(const char *startup_cmd);

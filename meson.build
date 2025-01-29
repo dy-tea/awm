@@ -95,7 +95,8 @@ libs = [
     dependency('wayland-protocols'),
     dependency('wlroots-0.19'),
     dependency('pixman-1'),
-    dependency('xkbcommon')
+    dependency('xkbcommon'),
+    dependency('xcb')
 ]
 
 executable(
@@ -109,6 +110,8 @@ executable(
         'src/Popup.cpp',
         'src/LayerShell.cpp',
         'src/LayerSurface.cpp',
+        #'src/XWayland.cpp',
+        #'src/XWaylandSurface.cpp',
         protocol_sources,
         protocol_code,
     ],

@@ -12,7 +12,8 @@ struct LayerSurface {
     struct wl_listener new_popup;
     struct wl_listener destroy;
 
-    LayerSurface(struct LayerShell *shell, struct wlr_layer_surface_v1* wlr_layer_surface);
+    LayerSurface(struct LayerShell *shell,
+                 struct wlr_layer_surface_v1 *wlr_layer_surface);
     ~LayerSurface();
 
     void handle_focus();

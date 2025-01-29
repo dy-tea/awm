@@ -223,7 +223,7 @@ Server::Server(const char *startup_cmd) {
      * to dig your fingers in and play with their behavior if you want. Note
      * that the clients cannot set the selection directly without compositor
      * approval, see the handling of the request_set_selection event below.*/
-    wlr_compositor_create(wl_display, 5, renderer);
+    compositor = wlr_compositor_create(wl_display, 5, renderer);
     wlr_subcompositor_create(wl_display);
     wlr_data_device_manager_create(wl_display);
 
@@ -292,10 +292,12 @@ Server::Server(const char *startup_cmd) {
          * (application window). */
         struct Server *server =
             wl_container_of(listener, server, new_xdg_toplevel);
-        struct wlr_xdg_toplevel *xdg_toplevel = (wlr_xdg_toplevel *)data;
 
         /* Allocate a Toplevel for this surface */
-        struct Toplevel *toplevel = new Toplevel(server, xdg_toplevel);
+        struct Toplevel *toplevel =
+            new Toplevel(server, (wlr_xdg_toplevel *)data);
+
+        wl_list_insert(&server->toplevels, &toplevel->link);
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 
@@ -509,6 +511,9 @@ Server::Server(const char *startup_cmd) {
         wlr_seat_set_selection(server->seat, event->source, event->serial);
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
+
+    // create xwayland
+    xwayland = new XWayland(wl_display, compositor);
 
     // create layer shell
     layer_shell = new LayerShell(wl_display, scene, seat);

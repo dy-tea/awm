@@ -14,6 +14,7 @@ struct Server {
     struct wlr_backend *backend;
     struct wlr_renderer *renderer;
     struct wlr_allocator *allocator;
+    struct wlr_compositor *compositor;
     struct wlr_scene *scene;
     struct wlr_scene_output_layout *scene_layout;
 
@@ -45,6 +46,7 @@ struct Server {
     struct wl_list outputs;
     struct wl_listener new_output;
 
+    struct XWayland *xwayland;
     struct LayerShell *layer_shell;
 
     Server(const char *startup_cmd);

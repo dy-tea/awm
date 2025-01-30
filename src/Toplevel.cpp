@@ -94,20 +94,9 @@ Toplevel::Toplevel(struct Server *server,
         if (!toplevel->xdg_toplevel->base->initialized)
             return;
 
-        double center_x = toplevel->scene_tree->node.x +
-                          (toplevel->xdg_toplevel->current.width / 2.0);
-        double center_y = toplevel->scene_tree->node.y +
-                          (toplevel->xdg_toplevel->current.height / 2.0);
-
         struct wlr_output *wlr_output = wlr_output_layout_output_at(
-            toplevel->server->output_layout, center_x, center_y);
-
-        if (!wlr_output) {
-            struct Output *first_output = toplevel->server->get_output(0);
-            if (!first_output)
-                return;
-            wlr_output = first_output->wlr_output;
-        }
+            toplevel->server->output_layout, toplevel->server->cursor->x,
+            toplevel->server->cursor->y);
 
         struct wlr_box output_box;
         wlr_output_layout_get_box(toplevel->server->output_layout, wlr_output,

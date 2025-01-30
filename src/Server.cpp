@@ -378,8 +378,8 @@ Server::Server(const char *startup_cmd) {
             struct wlr_surface *surface = NULL;
             struct LayerSurface *layer_surface = server->layer_surface_at(
                 server->cursor->x, server->cursor->y, &surface, &sx, &sy);
-            if (layer_surface)
-                if (surface) {
+            if (layer_surface && surface)
+                if (layer_surface->should_focus()) {
                     layer_surface->handle_focus();
                     return;
                 }
@@ -496,7 +496,7 @@ Server::Server(const char *startup_cmd) {
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
     // create xwayland shell
-    xwayland_shell = new XWaylandShell(wl_display, scene);
+    // xwayland_shell = new XWaylandShell(wl_display, scene);
 
     // create layer shell
     layer_shell = new LayerShell(wl_display, scene, seat);
@@ -552,7 +552,7 @@ Server::~Server() {
     wl_list_remove(&new_output.link);
 
     delete layer_shell;
-    delete xwayland_shell;
+    // delete xwayland_shell;
 
     wlr_scene_node_destroy(&scene->tree.node);
     wlr_xcursor_manager_destroy(cursor_mgr);

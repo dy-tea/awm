@@ -17,4 +17,5 @@ struct LayerSurface {
     ~LayerSurface();
 
     void handle_focus();
+    bool should_focus();
 };

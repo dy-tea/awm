@@ -17,10 +17,6 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
     scene_layer_surface->tree->node.data = this;
     wlr_layer_surface->data = this;
 
-    wlr_layer_surface->current.keyboard_interactive =
-        ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND;
-    wlr_layer_surface->current.layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
-
     // map surface
     map.notify = [](struct wl_listener *listener, void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, map);
@@ -102,6 +98,11 @@ void LayerSurface::handle_focus() {
     if (!wlr_layer_surface->surface->mapped)
         return;
 
+    if (wlr_layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY &&
+        wlr_layer_surface->current.keyboard_interactive ==
+            ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE)
+        return;
+
     struct wlr_surface *surface = wlr_layer_surface->surface;
     struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(layer_shell->seat);
 
@@ -109,4 +110,9 @@ void LayerSurface::handle_focus() {
         wlr_seat_keyboard_notify_enter(
             layer_shell->seat, surface, keyboard->keycodes,
             keyboard->num_keycodes, &keyboard->modifiers);
+}
+
+bool LayerSurface::should_focus() {
+    return wlr_layer_surface->current.keyboard_interactive !=
+           ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
 }

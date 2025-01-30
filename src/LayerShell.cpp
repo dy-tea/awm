@@ -18,9 +18,6 @@ LayerShell::LayerShell(struct wl_display *wl_display, struct wlr_scene *scene,
         wlr_layer_surface_v1 *shell_surface =
             static_cast<wlr_layer_surface_v1 *>(data);
 
-        shell_surface->current.keyboard_interactive =
-            ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND;
-
         if (!shell_surface->output) {
             Server *server = wl_container_of(listener, server, outputs);
             Output *output = server->get_output(0);

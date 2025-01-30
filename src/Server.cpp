@@ -17,12 +17,9 @@ void Server::new_pointer(struct wlr_input_device *device) {
     wlr_cursor_attach_input_device(cursor, device);
 }
 
-struct Toplevel *Server::toplevel_at(double lx, double ly,
-                                     struct wlr_surface **surface, double *sx,
-                                     double *sy) {
-    /* This returns the topmost node in the scene at the given layout coords.
-     * We only care about surface nodes as we are specifically looking for a
-     * surface in the surface tree of a Toplevel. */
+template <typename T>
+T *Server::surface_at(double lx, double ly, struct wlr_surface **surface,
+                      double *sx, double *sy) {
     struct wlr_scene_node *node =
         wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
     if (node == NULL || node->type != WLR_SCENE_NODE_BUFFER)
@@ -35,8 +32,7 @@ struct Toplevel *Server::toplevel_at(double lx, double ly,
         return NULL;
 
     *surface = scene_surface->surface;
-    /* Find the node corresponding to the Toplevel at the root of this
-     * surface tree, it is the only one for which we set the data field. */
+
     struct wlr_scene_tree *tree = node->parent;
 
     if (tree->node.type != WLR_SCENE_NODE_TREE)
@@ -48,33 +44,19 @@ struct Toplevel *Server::toplevel_at(double lx, double ly,
     if (tree == NULL)
         return NULL;
 
-    return (Toplevel *)tree->node.data;
+    return static_cast<T *>(tree->node.data);
+}
+
+struct Toplevel *Server::toplevel_at(double lx, double ly,
+                                     struct wlr_surface **surface, double *sx,
+                                     double *sy) {
+    return surface_at<Toplevel>(lx, ly, surface, sx, sy);
 }
 
 struct LayerSurface *Server::layer_surface_at(double lx, double ly,
                                               struct wlr_surface **surface,
                                               double *sx, double *sy) {
-    struct wlr_scene_node *node =
-        wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
-    if (node == NULL || node->type != WLR_SCENE_NODE_BUFFER)
-        return NULL;
-
-    struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
-    struct wlr_scene_surface *scene_surface =
-        wlr_scene_surface_try_from_buffer(scene_buffer);
-    if (!scene_surface)
-        return NULL;
-
-    *surface = scene_surface->surface;
-
-    struct wlr_scene_tree *tree = node->parent;
-    while (tree != NULL && tree->node.data == NULL)
-        tree = tree->node.parent;
-
-    if (!tree)
-        return NULL;
-
-    return (LayerSurface *)tree->node.data;
+    return surface_at<LayerSurface>(lx, ly, surface, sx, sy);
 }
 
 struct Output *Server::get_output(uint32_t index) {

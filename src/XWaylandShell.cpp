@@ -1,11 +1,13 @@
 #include "XWaylandShell.h"
 
-XWaylandShell::XWaylandShell(struct wl_display *display) {
+XWaylandShell::XWaylandShell(struct wl_display *display,
+                             struct wlr_scene *scene) {
     xwayland_shell = wlr_xwayland_shell_v1_create(display, 1);
     if (xwayland_shell == nullptr) {
         wlr_log(WLR_ERROR, "Failed to create XWayland shell");
         return;
     }
+    this->scene = scene;
 
     wl_list_init(&surfaces);
 
@@ -20,7 +22,7 @@ XWaylandShell::XWaylandShell(struct wl_display *display) {
     new_surface.notify = [](struct wl_listener *listener, void *data) {
         XWaylandShell *shell = wl_container_of(listener, shell, new_surface);
         XWaylandSurface *surface =
-            new XWaylandSurface((wlr_xwayland_surface *)data);
+            new XWaylandSurface(shell, (wlr_xwayland_surface_v1 *)data);
         wl_list_insert(&shell->surfaces, &surface->link);
     };
     wl_signal_add(&xwayland_shell->events.new_surface, &new_surface);

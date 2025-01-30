@@ -28,6 +28,7 @@ LayerShell::LayerShell(struct wl_display *wl_display, struct wlr_scene *scene,
         }
 
         LayerSurface *layer_surface = new LayerSurface(shell, shell_surface);
+        wl_list_insert(&shell->layer_surfaces, &layer_surface->link);
     };
     wl_signal_add(&wlr_layer_shell->events.new_surface, &new_shell_surface);
 

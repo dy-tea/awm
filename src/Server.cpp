@@ -513,8 +513,8 @@ Server::Server(const char *startup_cmd) {
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
-    // create xwayland
-    xwayland_shell = new XWaylandShell(wl_display);
+    // create xwayland shell
+    xwayland_shell = new XWaylandShell(wl_display, scene);
 
     // create layer shell
     layer_shell = new LayerShell(wl_display, scene, seat);

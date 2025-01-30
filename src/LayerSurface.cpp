@@ -4,7 +4,6 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
                            struct wlr_layer_surface_v1 *wlr_layer_surface) {
     layer_shell = shell;
     this->wlr_layer_surface = wlr_layer_surface;
-    wl_list_insert(&shell->layer_surfaces, &link);
     wl_list_init(&popups);
 
     scene_layer_surface = wlr_scene_layer_surface_v1_create(&shell->scene->tree,

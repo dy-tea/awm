@@ -45,7 +45,7 @@ struct Server {
     struct wl_list outputs;
     struct wl_listener new_output;
 
-    // struct XWaylandShell *xwayland_shell;
+    struct XWaylandShell *xwayland_shell;
     struct LayerShell *layer_shell;
 
     Server(const char *startup_cmd);

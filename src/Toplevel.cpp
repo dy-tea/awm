@@ -232,3 +232,9 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
         server->resize_edges = edges;
     }
 }
+
+void Toplevel::set_position_size(double x, double y, int width, int height) {
+    wlr_scene_node_set_position(&scene_tree->node, x, y);
+    wlr_xdg_toplevel_set_size(xdg_toplevel, width, height);
+    wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+}

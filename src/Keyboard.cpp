@@ -13,7 +13,40 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
         wl_display_terminate(server->wl_display);
         break;
     case XKB_KEY_Left:
-        wlr_log(WLR_ERROR, "TODO");
+        if (!wl_list_empty(&server->toplevels)) {
+            Toplevel *toplevel =
+                wl_container_of(server->toplevels.next, toplevel, link);
+
+            struct wlr_output *wlr_output = wlr_output_layout_output_at(
+                server->output_layout, server->cursor->x, server->cursor->y);
+            double scale = wlr_output->scale;
+
+            struct wlr_box output_box;
+            wlr_output_layout_get_box(server->output_layout, wlr_output,
+                                      &output_box);
+
+            toplevel->set_position_size(output_box.x, output_box.y,
+                                        output_box.width / scale / 2,
+                                        output_box.height / scale);
+        }
+        break;
+    case XKB_KEY_Right:
+        if (!wl_list_empty(&server->toplevels)) {
+            Toplevel *toplevel =
+                wl_container_of(server->toplevels.next, toplevel, link);
+
+            struct wlr_output *wlr_output = wlr_output_layout_output_at(
+                server->output_layout, server->cursor->x, server->cursor->y);
+            double scale = wlr_output->scale;
+
+            struct wlr_box output_box;
+            wlr_output_layout_get_box(server->output_layout, wlr_output,
+                                      &output_box);
+
+            toplevel->set_position_size(
+                output_box.x + output_box.width / 2.0, output_box.y,
+                output_box.width / scale / 2, output_box.height / scale);
+        }
         break;
     case XKB_KEY_space:
         if (fork() == 0) {
@@ -45,15 +78,15 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
 
     // handle_modifiers
     modifiers.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a modifier key, such as shift or alt, is
-         * pressed. We simply communicate this to the client. */
+        /* This event is raised when a modifier key, such as shift or alt,
+         * is pressed. We simply communicate this to the client. */
         struct Keyboard *keyboard =
             wl_container_of(listener, keyboard, modifiers);
         /*
-         * A seat can only have one keyboard, but this is a limitation of the
-         * Wayland protocol - not wlroots. We assign all connected keyboards to
-         * the same seat. You can swap out the underlying wlr_keyboard like this
-         * and wlr_seat handles this transparently.
+         * A seat can only have one keyboard, but this is a limitation of
+         * the Wayland protocol - not wlroots. We assign all connected
+         * keyboards to the same seat. You can swap out the underlying
+         * wlr_keyboard like this and wlr_seat handles this transparently.
          */
         wlr_seat_set_keyboard(keyboard->server->seat, keyboard->wlr_keyboard);
         /* Send modifiers to the client. */
@@ -81,8 +114,8 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
         uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
         if ((modifiers & WLR_MODIFIER_ALT) &&
             event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-            /* If alt is held down and this button was _pressed_, we attempt to
-             * process it as a compositor keybinding. */
+            /* If alt is held down and this button was _pressed_, we attempt
+             * to process it as a compositor keybinding. */
             for (int i = 0; i < nsyms; i++) {
                 handled = handle_keybinding(server, syms[i]);
             }
@@ -99,9 +132,9 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
 
     // handle_destroy (keyboard)
     destroy.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised by the keyboard base wlr_input_device to signal
-         * the destruction of the wlr_keyboard. It will no longer receive events
-         * and should be destroyed.
+        /* This event is raised by the keyboard base wlr_input_device to
+         * signal the destruction of the wlr_keyboard. It will no longer
+         * receive events and should be destroyed.
          */
         struct Keyboard *keyboard =
             wl_container_of(listener, keyboard, destroy);

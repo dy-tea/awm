@@ -22,4 +22,5 @@ struct Toplevel {
 
     void focus();
     void begin_interactive(enum CursorMode mode, uint32_t edges);
+    void set_position_size(double x, double y, int width, int height);
 };

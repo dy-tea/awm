@@ -1,6 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
-#include <wayland-server-core.h>
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -157,8 +155,8 @@ Toplevel::~Toplevel() {
     wl_list_remove(&request_fullscreen.link);
 }
 
+// focus keyboard to surface
 void Toplevel::focus() {
-    /* Note: this function only deals with keyboard focus. */
     if (xdg_toplevel == NULL)
         return;
 
@@ -199,17 +197,25 @@ void Toplevel::focus() {
                                        &keyboard->modifiers);
 }
 
+// move or resize toplevel
 void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
-    /* This function sets up an interactive move or resize operation, where the
-     * compositor stops propegating pointer events to clients and instead
-     * consumes them itself, to move or resize windows. */
     server->grabbed_toplevel = this;
     server->cursor_mode = mode;
 
     if (mode == CURSORMODE_MOVE) {
+        // Do not set position back to saved one because this will mess up the
+        // window position
+        if (xdg_toplevel->current.maximized) {
+            wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width,
+                                      saved_geometry.height);
+            wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
+            wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+        }
+
         server->grab_x = server->cursor->x - scene_tree->node.x;
         server->grab_y = server->cursor->y - scene_tree->node.y;
     } else {
+        // Resize operation
         struct wlr_box *geo_box = &xdg_toplevel->base->geometry;
 
         double border_x = (scene_tree->node.x + geo_box->x) +

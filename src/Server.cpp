@@ -76,6 +76,9 @@ void Server::reset_cursor_mode() {
 }
 
 void Server::process_cursor_move() {
+    if (grabbed_toplevel->xdg_toplevel->current.fullscreen)
+        return;
+
     /* Move the grabbed toplevel to the new position. */
     wlr_scene_node_set_position(&grabbed_toplevel->scene_tree->node,
                                 cursor->x - grab_x, cursor->y - grab_y);

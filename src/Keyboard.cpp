@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
     /*
@@ -46,6 +47,15 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
             toplevel->set_position_size(
                 output_box.x + output_box.width / 2.0, output_box.y,
                 output_box.width / scale / 2, output_box.height / scale);
+        }
+        break;
+    case XKB_KEY_f:
+        if (!wl_list_empty(&server->toplevels)) {
+            Toplevel *toplevel =
+                wl_container_of(server->toplevels.next, toplevel, link);
+
+            wl_signal_emit(&toplevel->xdg_toplevel->events.request_fullscreen,
+                           nullptr);
         }
         break;
     case XKB_KEY_space:

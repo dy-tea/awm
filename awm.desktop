@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=awm
+Comment=Start an awm session
+Exec=/usr/bin/awm
+Type=Application
+DesktopNames=awm

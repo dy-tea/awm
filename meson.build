@@ -99,7 +99,7 @@ libs = [
     dependency('xcb')
 ]
 
-executable(
+awm = executable(
     'awm',
     [
         'src/main.cpp',
@@ -118,4 +118,11 @@ executable(
     cpp_args: ['-fpermissive'],
     include_directories: include,
     dependencies: libs,
+    install: true,
+    install_dir: '/usr/bin'
+)
+
+install_data(
+	'awm.desktop',
+	install_dir: '/usr/share/wayland-sessions'
 )

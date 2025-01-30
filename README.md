@@ -12,7 +12,14 @@
 - `pixman`
 
 ### Build
+You can build and run using:
 ```sh
 meson setup build
 ninja -C build
+./build/awm # to run
 ```
+Addtionally, you can install awm to your wayland-sessions using:
+```sh
+meson setup build
+sudo meson install -C build
+````

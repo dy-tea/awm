@@ -15,6 +15,8 @@ struct Toplevel {
     struct wl_listener request_maximize;
     struct wl_listener request_fullscreen;
 
+    struct wlr_fbox saved_geometry;
+
     Toplevel(struct Server *server, struct wlr_xdg_toplevel *wlr_xdg_toplevel);
     ~Toplevel();
 

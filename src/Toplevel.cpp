@@ -1,4 +1,6 @@
 #include "Server.h"
+#include "wlr.h"
+#include <wayland-server-core.h>
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -58,22 +60,17 @@ Toplevel::Toplevel(struct Server *server,
     };
     wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
 
-    /* cotd */
-    // request_move (toplevel)
+    // request_move
     request_move.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a client would like to begin an interactive
-         * move, typically because the user clicked on their client-side
-         * decorations. Note that a more sophisticated compositor should check
-         * the provided serial against a list of button press serials sent to
-         * this client, to prevent the client from requesting this whenever they
-         * want. */
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_move);
+
+        // start interactivity
         toplevel->begin_interactive(CURSORMODE_MOVE, 0);
     };
     wl_signal_add(&xdg_toplevel->events.request_move, &request_move);
 
-    // request_resize (toplevel)
+    // request_resize
     request_resize.notify = [](struct wl_listener *listener, void *data) {
         /* This event is raised when a client would like to begin an interactive
          * resize, typically because the user clicked on their client-side
@@ -89,24 +86,65 @@ Toplevel::Toplevel(struct Server *server,
     };
     wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
 
-    // request_maximize (toplevel)
+    // request_maximize
     request_maximize.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a client would like to maximize itself,
-         * typically because the user clicked on the maximize button on
-         * client-side decorations. tinywl doesn't support maximization, but to
-         * conform to xdg-shell protocol we still must send a configure.
-         * wlr_xdg_surface_schedule_configure() is used to send an empty reply.
-         * However, if the request was sent before an initial commit, we don't
-         * do anything and let the client finish the initial surface setup. */
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_maximize);
-        if (toplevel->xdg_toplevel->base->initialized) {
-            wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+
+        if (!toplevel->xdg_toplevel->base->initialized)
+            return;
+
+        double center_x = toplevel->scene_tree->node.x +
+                          (toplevel->xdg_toplevel->current.width / 2.0);
+        double center_y = toplevel->scene_tree->node.y +
+                          (toplevel->xdg_toplevel->current.height / 2.0);
+
+        struct wlr_output *wlr_output = wlr_output_layout_output_at(
+            toplevel->server->output_layout, center_x, center_y);
+
+        if (!wlr_output) {
+            struct Output *first_output = toplevel->server->get_output(0);
+            if (!first_output)
+                return;
+            wlr_output = first_output->wlr_output;
         }
+
+        struct wlr_box output_box;
+        wlr_output_layout_get_box(toplevel->server->output_layout, wlr_output,
+                                  &output_box);
+
+        if (toplevel->xdg_toplevel->requested.maximized) {
+            toplevel->saved_geometry.x = toplevel->scene_tree->node.x;
+            toplevel->saved_geometry.y = toplevel->scene_tree->node.y;
+            toplevel->saved_geometry.width =
+                toplevel->xdg_toplevel->current.width;
+            toplevel->saved_geometry.height =
+                toplevel->xdg_toplevel->current.height;
+
+            float scale = wlr_output->scale;
+
+            wlr_scene_node_set_position(&toplevel->scene_tree->node,
+                                        output_box.x, output_box.y);
+            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
+                                      output_box.width / scale,
+                                      output_box.height / scale);
+        } else {
+            wlr_scene_node_set_position(&toplevel->scene_tree->node,
+                                        toplevel->saved_geometry.x,
+                                        toplevel->saved_geometry.y);
+            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
+                                      toplevel->saved_geometry.width,
+                                      toplevel->saved_geometry.height);
+        }
+        wlr_xdg_toplevel_set_maximized(
+            toplevel->xdg_toplevel,
+            toplevel->xdg_toplevel->requested.maximized);
+
+        wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
     };
     wl_signal_add(&xdg_toplevel->events.request_maximize, &request_maximize);
 
-    // request_fullscreen (toplevel)
+    // request_fullscreen
     request_fullscreen.notify = [](struct wl_listener *listener, void *data) {
         /* Just as with request_maximize, we must send a configure here. */
         struct Toplevel *toplevel =

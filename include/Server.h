@@ -22,6 +22,8 @@ struct Server {
     struct wl_listener new_xdg_popup;
     struct wl_list toplevels;
 
+    struct wl_listener renderer_lost;
+
     struct wlr_cursor *cursor;
     struct wlr_xcursor_manager *cursor_mgr;
     struct wl_listener cursor_motion;

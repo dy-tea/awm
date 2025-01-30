@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
     /*

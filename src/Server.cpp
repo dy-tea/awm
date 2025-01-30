@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr/util/log.h"
 
 void Server::new_keyboard(struct wlr_input_device *device) {
     struct Keyboard *keyboard = new Keyboard(this, device);
@@ -271,6 +272,48 @@ Server::Server(const char *startup_cmd) {
      */
     wl_list_init(&toplevels);
     xdg_shell = wlr_xdg_shell_create(wl_display, 3);
+
+    // renderer_lost
+    renderer_lost.notify = [](struct wl_listener *listener, void *data) {
+        struct Server *server =
+            wl_container_of(listener, server, renderer_lost);
+
+        wlr_log(WLR_INFO, "Re-creating renderer after GPU reset");
+
+        struct wlr_renderer *renderer =
+            wlr_renderer_autocreate(server->backend);
+        if (renderer == NULL) {
+            wlr_log(WLR_ERROR, "Unable to create renderer");
+            return;
+        }
+
+        struct wlr_allocator *allocator =
+            wlr_allocator_autocreate(server->backend, renderer);
+        if (allocator == NULL) {
+            wlr_log(WLR_ERROR, "Unable to create allocator");
+            wlr_renderer_destroy(renderer);
+            return;
+        }
+
+        struct wlr_renderer *old_renderer = server->renderer;
+        struct wlr_allocator *old_allocator = server->allocator;
+        server->renderer = renderer;
+        server->allocator = allocator;
+
+        wl_list_remove(&server->renderer_lost.link);
+        wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
+
+        wlr_compositor_set_renderer(server->compositor, renderer);
+
+        struct Output *output, *tmp;
+        wl_list_for_each_safe(output, tmp, &server->outputs, link)
+            wlr_output_init_render(output->wlr_output, server->allocator,
+                                   server->renderer);
+
+        wlr_allocator_destroy(old_allocator);
+        wlr_renderer_destroy(old_renderer);
+    };
+    wl_signal_add(&renderer->events.lost, &renderer_lost);
 
     // new_xdg_toplevel
     new_xdg_toplevel.notify = [](struct wl_listener *listener, void *data) {

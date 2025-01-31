@@ -1,5 +1,4 @@
 #include "Server.h"
-#include <wayland-util.h>
 
 Workspace::Workspace(struct Output *output) {
     this->output = output;
@@ -140,7 +139,7 @@ void Workspace::tile() {
 
     int toplevel_count = wl_list_length(&toplevels);
 
-    int cols = std::sqrt(toplevel_count);
+    int cols = std::round(std::sqrt(toplevel_count));
     int rows = (toplevel_count + cols - 1) / cols;
 
     int width = box.width / cols;

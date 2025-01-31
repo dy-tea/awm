@@ -8,12 +8,14 @@ Workspace::Workspace(struct Output *output) {
 
 Workspace::~Workspace() {}
 
+// add a toplevel to the workspace
 void Workspace::add_toplevel(struct Toplevel *toplevel) {
     wl_list_insert(&toplevels, &toplevel->link);
     active_toplevel = toplevel;
     active_toplevel->focus();
 }
 
+// returns true if the workspace contains the passed toplevel
 bool Workspace::contains(struct Toplevel *toplevel) {
     if (wl_list_empty(&toplevels))
         return false;
@@ -25,6 +27,7 @@ bool Workspace::contains(struct Toplevel *toplevel) {
     return false;
 }
 
+// move a toplevel to another workspace
 bool Workspace::move_to(struct Toplevel *toplevel,
                         struct Workspace *workspace) {
     if (workspace == this)
@@ -39,6 +42,7 @@ bool Workspace::move_to(struct Toplevel *toplevel,
     return false;
 }
 
+// get the nth toplevel
 struct Toplevel *Workspace::get_toplevel(uint32_t n) {
     Toplevel *toplevel, *tmp;
     uint32_t current = 0;
@@ -52,6 +56,7 @@ struct Toplevel *Workspace::get_toplevel(uint32_t n) {
     return nullptr;
 }
 
+// move the nth toplevel to another workspace
 bool Workspace::move_to(uint32_t n, struct Workspace *workspace) {
     if (wl_list_empty(&toplevels))
         return false;
@@ -64,12 +69,14 @@ bool Workspace::move_to(uint32_t n, struct Workspace *workspace) {
     return move_to(toplevel, workspace);
 }
 
+// set the workspace's visibility
 void Workspace::set_hidden(bool hidden) {
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link)
         toplevel->set_hidden(hidden);
 }
 
+// focus the workspace
 void Workspace::focus() {
     set_hidden(false);
 
@@ -80,6 +87,7 @@ void Workspace::focus() {
     }
 }
 
+// focus the toplevel following the active one, looping around to the start
 void Workspace::focus_next() {
     if (wl_list_length(&toplevels) < 2 || wl_list_empty(&toplevels))
         return;
@@ -100,6 +108,7 @@ void Workspace::focus_next() {
     active_toplevel->focus();
 }
 
+// focus the toplevel preceding the active one, looping around to the end
 void Workspace::focus_prev() {
     if (wl_list_length(&toplevels) < 2 || wl_list_empty(&toplevels))
         return;
@@ -119,6 +128,8 @@ void Workspace::focus_prev() {
     active_toplevel->focus();
 }
 
+// auto-tile the toplevels of a workspace, not currently reversible or
+// any kind of special state
 void Workspace::tile() {
     if (wl_list_empty(&toplevels))
         return;

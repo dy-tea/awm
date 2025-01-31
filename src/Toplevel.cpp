@@ -234,6 +234,7 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
     }
 }
 
+// set the position and size of a toplevel, send a configure
 void Toplevel::set_position_size(double x, double y, int width, int height) {
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
         server->output_layout, server->cursor->x, server->cursor->y);
@@ -254,6 +255,7 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
     wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 }
 
+// set the visibility of the toplevel
 void Toplevel::set_hidden(bool hidden) {
     this->hidden = hidden;
     wlr_scene_node_set_enabled(&scene_tree->node, !hidden);

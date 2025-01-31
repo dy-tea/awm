@@ -121,10 +121,10 @@ awm = executable(
     include_directories: include,
     dependencies: libs,
     install: true,
-    install_dir: '/usr/bin'
+    install_dir: get_option('bindir')
 )
 
 install_data(
 	'awm.desktop',
-	install_dir: '/usr/share/wayland-sessions'
+	install_dir: join_paths(get_option('datadir'), 'wayland-sessions')
 )

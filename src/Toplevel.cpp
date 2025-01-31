@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -14,8 +13,6 @@ Toplevel::Toplevel(struct Server *server,
     map.notify = [](struct wl_listener *listener, void *data) {
         /* Called when the surface is mapped, or ready to display on-screen. */
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
-
-        wl_list_insert(&toplevel->server->toplevels, &toplevel->link);
 
         toplevel->focus();
     };
@@ -231,8 +228,7 @@ void Toplevel::focus() {
     struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
     /* Move the toplevel to the front */
     wlr_scene_node_raise_to_top(&scene_tree->node);
-    wl_list_remove(&link);
-    wl_list_insert(&server->toplevels, &link);
+
     /* Activate the new surface */
     wlr_xdg_toplevel_set_activated(xdg_toplevel, true);
     /*
@@ -304,7 +300,5 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
 
 void Toplevel::set_hidden(bool hidden) {
     this->hidden = hidden;
-    // wlr_scene_node_set_enabled(&scene_tree->node, !hidden);
-    wlr_xdg_toplevel_set_suspended(xdg_toplevel, hidden);
-    wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+    wlr_scene_node_set_enabled(&scene_tree->node, !hidden);
 }

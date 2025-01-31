@@ -8,63 +8,45 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
      *
      * This function assumes Alt is held down.
      */
+    Output *output = server->output_at(server->cursor->x, server->cursor->y);
+
     switch (sym) {
-    case XKB_KEY_Escape:
+    case XKB_KEY_Escape: // exit the compositor
         wl_display_terminate(server->wl_display);
         break;
     case XKB_KEY_Left:
-        if (!wl_list_empty(&server->toplevels)) {
-            Toplevel *toplevel =
-                wl_container_of(server->toplevels.next, toplevel, link);
-
-            struct wlr_output *wlr_output = wlr_output_layout_output_at(
-                server->output_layout, server->cursor->x, server->cursor->y);
-            double scale = wlr_output->scale;
-
-            struct wlr_box output_box;
-            wlr_output_layout_get_box(server->output_layout, wlr_output,
-                                      &output_box);
-
-            toplevel->set_position_size(output_box.x, output_box.y,
-                                        output_box.width / scale / 2,
-                                        output_box.height / scale);
-        }
+        if (output == NULL)
+            break;
+        wlr_log(WLR_DEBUG, "TODO: move left");
         break;
     case XKB_KEY_Right:
-        if (!wl_list_empty(&server->toplevels)) {
-            Toplevel *toplevel =
-                wl_container_of(server->toplevels.next, toplevel, link);
-
-            struct wlr_output *wlr_output = wlr_output_layout_output_at(
-                server->output_layout, server->cursor->x, server->cursor->y);
-            double scale = wlr_output->scale;
-
-            struct wlr_box output_box;
-            wlr_output_layout_get_box(server->output_layout, wlr_output,
-                                      &output_box);
-
-            toplevel->set_position_size(
-                output_box.x + output_box.width / 2.0, output_box.y,
-                output_box.width / scale / 2, output_box.height / scale);
-        }
+        if (output == NULL)
+            break;
+        wlr_log(WLR_DEBUG, "TODO: move right");
         break;
-    case XKB_KEY_f:
-        if (!wl_list_empty(&server->toplevels)) {
-            Toplevel *toplevel =
-                wl_container_of(server->toplevels.next, toplevel, link);
+    case XKB_KEY_o: // focus the previous toplevel in the active workspace
+        if (output == NULL)
+            break;
+        output->active_workspace->focus_prev();
+        break;
+    case XKB_KEY_p: // focus the next toplevel in the active workspace
+        if (output == NULL)
+            break;
+        output->active_workspace->focus_next();
+        break;
+    case XKB_KEY_m:
+        if (output == NULL)
+            break;
 
-            wl_signal_emit(&toplevel->xdg_toplevel->events.request_fullscreen,
-                           nullptr);
-        }
+        wlr_log(WLR_DEBUG, "TODO: set maximized");
         break;
-    case XKB_KEY_h:
-        if (!wl_list_empty(&server->toplevels)) {
-            Toplevel *toplevel =
-                wl_container_of(server->toplevels.next, toplevel, link);
-            toplevel->set_hidden(!toplevel->hidden);
-        }
+    case XKB_KEY_t: // set workspace to tile
+        if (output == NULL)
+            break;
+
+        output->active_workspace->tile();
         break;
-    case XKB_KEY_space:
+    case XKB_KEY_space: // open rofi
         if (fork() == 0) {
             execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", (void *)NULL);
         }

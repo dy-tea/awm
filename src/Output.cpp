@@ -1,10 +1,12 @@
 #include "Server.h"
-#include <climits>
 
 Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     this->wlr_output = wlr_output;
     this->server = server;
     wl_list_init(&workspaces);
+
+    // Create default workspace
+    active_workspace = new_workspace();
 
     /* Sets up a listener for the frame event. */
     frame.notify = [](struct wl_listener *listener, void *data) {
@@ -65,6 +67,9 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
 }
 
 Output::~Output() {
+    Workspace *workspace, *tmp;
+    wl_list_for_each_safe(workspace, tmp, &workspaces, link) delete workspace;
+
     wl_list_remove(&frame.link);
     wl_list_remove(&request_state.link);
     wl_list_remove(&destroy.link);

@@ -131,6 +131,20 @@ void Server::process_cursor_resize() {
                               new_bottom - new_top);
 }
 
+struct Output *Server::output_at(double x, double y) {
+    struct wlr_output *wlr_output =
+        wlr_output_layout_output_at(output_layout, x, y);
+
+    if (wlr_output == NULL)
+        return NULL;
+
+    struct Output *output;
+    wl_list_for_each(output, &outputs,
+                     link) if (output->wlr_output == wlr_output) return output;
+
+    return NULL;
+}
+
 void Server::process_cursor_motion(uint32_t time) {
     /* If the mode is non-passthrough, delegate to those functions. */
     if (cursor_mode == CURSORMODE_MOVE) {
@@ -267,7 +281,6 @@ Server::Server(const char *startup_cmd) {
     scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
 
     // create xdg shell
-    wl_list_init(&toplevels);
     xdg_shell = wlr_xdg_shell_create(wl_display, 6);
 
     // renderer_lost
@@ -323,7 +336,9 @@ Server::Server(const char *startup_cmd) {
         struct Toplevel *toplevel =
             new Toplevel(server, (wlr_xdg_toplevel *)data);
 
-        wl_list_insert(&server->toplevels, &toplevel->link);
+        Output *active =
+            server->output_at(server->cursor->x, server->cursor->y);
+        active->active_workspace->add_toplevel(toplevel);
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 

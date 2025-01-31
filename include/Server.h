@@ -21,7 +21,6 @@ struct Server {
     struct wlr_xdg_shell *xdg_shell;
     struct wl_listener new_xdg_toplevel;
     struct wl_listener new_xdg_popup;
-    struct wl_list toplevels;
 
     struct wl_listener renderer_lost;
 
@@ -73,4 +72,5 @@ struct Server {
     struct LayerSurface *layer_surface_at(double lx, double ly,
                                           struct wlr_surface **surface,
                                           double *sx, double *sy);
+    struct Output *output_at(double x, double y);
 };

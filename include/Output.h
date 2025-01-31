@@ -8,6 +8,11 @@ struct Output {
     struct wl_listener request_state;
     struct wl_listener destroy;
 
+    struct wl_list workspaces;
+
     Output(struct Server *server, struct wlr_output *wlr_output);
     ~Output();
+
+    struct Workspace *new_workspace();
+    struct Workspace *get_workspace(uint32_t n);
 };

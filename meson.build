@@ -112,6 +112,7 @@ awm = executable(
         'src/Popup.cpp',
         'src/LayerShell.cpp',
         'src/LayerSurface.cpp',
+        'src/Workspace.cpp',
         #'src/XWaylandShell.cpp',
         #'src/XWaylandSurface.cpp',
         protocol_sources,

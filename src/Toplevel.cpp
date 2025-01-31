@@ -301,3 +301,10 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
     wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
     wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 }
+
+void Toplevel::set_hidden(bool hidden) {
+    this->hidden = hidden;
+    // wlr_scene_node_set_enabled(&scene_tree->node, !hidden);
+    wlr_xdg_toplevel_set_suspended(xdg_toplevel, hidden);
+    wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+}

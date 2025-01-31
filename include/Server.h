@@ -6,6 +6,7 @@
 #include "Output.h"
 #include "Popup.h"
 #include "Toplevel.h"
+#include "Workspace.h"
 #include "XWaylandShell.h"
 
 struct Server {

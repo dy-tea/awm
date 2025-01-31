@@ -266,12 +266,9 @@ Server::Server(const char *startup_cmd) {
     scene = wlr_scene_create();
     scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
 
-    /* Set up xdg-shell version 3. The xdg-shell is a Wayland protocol which is
-     * used for application windows. For more detail on shells, refer to
-     * https://drewdevault.com/2018/07/29/Wayland-shells.html.
-     */
+    // create xdg shell
     wl_list_init(&toplevels);
-    xdg_shell = wlr_xdg_shell_create(wl_display, 3);
+    xdg_shell = wlr_xdg_shell_create(wl_display, 6);
 
     // renderer_lost
     renderer_lost.notify = [](struct wl_listener *listener, void *data) {
@@ -596,6 +593,7 @@ Server::~Server() {
     wl_list_remove(&request_set_selection.link);
 
     wl_list_remove(&new_output.link);
+    wl_list_remove(&renderer_lost.link);
 
     delete layer_shell;
     // delete xwayland_shell;

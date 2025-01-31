@@ -1,8 +1,10 @@
 #include "Server.h"
+#include <climits>
 
 Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     this->wlr_output = wlr_output;
     this->server = server;
+    wl_list_init(&workspaces);
 
     /* Sets up a listener for the frame event. */
     frame.notify = [](struct wl_listener *listener, void *data) {
@@ -67,4 +69,23 @@ Output::~Output() {
     wl_list_remove(&request_state.link);
     wl_list_remove(&destroy.link);
     wl_list_remove(&link);
+}
+
+struct Workspace *Output::new_workspace() {
+    struct Workspace *workspace = new Workspace(this);
+    wl_list_insert(&workspaces, &workspace->link);
+    return workspace;
+}
+
+struct Workspace *Output::get_workspace(uint32_t n) {
+    Workspace *workspace, *tmp;
+    int index = 0;
+    wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
+        if (index == n)
+            return workspace;
+        else
+            ++index;
+    }
+
+    return nullptr;
 }

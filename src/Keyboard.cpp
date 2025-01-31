@@ -57,6 +57,13 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
                            nullptr);
         }
         break;
+    case XKB_KEY_h:
+        if (!wl_list_empty(&server->toplevels)) {
+            Toplevel *toplevel =
+                wl_container_of(server->toplevels.next, toplevel, link);
+            toplevel->set_hidden(!toplevel->hidden);
+        }
+        break;
     case XKB_KEY_space:
         if (fork() == 0) {
             execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", (void *)NULL);

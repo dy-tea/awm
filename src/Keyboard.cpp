@@ -1,4 +1,6 @@
 #include "Server.h"
+#include <wayland-server-core.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
 
 static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
     /*
@@ -8,48 +10,37 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
      *
      * This function assumes Alt is held down.
      */
-    Output *output = server->output_at(server->cursor->x, server->cursor->y);
 
-    switch (sym) {
-    case XKB_KEY_Escape: // exit the compositor
+    // exit compositor
+    if (sym == XKB_KEY_Escape) {
         wl_display_terminate(server->wl_display);
-        break;
+        return true;
+    }
+
+    Output *output = server->output_at(server->cursor->x, server->cursor->y);
+    if (output == NULL)
+        return false;
+
+    // match remaining syms
+    switch (sym) {
     case XKB_KEY_Left:
-        if (output == NULL)
-            break;
         wlr_log(WLR_DEBUG, "TODO: move left");
         break;
     case XKB_KEY_Right:
-        if (output == NULL)
-            break;
         wlr_log(WLR_DEBUG, "TODO: move right");
         break;
     case XKB_KEY_o: // focus the previous toplevel in the active workspace
-        if (output == NULL)
-            break;
         output->active_workspace->focus_prev();
         break;
     case XKB_KEY_p: // focus the next toplevel in the active workspace
-        if (output == NULL)
-            break;
         output->active_workspace->focus_next();
         break;
-    case XKB_KEY_m:
-        if (output == NULL)
-            break;
-
-        wlr_log(WLR_DEBUG, "TODO: set maximized");
-        break;
     case XKB_KEY_t: // set workspace to tile
-        if (output == NULL)
-            break;
-
         output->active_workspace->tile();
         break;
     case XKB_KEY_space: // open rofi
-        if (fork() == 0) {
+        if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", (void *)NULL);
-        }
         break;
     default:
         return false;

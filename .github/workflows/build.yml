@@ -1,0 +1,53 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install --fix-missing meson wayland-protocols wayland-utils \
+          libwlroots-dev libffi-dev graphviz doxygen xsltproc xmlto
+
+      - name: pixman-1
+        run: |
+          git clone https://gitlab.freedesktop.org/pixman/pixman.git
+          cd pixman
+          meson setup build
+          sudo ninja -C build/ install
+
+      - name: wayland
+        run: |
+          git clone https://gitlab.freedesktop.org/wayland/wayland.git
+          cd wayland
+          meson setup build/
+          sudo ninja -C build/ install
+
+      - name: wayland-protocols
+        run: |
+          git clone https://gitlab.freedesktop.org/wayland/wayland-protocols.git
+          cd wayland-protocols
+          meson setup build/
+          sudo ninja -C build/ install
+
+      - name: wlroots
+        run: |
+          git clone https://gitlab.freedesktop.org/wlroots/wlroots.git
+          cd wlroots
+          meson setup build/
+          sudo ninja -C build/ install
+
+      - name: Build the project
+        run: |
+          meson setup build
+          ninja -C build

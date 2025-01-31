@@ -84,9 +84,11 @@ foreach protocol : protocols_wlr_unstable
     protocol_code += [code]
 endforeach
 
+include_dir = run_command(pkg_config, '--variable=includedir', 'wlroots-0.19').stdout().replace('\n', '')
+
 include = include_directories(
-  '/usr/include',
-  '/usr/include/wlroots-0.19',
+  include_dir,
+  include_dir / 'wlroots-0.19',
   'include',
 )
 
@@ -110,8 +112,8 @@ awm = executable(
         'src/Popup.cpp',
         'src/LayerShell.cpp',
         'src/LayerSurface.cpp',
-        'src/XWaylandShell.cpp',
-        'src/XWaylandSurface.cpp',
+        #'src/XWaylandShell.cpp',
+        #'src/XWaylandSurface.cpp',
         protocol_sources,
         protocol_code,
     ],

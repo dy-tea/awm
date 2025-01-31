@@ -31,14 +31,6 @@ foreach protocol : protocols_wl_stable
     )
     protocol_sources += [header]
 
-    out_hc = '@0@@-client-protocol.h'.format(protocol)
-    client_header = custom_target(
-        out_hc,
-        output: out_hc,
-        input: path,
-        command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ],
-    )
-
     out_c = '@0@-protocol.c'.format(protocol)
     code = custom_target(
         out_c,
@@ -65,14 +57,6 @@ foreach protocol : protocols_wlr_unstable
         command: [ wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@' ]
     )
     protocol_sources += [header]
-
-    out_hc = '@0@@-client-protocol.h'.format(protocol)
-    client_header = custom_target(
-        out_hc,
-        output: out_hc,
-        input: path,
-        command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ],
-    )
 
     out_c = '@0@-protocol.c'.format(protocol)
     code = custom_target(
@@ -101,7 +85,7 @@ libs = [
     dependency('xcb')
 ]
 
-awm = executable(
+executable(
     'awm',
     [
         'src/main.cpp',

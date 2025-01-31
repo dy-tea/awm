@@ -139,51 +139,7 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_fullscreen);
 
-        if (!toplevel->xdg_toplevel->base->initialized)
-            return;
-
-        if (toplevel->xdg_toplevel->current.maximized) {
-            wlr_xdg_toplevel_set_maximized(
-                toplevel->xdg_toplevel,
-                !toplevel->xdg_toplevel->current.maximized);
-            wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
-        }
-
-        struct wlr_output *wlr_output = wlr_output_layout_output_at(
-            toplevel->server->output_layout, toplevel->server->cursor->x,
-            toplevel->server->cursor->y);
-
-        float scale = wlr_output->scale;
-
-        struct wlr_box output_box;
-        wlr_output_layout_get_box(toplevel->server->output_layout, wlr_output,
-                                  &output_box);
-
-        if (toplevel->xdg_toplevel->requested.fullscreen) {
-            toplevel->saved_geometry.x = toplevel->scene_tree->node.x;
-            toplevel->saved_geometry.y = toplevel->scene_tree->node.y;
-            toplevel->saved_geometry.width =
-                toplevel->xdg_toplevel->current.width;
-            toplevel->saved_geometry.height =
-                toplevel->xdg_toplevel->current.height;
-
-            wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                        output_box.x, output_box.y);
-            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
-                                      output_box.width / scale,
-                                      output_box.height / scale);
-        } else {
-            wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                        toplevel->saved_geometry.x,
-                                        toplevel->saved_geometry.y);
-            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
-                                      toplevel->saved_geometry.width / scale,
-                                      toplevel->saved_geometry.height / scale);
-        }
-        wlr_xdg_toplevel_set_fullscreen(
-            toplevel->xdg_toplevel,
-            !toplevel->xdg_toplevel->current.fullscreen);
-
+        wlr_log(WLR_ERROR, "FIXME: fullscreen not implemented");
         wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
     };
     wl_signal_add(&xdg_toplevel->events.request_fullscreen,

@@ -334,21 +334,6 @@ Server::Server(const char *startup_cmd) {
         /* Allocate a Toplevel for this surface */
         struct Toplevel *toplevel =
             new Toplevel(server, (wlr_xdg_toplevel *)data);
-
-        Output *active =
-            server->output_at(server->cursor->x, server->cursor->y);
-
-        if (!active) {
-            wlr_log(WLR_ERROR, "No active output found for new toplevel");
-
-            active = wl_container_of(server->outputs.next, active, link);
-            if (!active) {
-                wlr_log(WLR_ERROR, "No outputs available");
-                return;
-            }
-        }
-
-        active->get_active()->add_toplevel(toplevel);
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 

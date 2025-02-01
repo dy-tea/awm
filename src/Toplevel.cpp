@@ -14,6 +14,14 @@ Toplevel::Toplevel(struct Server *server,
         /* Called when the surface is mapped, or ready to display on-screen. */
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
+        Server *server = toplevel->server;
+        Output *active =
+            server->output_at(server->cursor->x, server->cursor->y);
+
+        // add toplevel to active workspace
+        if (active)
+            active->get_active()->add_toplevel(toplevel);
+
         toplevel->focus();
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.map, &map);
@@ -92,7 +100,6 @@ Toplevel::Toplevel(struct Server *server,
             wlr_xdg_toplevel_set_fullscreen(
                 toplevel->xdg_toplevel,
                 !toplevel->xdg_toplevel->current.fullscreen);
-            wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
         }
 
         struct wlr_output *wlr_output = wlr_output_layout_output_at(

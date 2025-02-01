@@ -2,11 +2,12 @@
 
 struct Workspace {
     struct wl_list link;
+    uint32_t num;
     struct Output *output;
     struct wl_list toplevels;
     struct Toplevel *active_toplevel;
 
-    Workspace(struct Output *output);
+    Workspace(struct Output *output, uint32_t num);
     ~Workspace();
 
     void add_toplevel(struct Toplevel *toplevel);

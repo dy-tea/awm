@@ -32,13 +32,13 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
         wlr_log(WLR_DEBUG, "TODO: move right");
         break;
     case XKB_KEY_o: // focus the previous toplevel in the active workspace
-        output->active_workspace->focus_prev();
+        output->get_active()->focus_prev();
         break;
     case XKB_KEY_p: // focus the next toplevel in the active workspace
-        output->active_workspace->focus_next();
+        output->get_active()->focus_next();
         break;
     case XKB_KEY_t: // set workspace to tile
-        output->active_workspace->tile();
+        output->get_active()->tile();
         break;
     case XKB_KEY_space: // open rofi
         if (fork() == 0)

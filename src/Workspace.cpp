@@ -1,7 +1,9 @@
 #include "Server.h"
 
-Workspace::Workspace(struct Output *output) {
+Workspace::Workspace(struct Output *output, uint32_t num) {
     this->output = output;
+    this->num = num;
+    this->active_toplevel = nullptr;
     wl_list_init(&toplevels);
 }
 
@@ -48,7 +50,7 @@ struct Toplevel *Workspace::get_toplevel(uint32_t n) {
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
         if (current == n)
             return toplevel;
-        ++n;
+        ++current;
     }
 
     return nullptr;

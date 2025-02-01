@@ -6,12 +6,9 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     wl_list_init(&workspaces);
 
     // Create workspaces
-    for (int i = 0; i != 8; ++i) {
-        Workspace *w = new_workspace();
-        w->set_hidden(true);
-    }
-    active_workspace = new_workspace();
-    active_workspace->focus();
+    for (int i = 0; i != 9; ++i)
+        new_workspace();
+    set_workspace(0);
 
     /* Sets up a listener for the frame event. */
     frame.notify = [](struct wl_listener *listener, void *data) {
@@ -82,22 +79,26 @@ Output::~Output() {
 }
 
 struct Workspace *Output::new_workspace() {
-    struct Workspace *workspace = new Workspace(this);
+    struct Workspace *workspace = new Workspace(this, max_workspace++);
+
     wl_list_insert(&workspaces, &workspace->link);
     return workspace;
 }
 
 struct Workspace *Output::get_workspace(uint32_t n) {
     Workspace *workspace, *tmp;
-    uint32_t index = 0;
-    wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
-        if (index == n)
-            return workspace;
-        else
-            ++index;
-    }
+    wl_list_for_each_safe(workspace, tmp, &workspaces,
+                          link) if (workspace->num == n) return workspace;
 
     return nullptr;
+}
+
+struct Workspace *Output::get_active() {
+    if (wl_list_empty(&workspaces))
+        return nullptr;
+
+    Workspace *active = wl_container_of(workspaces.next, active, link);
+    return active;
 }
 
 bool Output::set_workspace(uint32_t n) {
@@ -106,10 +107,14 @@ bool Output::set_workspace(uint32_t n) {
     if (requested == nullptr)
         return false;
 
-    active_workspace->set_hidden(true);
-    active_workspace = requested;
-    active_workspace->set_hidden(false);
-    active_workspace->focus();
+    Workspace *previous = get_active();
+    if (previous)
+        previous->set_hidden(true);
+
+    wl_list_remove(&requested->link);
+    wl_list_insert(&workspaces, &requested->link);
+    requested->set_hidden(false);
+    requested->focus();
 
     return true;
 }

@@ -348,7 +348,7 @@ Server::Server(const char *startup_cmd) {
             }
         }
 
-        active->active_workspace->add_toplevel(toplevel);
+        active->get_active()->add_toplevel(toplevel);
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 

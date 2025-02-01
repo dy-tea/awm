@@ -16,4 +16,5 @@ struct Output {
 
     struct Workspace *new_workspace();
     struct Workspace *get_workspace(uint32_t n);
+    bool set_workspace(uint32_t n);
 };

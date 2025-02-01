@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr/util/log.h"
 
 void Server::new_keyboard(struct wlr_input_device *device) {
     struct Keyboard *keyboard = new Keyboard(this, device);
@@ -338,6 +337,17 @@ Server::Server(const char *startup_cmd) {
 
         Output *active =
             server->output_at(server->cursor->x, server->cursor->y);
+
+        if (!active) {
+            wlr_log(WLR_ERROR, "No active output found for new toplevel");
+
+            active = wl_container_of(server->outputs.next, active, link);
+            if (!active) {
+                wlr_log(WLR_ERROR, "No outputs available");
+                return;
+            }
+        }
+
         active->active_workspace->add_toplevel(toplevel);
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);

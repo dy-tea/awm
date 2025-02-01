@@ -5,8 +5,13 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     this->server = server;
     wl_list_init(&workspaces);
 
-    // Create default workspace
+    // Create workspaces
+    for (int i = 0; i != 8; ++i) {
+        Workspace *w = new_workspace();
+        w->set_hidden(true);
+    }
     active_workspace = new_workspace();
+    active_workspace->focus();
 
     /* Sets up a listener for the frame event. */
     frame.notify = [](struct wl_listener *listener, void *data) {
@@ -84,7 +89,7 @@ struct Workspace *Output::new_workspace() {
 
 struct Workspace *Output::get_workspace(uint32_t n) {
     Workspace *workspace, *tmp;
-    int index = 0;
+    uint32_t index = 0;
     wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
         if (index == n)
             return workspace;
@@ -93,4 +98,18 @@ struct Workspace *Output::get_workspace(uint32_t n) {
     }
 
     return nullptr;
+}
+
+bool Output::set_workspace(uint32_t n) {
+    Workspace *requested = get_workspace(n);
+
+    if (requested == nullptr)
+        return false;
+
+    active_workspace->set_hidden(true);
+    active_workspace = requested;
+    active_workspace->set_hidden(false);
+    active_workspace->focus();
+
+    return true;
 }

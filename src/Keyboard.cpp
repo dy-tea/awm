@@ -1,6 +1,4 @@
 #include "Server.h"
-#include <wayland-server-core.h>
-#include <xkbcommon/xkbcommon-keysyms.h>
 
 static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
     /*
@@ -20,6 +18,10 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
     Output *output = server->output_at(server->cursor->x, server->cursor->y);
     if (output == NULL)
         return false;
+
+    // switch to workspace n, 1-9 inclusive
+    if (sym >= XKB_KEY_1 && sym <= XKB_KEY_9)
+        return output->set_workspace(sym - XKB_KEY_1);
 
     // match remaining syms
     switch (sym) {

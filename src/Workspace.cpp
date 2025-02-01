@@ -48,8 +48,7 @@ struct Toplevel *Workspace::get_toplevel(uint32_t n) {
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
         if (current == n)
             return toplevel;
-        else
-            ++n;
+        ++n;
     }
 
     return nullptr;

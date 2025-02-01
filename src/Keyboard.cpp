@@ -1,6 +1,6 @@
 #include "Server.h"
 
-static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
+bool Keyboard::handle_keybinding(xkb_keysym_t sym) {
     /*
      * Here we handle compositor keybindings. This is when the compositor is
      * processing keys, rather than passing them on to the client for its own
@@ -44,6 +44,31 @@ static bool handle_keybinding(struct Server *server, xkb_keysym_t sym) {
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", (void *)NULL);
         break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+bool Keyboard::handle_shift_keybinding(uint32_t keycode, xkb_keysym_t sym) {
+    Output *output = server->output_at(server->cursor->x, server->cursor->y);
+    if (output == NULL)
+        return false;
+
+    // move active toplevel to workspace n, 1-9 inclusive
+    // keycode for 1 is 2 which corresponds to workspace 0
+    if (keycode > 1 && keycode < 11) {
+        Workspace *current = output->get_active();
+        Workspace *target = output->get_workspace(keycode - 2);
+
+        if (target == nullptr)
+            return false;
+
+        current->move_to(current->active_toplevel, target);
+        return true;
+    }
+
+    switch (sym) {
     default:
         return false;
     }
@@ -103,12 +128,15 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
 
         bool handled = false;
         uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
-        if ((modifiers & WLR_MODIFIER_ALT) &&
-            event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-            /* If alt is held down and this button was _pressed_, we attempt
-             * to process it as a compositor keybinding. */
-            for (int i = 0; i < nsyms; i++) {
-                handled = handle_keybinding(server, syms[i]);
+        if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+            if (modifiers & WLR_MODIFIER_ALT) {
+                if (modifiers & WLR_MODIFIER_SHIFT)
+                    for (int i = 0; i < nsyms; i++)
+                        handled = keyboard->handle_shift_keybinding(
+                            event->keycode, syms[i]);
+                else
+                    for (int i = 0; i < nsyms; i++)
+                        handled = keyboard->handle_keybinding(syms[i]);
             }
         }
 

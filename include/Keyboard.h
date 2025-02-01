@@ -11,4 +11,7 @@ struct Keyboard {
 
     Keyboard(struct Server *server, struct wlr_input_device *device);
     ~Keyboard();
+
+    bool handle_keybinding(xkb_keysym_t sym);
+    bool handle_shift_keybinding(uint32_t keycode, xkb_keysym_t sym);
 };

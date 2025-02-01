@@ -34,7 +34,16 @@ bool Workspace::move_to(struct Toplevel *toplevel,
     if (workspace == this)
         return false;
 
+    if (toplevel == active_toplevel) {
+        if (wl_list_length(&toplevels) == 1)
+            active_toplevel = nullptr;
+        else
+            active_toplevel =
+                wl_container_of(toplevels.next, active_toplevel, link);
+    }
+
     if (contains(toplevel)) {
+        toplevel->set_hidden(true);
         wl_list_remove(&toplevel->link);
         workspace->add_toplevel(toplevel);
         return true;

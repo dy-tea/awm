@@ -270,9 +270,6 @@ void Toplevel::set_fullscreen(bool fullscreen) {
     if (!xdg_toplevel->base->initialized)
         return;
 
-    if (fullscreen == xdg_toplevel->current.fullscreen)
-        return;
-
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
         server->output_layout, server->cursor->x, server->cursor->y);
 
@@ -281,7 +278,7 @@ void Toplevel::set_fullscreen(bool fullscreen) {
     struct wlr_box output_box;
     wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
 
-    if (xdg_toplevel->requested.fullscreen) {
+    if (fullscreen) {
         saved_geometry.x = scene_tree->node.x;
         saved_geometry.y = scene_tree->node.y;
         saved_geometry.width = xdg_toplevel->current.width;

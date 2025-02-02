@@ -1,0 +1,40 @@
+# Example awm config
+
+# TODO: add startup commands
+[startup]
+satellite = "exec xwayland-statellite"
+background = "swaybg --color 1F1F1F"
+
+[binds]
+"Alt+Escape" = "exit"
+"Alt+F" = "fullscreen"
+"Alt+O" = "previous_window"
+"Alt+P" = "next_window"
+"Alt+T" = "tile_workspace"
+"Alt+Space" = "exec rofi -drun show"
+"Alt+C" = "exec grim -g \"$(slurp)\" - | swappy -f -"
+"Alt+1" = "workspace 1"
+"Alt+2" = "workspace 2"
+"Alt+3" = "workspace 3"
+"Alt+4" = "workspace 4"
+"Alt+5" = "workspace 5"
+"Alt+6" = "workspace 6"
+"Alt+7" = "workspace 7"
+"Alt+8" = "workspace 8"
+"Alt+9" = "workspace 9"
+"Alt+Shift+1" = "to_workspace 1"
+"Alt+Shift+2" = "to_workspace 2"
+"Alt+Shift+3" = "to_workspace 3"
+"Alt+Shift+4" = "to_workspace 4"
+"Alt+Shift+5" = "to_workspace 5"
+"Alt+Shift+6" = "to_workspace 6"
+"Alt+Shift+7" = "to_workspace 7"
+"Alt+Shift+8" = "to_workspace 8"
+"Alt+Shift+9" = "to_workspace 9"
+
+# Potentially have a digit specifier like:
+#
+# "Alt+\d" = "workspace \d"
+# "Alt+\d" = "to_workspace \d"
+
+# TODO: keyboard, locale, monitor configuration

@@ -2,7 +2,9 @@
 
 ### Supported protocols
 - `xdg-shell`
+- `xdg-output-unstable-v1`
 - `wlr-layer-shell-unstable-v1`
+- `wlr-screencopy-unstable-v1`
 
 ### Dependencies
 - `wlroots` **0.19** (wlroots-git)

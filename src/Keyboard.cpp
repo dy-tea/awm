@@ -42,7 +42,13 @@ bool Keyboard::handle_keybinding(xkb_keysym_t sym) {
         break;
     case XKB_KEY_space: // open rofi
         if (fork() == 0)
-            execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", (void *)NULL);
+            execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", nullptr);
+        break;
+    case XKB_KEY_c:
+        wlr_log(WLR_DEBUG, "PrintScreen activated");
+        if (fork() == 0)
+            execl("/bin/sh", "/bin/sh", "-c",
+                  "grim -g \"$(slurp)\" - | swappy -f -", nullptr);
         break;
     default:
         return false;
@@ -129,7 +135,9 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
         bool handled = false;
         uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
         if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+            // Alt modifier
             if (modifiers & WLR_MODIFIER_ALT) {
+                // Alt + Shift
                 if (modifiers & WLR_MODIFIER_SHIFT)
                     for (int i = 0; i < nsyms; i++)
                         handled = keyboard->handle_shift_keybinding(

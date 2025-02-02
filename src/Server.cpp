@@ -548,11 +548,18 @@ Server::Server(const char *startup_cmd) {
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
-    // create xwayland shell
-    // xwayland_shell = new XWaylandShell(wl_display, scene);
+    // create wlr_xdg_output manager
+    wlr_xdg_output_manager =
+        wlr_xdg_output_manager_v1_create(wl_display, output_layout);
 
     // create layer shell
     layer_shell = new LayerShell(wl_display, scene, seat);
+
+    // create xwayland shell
+    // xwayland_shell = new XWaylandShell(wl_display, scene);
+
+    // create screencopy manager
+    wlr_screencopy_manager = wlr_screencopy_manager_v1_create(wl_display);
 
     /* Add a Unix socket to the Wayland display. */
     const char *socket = wl_display_add_socket_auto(wl_display);

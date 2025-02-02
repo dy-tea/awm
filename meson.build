@@ -41,9 +41,36 @@ foreach protocol : protocols_wl_stable
     protocol_code += [code]
 endforeach
 
+protocols_wl_unstable = [
+    'xdg-output'
+]
+
+foreach protocol : protocols_wl_unstable
+    path = wl_protocols_dir / 'unstable' / protocol / '@0@-unstable-v1.xml'.format(protocol)
+
+    out_h = '@0@-unstable-v1-protocol.h'.format(protocol)
+    header = custom_target(
+        out_h,
+        output: out_h,
+        input: path,
+        command: [ wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@' ],
+    )
+    protocol_sources += [header]
+
+    out_c = '@0@-unstable-v1-protocol.c'.format(protocol)
+    code = custom_target(
+        out_c,
+        output: out_c,
+        input: path,
+        command: [ wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@' ],
+    )
+    protocol_code += [code]
+endforeach
+
 protocols_wlr_unstable = [
     'wlr-layer-shell-unstable-v1',
-    'wlr-foreign-toplevel-management-unstable-v1'
+    #'wlr-foreign-toplevel-management-unstable-v1',
+    'wlr-screencopy-unstable-v1'
 ]
 
 foreach protocol : protocols_wlr_unstable

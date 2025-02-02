@@ -50,6 +50,9 @@ struct Server {
     // struct XWaylandShell *xwayland_shell;
     struct LayerShell *layer_shell;
 
+    struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
+    struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
+
     Server(const char *startup_cmd);
     ~Server();
 

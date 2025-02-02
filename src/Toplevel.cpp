@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -96,11 +97,8 @@ Toplevel::Toplevel(struct Server *server,
         if (!toplevel->xdg_toplevel->base->initialized)
             return;
 
-        if (toplevel->xdg_toplevel->current.fullscreen) {
-            wlr_xdg_toplevel_set_fullscreen(
-                toplevel->xdg_toplevel,
-                !toplevel->xdg_toplevel->current.fullscreen);
-        }
+        if (toplevel->xdg_toplevel->current.fullscreen)
+            wlr_xdg_toplevel_set_fullscreen(toplevel->xdg_toplevel, false);
 
         struct wlr_output *wlr_output = wlr_output_layout_output_at(
             toplevel->server->output_layout, toplevel->server->cursor->x,
@@ -146,8 +144,7 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_fullscreen);
 
-        wlr_log(WLR_ERROR, "FIXME: fullscreen not implemented");
-        wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
     };
     wl_signal_add(&xdg_toplevel->events.request_fullscreen,
                   &request_fullscreen);
@@ -266,4 +263,41 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
 void Toplevel::set_hidden(bool hidden) {
     this->hidden = hidden;
     wlr_scene_node_set_enabled(&scene_tree->node, !hidden);
+}
+
+// set the toplevel to be fullscreened
+void Toplevel::set_fullscreen(bool fullscreen) {
+    if (!xdg_toplevel->base->initialized)
+        return;
+
+    if (fullscreen == xdg_toplevel->current.fullscreen)
+        return;
+
+    struct wlr_output *wlr_output = wlr_output_layout_output_at(
+        server->output_layout, server->cursor->x, server->cursor->y);
+
+    float scale = wlr_output->scale;
+
+    struct wlr_box output_box;
+    wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
+
+    if (xdg_toplevel->requested.fullscreen) {
+        saved_geometry.x = scene_tree->node.x;
+        saved_geometry.y = scene_tree->node.y;
+        saved_geometry.width = xdg_toplevel->current.width;
+        saved_geometry.height = xdg_toplevel->current.height;
+
+        wlr_scene_node_set_position(&scene_tree->node, output_box.x,
+                                    output_box.y);
+        wlr_xdg_toplevel_set_size(xdg_toplevel, output_box.width / scale,
+                                  output_box.height / scale);
+    } else {
+        wlr_scene_node_set_position(&scene_tree->node, output_box.x,
+                                    output_box.y);
+        wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width / scale,
+                                  saved_geometry.height / scale);
+    }
+    wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, fullscreen);
+
+    wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 }

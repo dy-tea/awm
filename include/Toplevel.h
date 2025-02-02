@@ -31,4 +31,5 @@ struct Toplevel {
     void begin_interactive(enum CursorMode mode, uint32_t edges);
     void set_position_size(double x, double y, int width, int height);
     void set_hidden(bool hidden);
+    void set_fullscreen(bool fullscreen);
 };

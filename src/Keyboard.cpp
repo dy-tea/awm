@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 bool Keyboard::handle_keybinding(xkb_keysym_t sym) {
     /*
@@ -40,6 +41,15 @@ bool Keyboard::handle_keybinding(xkb_keysym_t sym) {
     case XKB_KEY_t: // set workspace to tile
         output->get_active()->tile();
         break;
+    case XKB_KEY_f: { // fullscreen the active toplevel
+        Toplevel *active = output->get_active()->active_toplevel;
+
+        if (active == nullptr)
+            return false;
+
+        active->set_fullscreen(!active->xdg_toplevel->current.fullscreen);
+        break;
+    }
     case XKB_KEY_space: // open rofi
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", nullptr);

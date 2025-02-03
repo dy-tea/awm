@@ -39,6 +39,7 @@ struct Config {
     struct Bind workspace_window_to{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
                                     XKB_KEY_NoSymbol};
 
+    Config();
     Config(std::string path);
     ~Config();
 

@@ -2,6 +2,8 @@
 #include "tomlcpp.hpp"
 #include <sstream>
 
+Config::Config() {}
+
 Config::Config(std::string path) {
     // Read in config file
     toml::Result config_file = toml::parseFile(path);

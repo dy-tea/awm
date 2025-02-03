@@ -6,6 +6,7 @@ project(
         'cpp_std=c++17',
     ],
 )
+add_project_arguments('-Ofast', '-g3',  language : 'cpp')
 add_global_arguments('-DWLR_USE_UNSTABLE=1', language: 'c')
 
 wayland_scanner = find_program('wayland-scanner')
@@ -143,4 +144,9 @@ executable(
 install_data(
 	'awm.desktop',
 	install_dir: join_paths(get_option('datadir'), 'wayland-sessions')
+)
+
+install_data(
+  'config.toml',
+  install_dir: join_paths(get_option('datadir'), 'awm')
 )

@@ -21,7 +21,8 @@ int main(int argc, char *argv[]) {
     }
 
     struct Config *config = new Config("config.toml");
-    config->startup_commands.emplace_back(startup_cmd);
+    if (startup_cmd)
+        config->startup_commands.push_back(startup_cmd);
 
     struct Server *server = new Server(config);
     delete server;

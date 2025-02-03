@@ -97,6 +97,9 @@ endforeach
 
 include_dir = run_command(pkg_config, '--variable=includedir', 'wlroots-0.19').stdout().replace('\n', '')
 
+tomlcppp_proj = subproject('tomlcpp')
+tomlcpp_dep = tomlcppp_proj.get_variable('tomlcpp_dep')
+
 include = include_directories(
   include_dir,
   include_dir / 'wlroots-0.19',
@@ -109,7 +112,8 @@ libs = [
     dependency('wlroots-0.19'),
     dependency('pixman-1'),
     dependency('xkbcommon'),
-    dependency('xcb')
+    dependency('xcb'),
+    tomlcpp_dep
 ]
 
 executable(

@@ -1,7 +1,6 @@
 #include <cassert>
 #include <unistd.h>
 
-#include "Config.h"
 #include "Keyboard.h"
 #include "LayerShell.h"
 #include "Output.h"

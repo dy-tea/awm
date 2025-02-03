@@ -2,8 +2,7 @@
 
 [startup]
 exec = [
-    "xwayland-statellite",
-    "swaybg --color 1F1F1F"
+    "xwayland-satellite"
 ]
 env = [
     { "EXAMPLE" = "true" },
@@ -12,19 +11,19 @@ env = [
 
 [binds]
 exit = "Alt Escape"
-window.fullscreen = "Alt F"
-window.previous = "Alt O"
-window.next = "Alt P"
-workspace.tile = "Alt T"
-workspace.open.digit = "Alt digit"
-workspace.window_to.digit = "Alt Shift digit"
+window.fullscreen = "Alt f"
+window.previous = "Alt o"
+window.next = "Alt p"
+workspace.tile = "Alt t"
+workspace.open = "Alt Number"
+workspace.window_to = "Alt Shift Number"
 
 [[commands]] # Launcher
-bind = "Alt Space"
-exec = "rofi -drun show"
+bind = "Alt space"
+exec = "rofi -show drun"
 
 [[commands]] # Screenshot
-bind = "Alt C"
+bind = "Alt c"
 exec = "grim -g \"$(slurp)\" - | swappy -f -"
 
 # TODO: keyboard, locale, monitor configuration

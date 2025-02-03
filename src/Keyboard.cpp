@@ -1,93 +1,67 @@
 #include "Server.h"
-#include "wlr.h"
+#include <wayland-client-protocol.h>
 
-bool Keyboard::handle_keybinding(xkb_keysym_t sym) {
-    /*
-     * Here we handle compositor keybindings. This is when the compositor is
-     * processing keys, rather than passing them on to the client for its own
-     * processing.
-     *
-     * This function assumes Alt is held down.
-     */
+bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
+    // retrieve config
+    Config *config = server->config;
 
-    // exit compositor
-    if (sym == XKB_KEY_Escape) {
-        wl_display_terminate(server->wl_display);
-        return true;
-    }
-
+    // get current output
     Output *output = server->output_at(server->cursor->x, server->cursor->y);
     if (output == NULL)
         return false;
 
-    // switch to workspace n, 1-9 inclusive
-    if (sym >= XKB_KEY_1 && sym <= XKB_KEY_9)
-        return output->set_workspace(sym - XKB_KEY_1);
+    // handle user-defined binds
+    for (std::pair<Bind, std::string> command : config->commands)
+        if (command.first == bind) {
+            if (fork() == 0) {
+                execl("/bin/sh", "/bin/sh", "-c", command.second.c_str(),
+                      nullptr);
+                return true;
+            }
+        }
 
-    // match remaining syms
-    switch (sym) {
-    case XKB_KEY_Left:
-        wlr_log(WLR_DEBUG, "TODO: move left");
-        break;
-    case XKB_KEY_Right:
-        wlr_log(WLR_DEBUG, "TODO: move right");
-        break;
-    case XKB_KEY_o: // focus the previous toplevel in the active workspace
-        output->get_active()->focus_prev();
-        break;
-    case XKB_KEY_p: // focus the next toplevel in the active workspace
-        output->get_active()->focus_next();
-        break;
-    case XKB_KEY_t: // set workspace to tile
-        output->get_active()->tile();
-        break;
-    case XKB_KEY_f: { // fullscreen the active toplevel
+    // handle compositor binds
+    if (bind == config->exit) {
+        // exit compositor
+        wl_display_terminate(server->wl_display);
+    } else if (bind == config->window_fullscreen) {
+        // fullscreen the active toplevel
         Toplevel *active = output->get_active()->active_toplevel;
 
         if (active == nullptr)
             return false;
 
         active->set_fullscreen(!active->xdg_toplevel->current.fullscreen);
-        break;
-    }
-    case XKB_KEY_space: // open rofi
-        if (fork() == 0)
-            execl("/bin/sh", "/bin/sh", "-c", "rofi -show drun", nullptr);
-        break;
-    case XKB_KEY_c:
-        wlr_log(WLR_DEBUG, "PrintScreen activated");
-        if (fork() == 0)
-            execl("/bin/sh", "/bin/sh", "-c",
-                  "grim -g \"$(slurp)\" - | swappy -f -", nullptr);
-        break;
-    default:
-        return false;
-    }
-    return true;
-}
+    } else if (bind == config->window_previous) {
+        // focus the previous toplevel in the active workspace
+        output->get_active()->focus_prev();
+    } else if (bind == config->window_next) {
+        // focus the next toplevel in the active workspace
+        output->get_active()->focus_next();
+    } else if (bind == config->workspace_tile) {
+        // set workspace to tile
+        output->get_active()->tile();
+    } else if (keycode >= 2 && keycode <= 11) {
+        // digit pressed
+        Bind digbind = Bind{bind.modifiers, XKB_KEY_NoSymbol};
 
-bool Keyboard::handle_shift_keybinding(uint32_t keycode, xkb_keysym_t sym) {
-    Output *output = server->output_at(server->cursor->x, server->cursor->y);
-    if (output == NULL)
-        return false;
+        if (digbind == config->workspace_open) {
+            // set workspace to n
+            return output->set_workspace(keycode - 2);
+        } else if (digbind == config->workspace_window_to) {
+            // move active toplevel to workspace n
+            Workspace *current = output->get_active();
+            Workspace *target = output->get_workspace(keycode - 2);
 
-    // move active toplevel to workspace n, 1-9 inclusive
-    // keycode for 1 is 2 which corresponds to workspace 0
-    if (keycode > 1 && keycode < 11) {
-        Workspace *current = output->get_active();
-        Workspace *target = output->get_workspace(keycode - 2);
+            if (target == nullptr)
+                return false;
 
-        if (target == nullptr)
+            current->move_to(current->active_toplevel, target);
+        } else
             return false;
-
-        current->move_to(current->active_toplevel, target);
-        return true;
-    }
-
-    switch (sym) {
-    default:
+    } else
         return false;
-    }
+
     return true;
 }
 
@@ -144,19 +118,12 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
 
         bool handled = false;
         uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
-        if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-            // Alt modifier
-            if (modifiers & WLR_MODIFIER_ALT) {
-                // Alt + Shift
-                if (modifiers & WLR_MODIFIER_SHIFT)
-                    for (int i = 0; i < nsyms; i++)
-                        handled = keyboard->handle_shift_keybinding(
-                            event->keycode, syms[i]);
-                else
-                    for (int i = 0; i < nsyms; i++)
-                        handled = keyboard->handle_keybinding(syms[i]);
-            }
-        }
+
+        // handle binds
+        if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
+            for (int i = 0; i != nsyms; ++i)
+                handled = keyboard->handle_bind(Bind{modifiers, syms[i]},
+                                                event->keycode);
 
         if (!handled) {
             /* Otherwise, we pass it along to the client. */

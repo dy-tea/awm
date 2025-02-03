@@ -178,7 +178,10 @@ void Server::process_cursor_motion(uint32_t time) {
     wlr_seat_pointer_clear_focus(seat);
 }
 
-Server::Server(const char *startup_cmd) {
+Server::Server(struct Config *config) {
+    // set config from file
+    this->config = config;
+
     /* The Wayland display is managed by libwayland. It handles accepting
      * clients from the Unix socket, manging Wayland globals, and so on. */
     wl_display = wl_display_create();
@@ -332,7 +335,7 @@ Server::Server(const char *startup_cmd) {
             wl_container_of(listener, server, new_xdg_toplevel);
 
         /* Allocate a Toplevel for this surface */
-        struct Toplevel *toplevel =
+        [[maybe_unused]] struct Toplevel *toplevel =
             new Toplevel(server, (wlr_xdg_toplevel *)data);
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
@@ -342,7 +345,7 @@ Server::Server(const char *startup_cmd) {
         /* This event is raised when a client creates a new popup. */
         struct wlr_xdg_popup *xdg_popup = (wlr_xdg_popup *)data;
 
-        struct Popup *popup = new Popup(xdg_popup);
+        [[maybe_unused]] struct Popup *popup = new Popup(xdg_popup);
     };
     wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 
@@ -579,11 +582,15 @@ Server::Server(const char *startup_cmd) {
     /* Set the WAYLAND_DISPLAY environment variable to our socket and run the
      * startup command if requested. */
     setenv("WAYLAND_DISPLAY", socket, true);
-    if (startup_cmd) {
-        if (fork() == 0) {
-            execl("/bin/sh", "/bin/sh", "-c", startup_cmd, (void *)NULL);
-        }
-    }
+
+    // set env and startup commands according to config
+    for (std::pair<std::string, std::string> kv : config->startup_env)
+        setenv(kv.first.c_str(), kv.second.c_str(), true);
+
+    for (std::string command : config->startup_commands)
+        if (fork() == 0)
+            execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
+
     /* Run the Wayland event loop. This does not return until you exit the
      * compositor. Starting the backend rigged up all of the necessary event
      * loop configuration to listen to libinput events, DRM events, generate

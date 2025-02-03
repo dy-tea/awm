@@ -20,6 +20,9 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    struct Server *server = new Server(startup_cmd);
+    struct Config *config = new Config("config.toml");
+    config->startup_commands.emplace_back(startup_cmd);
+
+    struct Server *server = new Server(config);
     delete server;
 }

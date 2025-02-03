@@ -128,6 +128,7 @@ executable(
         'src/LayerShell.cpp',
         'src/LayerSurface.cpp',
         'src/Workspace.cpp',
+        'src/Config.cpp',
         #'src/XWaylandShell.cpp',
         #'src/XWaylandSurface.cpp',
         protocol_sources,

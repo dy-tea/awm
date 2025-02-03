@@ -1,6 +1,7 @@
 #include <cassert>
 #include <unistd.h>
 
+#include "Config.h"
 #include "Keyboard.h"
 #include "LayerShell.h"
 #include "Output.h"
@@ -10,6 +11,8 @@
 #include "XWaylandShell.h"
 
 struct Server {
+    struct Config *config;
+
     struct wl_display *wl_display;
     struct wlr_backend *backend;
     struct wlr_renderer *renderer;
@@ -53,7 +56,7 @@ struct Server {
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
 
-    Server(const char *startup_cmd);
+    Server(struct Config *config);
     ~Server();
 
     void new_keyboard(struct wlr_input_device *device);

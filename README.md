@@ -12,16 +12,22 @@
 - `wayland-server`
 - `wayland-protocols`
 - `pixman`
+- `tomlcpp` (submodule)
 
 ### Build
 You can build and run using:
 ```sh
+# clone
+git clone https://github.com/awm.git --recurse-submodules
+
+# build
 meson setup build
 ninja -C build
-./build/awm # to run
+
+# run
+./build/awm
 ```
 Addtionally, you can install awm to your wayland-sessions using:
 ```sh
-meson setup build
 sudo meson install -C build
 ````

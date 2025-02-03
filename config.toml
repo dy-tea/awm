@@ -6,7 +6,8 @@ exec = [
     "swaybg --color 1F1F1F"
 ]
 env = [
-    "EXAMPLEENVVAR=true",
+    { "EXAMPLE" = "true" },
+    { "EXAMPLE2" = 122 },
 ]
 
 [binds]

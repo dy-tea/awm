@@ -28,23 +28,22 @@ Config::Config(std::string path) {
         std::unique_ptr<toml::Array> env = startup->getArray("env");
 
         if (env) {
-            auto vars = env->getStringVector();
+            auto tables = env->getTableVector();
 
-            if (vars)
-                for (std::string &var : *vars) {
-                    std::regex r("[ =]+");
+            if (tables)
+                for (toml::Table table : *tables) {
+                    std::vector<std::string> keys = table.keys();
 
-                    std::sregex_token_iterator it(var.begin(), var.end(), r,
-                                                  -1);
-                    std::sregex_iterator end;
-
-                    if (it->length() != 2)
-                        continue;
-
-                    std::string key = *it++;
-                    std::string val = *it;
-
-                    startup_env.emplace_back(std::make_pair(key, val));
+                    for (std::string key : keys) {
+                        // try both string and int values
+                        auto intval = table.getInt(key);
+                        auto stringval = table.getString(key);
+                        if (intval.first)
+                            startup_env.emplace_back(
+                                key, std::to_string(intval.second));
+                        else if (stringval.first)
+                            startup_env.emplace_back(key, stringval.second);
+                    }
                 }
         }
     } else {
@@ -54,7 +53,6 @@ Config::Config(std::string path) {
     // Get awm binds
     std::unique_ptr<toml::Table> binds = config_file.table->getTable("binds");
     if (binds) {
-        // TODO
     } else {
         wlr_log(WLR_INFO, "No binds set, using defaults");
     }

@@ -102,52 +102,9 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_maximize);
 
-        if (!toplevel->xdg_toplevel->base->initialized)
-            return;
-
-        if (toplevel->xdg_toplevel->current.fullscreen)
-            wlr_xdg_toplevel_set_fullscreen(toplevel->xdg_toplevel, false);
-
-        struct wlr_output *wlr_output = wlr_output_layout_output_at(
-            toplevel->server->output_layout, toplevel->server->cursor->x,
-            toplevel->server->cursor->y);
-
-        float scale = wlr_output->scale;
-
-        struct wlr_box output_box;
-        wlr_output_layout_get_box(toplevel->server->output_layout, wlr_output,
-                                  &output_box);
-
-        if (toplevel->xdg_toplevel->requested.maximized) {
-            toplevel->saved_geometry.x = toplevel->scene_tree->node.x;
-            toplevel->saved_geometry.y = toplevel->scene_tree->node.y;
-            toplevel->saved_geometry.width =
-                toplevel->xdg_toplevel->current.width;
-            toplevel->saved_geometry.height =
-                toplevel->xdg_toplevel->current.height;
-
-            wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                        output_box.x, output_box.y);
-            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
-                                      output_box.width / scale,
-                                      output_box.height / scale);
-        } else {
-            wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                        toplevel->saved_geometry.x,
-                                        toplevel->saved_geometry.y);
-            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel,
-                                      toplevel->saved_geometry.width / scale,
-                                      toplevel->saved_geometry.height / scale);
-        }
-        wlr_xdg_toplevel_set_maximized(
-            toplevel->xdg_toplevel,
-            toplevel->xdg_toplevel->requested.maximized);
-
-        toplevel->update_foreign_toplevel();
-        wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+        toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
     };
     wl_signal_add(&xdg_toplevel->events.request_maximize, &request_maximize);
-    wl_signal_add(&handle->events.request_maximize, &request_maximize);
 
     // request_fullscreen
     request_fullscreen.notify = [](struct wl_listener *listener, void *data) {
@@ -155,11 +112,36 @@ Toplevel::Toplevel(struct Server *server,
             wl_container_of(listener, toplevel, request_fullscreen);
 
         toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
-        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&xdg_toplevel->events.request_fullscreen,
                   &request_fullscreen);
-    wl_signal_add(&handle->events.request_fullscreen, &request_maximize);
+
+    /*
+     * foreign toplevel listeners
+     */
+
+    // handle_request_maximize
+    handle_request_maximize.notify = [](struct wl_listener *listener,
+                                        void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, handle_request_maximize);
+
+        toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
+        toplevel->update_foreign_toplevel();
+    };
+    wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
+
+    // handle_request_fullscreen
+    handle_request_fullscreen.notify = [](struct wl_listener *listener,
+                                          void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, handle_request_fullscreen);
+
+        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
+        toplevel->update_foreign_toplevel();
+    };
+    wl_signal_add(&handle->events.request_fullscreen,
+                  &handle_request_fullscreen);
 }
 
 Toplevel::~Toplevel() {
@@ -170,9 +152,10 @@ Toplevel::~Toplevel() {
     wl_list_remove(&request_move.link);
     wl_list_remove(&request_resize.link);
     wl_list_remove(&request_maximize.link);
-    wl_list_remove(&request_maximize.link);
     wl_list_remove(&request_fullscreen.link);
-    wl_list_remove(&request_fullscreen.link);
+
+    wl_list_remove(&handle_request_maximize.link);
+    wl_list_remove(&handle_request_fullscreen.link);
 }
 
 // focus keyboard to surface
@@ -183,33 +166,29 @@ void Toplevel::focus() {
     struct wlr_seat *seat = server->seat;
     struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
     struct wlr_surface *surface = xdg_toplevel->base->surface;
+
+    // already focused
     if (prev_surface == surface)
-        /* Don't re-focus an already focused surface. */
         return;
 
     if (prev_surface) {
-        /*
-         * Deactivate the previously focused surface. This lets the client know
-         * it no longer has focus and the client will repaint accordingly, e.g.
-         * stop displaying a caret.
-         */
+        // deactivate previous surface
         struct wlr_xdg_toplevel *prev_toplevel =
             wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
-        if (prev_toplevel != NULL) {
+        if (prev_toplevel != NULL)
             wlr_xdg_toplevel_set_activated(prev_toplevel, false);
-        }
     }
+
+    // get keyboard
     struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
-    /* Move the toplevel to the front */
+
+    // move toplevel node to top of scene tree
     wlr_scene_node_raise_to_top(&scene_tree->node);
 
-    /* Activate the new surface */
+    // activate toplevel
     wlr_xdg_toplevel_set_activated(xdg_toplevel, true);
-    /*
-     * Tell the seat to have the keyboard enter this surface. wlroots will keep
-     * track of this and automatically send key events to the appropriate
-     * clients without additional work on your part.
-     */
+
+    // set seat keyboard focused surface to toplevel
     if (keyboard != NULL)
         wlr_seat_keyboard_notify_enter(seat, surface, keyboard->keycodes,
                                        keyboard->num_keycodes,
@@ -223,53 +202,69 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
 
     if (mode == CURSORMODE_MOVE) {
         if (xdg_toplevel->current.maximized) {
+            // unmaximize if maximized
             wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width,
                                       saved_geometry.height);
             wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
             wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
         }
 
+        // follow cursor
         server->grab_x = server->cursor->x - scene_tree->node.x;
         server->grab_y = server->cursor->y - scene_tree->node.y;
     } else {
+        // don't resize fullscreened windows
         if (xdg_toplevel->current.fullscreen)
             return;
 
+        // get toplevel bounds
         struct wlr_box *geo_box = &xdg_toplevel->base->geometry;
 
+        // calcualate borders
         double border_x = (scene_tree->node.x + geo_box->x) +
                           ((edges & WLR_EDGE_RIGHT) ? geo_box->width : 0);
         double border_y = (scene_tree->node.y + geo_box->y) +
                           ((edges & WLR_EDGE_BOTTOM) ? geo_box->height : 0);
+
+        // move with border
         server->grab_x = server->cursor->x - border_x;
         server->grab_y = server->cursor->y - border_y;
 
+        // change size
         server->grab_geobox = *geo_box;
         server->grab_geobox.x += scene_tree->node.x;
         server->grab_geobox.y += scene_tree->node.y;
 
+        // set edges
         server->resize_edges = edges;
     }
 }
 
 // set the position and size of a toplevel, send a configure
 void Toplevel::set_position_size(double x, double y, int width, int height) {
+    // get output layout at cursor
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
         server->output_layout, server->cursor->x, server->cursor->y);
 
+    // get output scale
     float scale = wlr_output->scale;
 
-    if (xdg_toplevel->current.maximized) {
+    if (xdg_toplevel->current.maximized)
+        // unmaximize if maximized
         wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
-    } else {
+    else {
+        // save current bounds
         saved_geometry.x = scene_tree->node.x;
         saved_geometry.y = scene_tree->node.y;
         saved_geometry.width = xdg_toplevel->current.width;
         saved_geometry.height = xdg_toplevel->current.height;
     }
 
+    // set position and size
     wlr_scene_node_set_position(&scene_tree->node, x, y);
     wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
+
+    // schedule configure
     wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 }
 
@@ -281,35 +276,92 @@ void Toplevel::set_hidden(bool hidden) {
 
 // set the toplevel to be fullscreened
 void Toplevel::set_fullscreen(bool fullscreen) {
+    // cannot fullscreen
     if (!xdg_toplevel->base->initialized)
         return;
 
+    // get output layout
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
         server->output_layout, server->cursor->x, server->cursor->y);
 
+    // get output scale
     float scale = wlr_output->scale;
 
+    // get output bounds
     struct wlr_box output_box;
     wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
 
     if (fullscreen) {
+        // save current geometry
         saved_geometry.x = scene_tree->node.x;
         saved_geometry.y = scene_tree->node.y;
         saved_geometry.width = xdg_toplevel->current.width;
         saved_geometry.height = xdg_toplevel->current.height;
 
+        // set to top left of output, width and height the size of output
         wlr_scene_node_set_position(&scene_tree->node, output_box.x,
                                     output_box.y);
         wlr_xdg_toplevel_set_size(xdg_toplevel, output_box.width / scale,
                                   output_box.height / scale);
     } else {
+        // set back to saved geometry
         wlr_scene_node_set_position(&scene_tree->node, output_box.x,
                                     output_box.y);
         wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width / scale,
                                   saved_geometry.height / scale);
     }
+
+    // set toplevel window mode to fullscreen
     wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, fullscreen);
 
+    // schedule configure
+    wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+}
+
+// set the toplevel to be maximized
+void Toplevel::set_maximized(bool maximized) {
+    // cannot maximize
+    if (!xdg_toplevel->base->initialized)
+        return;
+
+    // unfullscreen if fullscreened
+    if (xdg_toplevel->current.fullscreen)
+        wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, false);
+
+    // get output layout
+    struct wlr_output *wlr_output = wlr_output_layout_output_at(
+        server->output_layout, server->cursor->x, server->cursor->y);
+
+    // get output scale
+    float scale = wlr_output->scale;
+
+    // get output bounds
+    struct wlr_box output_box;
+    wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
+
+    if (maximized) {
+        // save current geometry
+        saved_geometry.x = scene_tree->node.x;
+        saved_geometry.y = scene_tree->node.y;
+        saved_geometry.width = xdg_toplevel->current.width;
+        saved_geometry.height = xdg_toplevel->current.height;
+
+        // set to top left of output, width and height the size of output
+        wlr_scene_node_set_position(&scene_tree->node, output_box.x,
+                                    output_box.y);
+        wlr_xdg_toplevel_set_size(xdg_toplevel, output_box.width / scale,
+                                  output_box.height / scale);
+    } else {
+        // set back to saved geometry
+        wlr_scene_node_set_position(&scene_tree->node, saved_geometry.x,
+                                    saved_geometry.y);
+        wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width / scale,
+                                  saved_geometry.height / scale);
+    }
+    // set toplevel window mode to maximized
+    wlr_xdg_toplevel_set_maximized(xdg_toplevel, maximized);
+
+    // schedule configure
     wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 }
 

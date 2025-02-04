@@ -6,6 +6,7 @@ struct Toplevel {
     struct Server *server;
     struct wlr_xdg_toplevel *xdg_toplevel;
     struct wlr_scene_tree *scene_tree;
+
     struct wl_listener map;
     struct wl_listener unmap;
     struct wl_listener commit;
@@ -22,6 +23,9 @@ struct Toplevel {
 
     struct wlr_foreign_toplevel_handle_v1 *handle;
 
+    struct wl_listener handle_request_maximize;
+    struct wl_listener handle_request_fullscreen;
+
     bool hidden{false};
 
     struct wlr_fbox saved_geometry;
@@ -34,6 +38,7 @@ struct Toplevel {
     void set_position_size(double x, double y, int width, int height);
     void set_hidden(bool hidden);
     void set_fullscreen(bool fullscreen);
+    void set_maximized(bool maximized);
 
     void update_foreign_toplevel();
 };

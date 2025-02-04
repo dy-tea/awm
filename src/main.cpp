@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 
     struct Config *config;
 
-    if (selected_config == 1) {
+    if (selected_config == -1) {
         wlr_log(WLR_INFO, "No config found, loading defaults");
         config = new Config();
     } else {

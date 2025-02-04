@@ -1,7 +1,6 @@
 #pragma once
 
 #include <EGL/egl.h>
-#include <errno.h>
 #include <libinput.h>
 #include <libudev.h>
 #include <stdarg.h>
@@ -9,9 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/types.h>
-#include <time.h>
 #include <wayland-client.h>
 #include <wayland-server-protocol.h>
 #include <wayland-server.h>

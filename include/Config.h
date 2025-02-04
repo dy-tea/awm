@@ -1,6 +1,5 @@
 #include "tomlcpp.hpp"
 #include "wlr.h"
-#include <iostream>
 #include <vector>
 
 struct Bind {

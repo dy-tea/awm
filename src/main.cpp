@@ -36,11 +36,9 @@ int main(int argc, char *argv[]) {
                            "./awm.toml",
                            "./config.toml"};
 
-    int selected_config = -1;
-
-    for (int i = 0; i != 7; ++i)
-        if (access(paths[i].c_str(), F_OK) == 0) {
-            selected_config = i;
+    for (std::string path : paths)
+        if (access(path.c_str(), F_OK) == 0) {
+            config_path = path.data();
             break;
         }
 
@@ -51,16 +49,12 @@ int main(int argc, char *argv[]) {
             wlr_log(WLR_INFO, "Loading config at '%s'", config_path);
             config = new Config(config_path);
         } else {
-            wlr_log(WLR_ERROR, "Config file '%s' not found", config_path);
+            wlr_log(WLR_ERROR, "Config file '%s' ", config_path);
             return 1;
         }
-    } else if (selected_config == -1) {
+    } else {
         wlr_log(WLR_INFO, "No config found, loading defaults");
         config = new Config();
-    } else {
-        wlr_log(WLR_INFO, "Found config at '%s'",
-                paths[selected_config].c_str());
-        config = new Config(paths[selected_config]);
     }
 
     if (startup_cmd)

@@ -20,6 +20,8 @@ struct Toplevel {
     // struct wl_listener set_title;
     // struct wl_listener set_app_id;
 
+    struct wlr_foreign_toplevel_handle_v1 *handle;
+
     bool hidden{false};
 
     struct wlr_fbox saved_geometry;
@@ -32,4 +34,6 @@ struct Toplevel {
     void set_position_size(double x, double y, int width, int height);
     void set_hidden(bool hidden);
     void set_fullscreen(bool fullscreen);
+
+    void update_foreign_toplevel();
 };

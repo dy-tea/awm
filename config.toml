@@ -2,7 +2,7 @@
 
 [startup]
 exec = [
-    "xwayland-satellite"
+    #"xwayland-satellite"
 ]
 env = [
     { "EXAMPLE" = "true" },

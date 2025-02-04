@@ -4,7 +4,8 @@ int main(int argc, char *argv[]) {
     wlr_log_init(WLR_DEBUG, NULL);
 
     std::string startup_cmd = "", config_path = "";
-    std::string usage = "Usage: %s [-s startup command] [-c config file path]\n";
+    std::string usage =
+        "Usage: %s [-s startup command] [-c config file path]\n";
 
     int c;
     while ((c = getopt(argc, argv, "s:c:h")) != -1) {
@@ -25,21 +26,23 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    std::string paths[] = {"$HOME/.config/awm/awm.toml",
-                           "$HOME/.config/awm/config.toml",
-                           "$HOME/.config/awm.toml",
-                           "/usr/local/share/awm/awm.toml",
-                           "/usr/local/share/awm/config.toml",
-                           "/etc/awm/awm.toml",
-                           "/etc/awm/config.toml",
-                           "./awm.toml",
-                           "./config.toml"};
+    if (config_path == "") {
+        std::string paths[] = {"$HOME/.config/awm/awm.toml",
+                               "$HOME/.config/awm/config.toml",
+                               "$HOME/.config/awm.toml",
+                               "/usr/local/share/awm/awm.toml",
+                               "/usr/local/share/awm/config.toml",
+                               "/etc/awm/awm.toml",
+                               "/etc/awm/config.toml",
+                               "./awm.toml",
+                               "./config.toml"};
 
-    for (std::string path : paths)
-        if (access(path.c_str(), F_OK) == 0) {
-            config_path = path;
-            break;
-        }
+        for (std::string path : paths)
+            if (access(path.c_str(), F_OK) == 0) {
+                config_path = path;
+                break;
+            }
+    }
 
     struct Config *config;
 
@@ -50,7 +53,8 @@ int main(int argc, char *argv[]) {
         wlr_log(WLR_INFO, "Loading config at '%s'", config_path.c_str());
         config = new Config(config_path);
     } else {
-        wlr_log(WLR_ERROR, "Config file '%s' does not exist", config_path.c_str());
+        wlr_log(WLR_ERROR, "Config file '%s' does not exist",
+                config_path.c_str());
         return 1;
     }
 

@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -9,6 +8,14 @@ Toplevel::Toplevel(struct Server *server,
         wlr_scene_xdg_surface_create(&server->scene->tree, xdg_toplevel->base);
     scene_tree->node.data = this;
     xdg_toplevel->base->data = scene_tree;
+    handle = wlr_foreign_toplevel_handle_v1_create(
+        server->wlr_foreign_toplevel_manager);
+
+    if (xdg_toplevel->title)
+        wlr_foreign_toplevel_handle_v1_set_title(handle, xdg_toplevel->title);
+
+    if (xdg_toplevel->app_id)
+        wlr_foreign_toplevel_handle_v1_set_app_id(handle, xdg_toplevel->app_id);
 
     // xdg_toplevel_map
     map.notify = [](struct wl_listener *listener, void *data) {
@@ -86,6 +93,7 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_resize);
         toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
+        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
 
@@ -135,9 +143,11 @@ Toplevel::Toplevel(struct Server *server,
             toplevel->xdg_toplevel,
             toplevel->xdg_toplevel->requested.maximized);
 
+        toplevel->update_foreign_toplevel();
         wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
     };
     wl_signal_add(&xdg_toplevel->events.request_maximize, &request_maximize);
+    wl_signal_add(&handle->events.request_maximize, &request_maximize);
 
     // request_fullscreen
     request_fullscreen.notify = [](struct wl_listener *listener, void *data) {
@@ -145,9 +155,11 @@ Toplevel::Toplevel(struct Server *server,
             wl_container_of(listener, toplevel, request_fullscreen);
 
         toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
+        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&xdg_toplevel->events.request_fullscreen,
                   &request_fullscreen);
+    wl_signal_add(&handle->events.request_fullscreen, &request_maximize);
 }
 
 Toplevel::~Toplevel() {
@@ -297,4 +309,14 @@ void Toplevel::set_fullscreen(bool fullscreen) {
     wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, fullscreen);
 
     wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+}
+
+// update foreign toplevel on window state change
+void Toplevel::update_foreign_toplevel() {
+    wlr_foreign_toplevel_handle_v1_set_maximized(
+        handle, xdg_toplevel->current.maximized);
+    wlr_foreign_toplevel_handle_v1_set_fullscreen(
+        handle, xdg_toplevel->current.maximized);
+    wlr_foreign_toplevel_handle_v1_set_activated(
+        handle, xdg_toplevel->current.maximized);
 }

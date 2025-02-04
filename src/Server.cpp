@@ -564,6 +564,9 @@ Server::Server(struct Config *config) {
     // create screencopy manager
     wlr_screencopy_manager = wlr_screencopy_manager_v1_create(wl_display);
 
+    // create foreign toplevel manager
+    wlr_foreign_toplevel_manager = wlr_foreign_toplevel_manager_v1_create(wl_display);
+
     /* Add a Unix socket to the Wayland display. */
     const char *socket = wl_display_add_socket_auto(wl_display);
     if (!socket) {

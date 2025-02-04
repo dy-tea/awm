@@ -8,6 +8,7 @@
 #include "Toplevel.h"
 #include "Workspace.h"
 #include "XWaylandShell.h"
+#include "wlr.h"
 
 struct Server {
     struct Config *config;
@@ -54,6 +55,7 @@ struct Server {
 
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
+    struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
 
     Server(struct Config *config);
     ~Server();

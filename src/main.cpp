@@ -2,9 +2,8 @@
 
 int main(int argc, char *argv[]) {
     wlr_log_init(WLR_DEBUG, NULL);
-    char *startup_cmd = NULL;
-    char *config_path = NULL;
 
+    std::string startup_cmd = "", config_path = "";
     std::string usage = "Usage: %s [-s startup command] [-c config file path]\n";
 
     int c;
@@ -38,26 +37,24 @@ int main(int argc, char *argv[]) {
 
     for (std::string path : paths)
         if (access(path.c_str(), F_OK) == 0) {
-            config_path = path.data();
+            config_path = path;
             break;
         }
 
     struct Config *config;
 
-    if (config_path) {
-        if (access(config_path, F_OK) == 0) {
-            wlr_log(WLR_INFO, "Loading config at '%s'", config_path);
-            config = new Config(config_path);
-        } else {
-            wlr_log(WLR_ERROR, "Config file '%s' ", config_path);
-            return 1;
-        }
-    } else {
+    if (config_path == "") {
         wlr_log(WLR_INFO, "No config found, loading defaults");
         config = new Config();
+    } else if (access(config_path.c_str(), F_OK) == 0) {
+        wlr_log(WLR_INFO, "Loading config at '%s'", config_path.c_str());
+        config = new Config(config_path);
+    } else {
+        wlr_log(WLR_ERROR, "Config file '%s' does not exist", config_path.c_str());
+        return 1;
     }
 
-    if (startup_cmd)
+    if (startup_cmd != "")
         config->startup_commands.push_back(startup_cmd);
 
     struct Server *server = new Server(config);

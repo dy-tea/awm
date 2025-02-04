@@ -1,5 +1,4 @@
 #include "Server.h"
-#include <wayland-client-protocol.h>
 
 bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     // retrieve config
@@ -12,13 +11,12 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
 
     // handle user-defined binds
     for (std::pair<Bind, std::string> command : config->commands)
-        if (command.first == bind) {
+        if (command.first == bind)
             if (fork() == 0) {
                 execl("/bin/sh", "/bin/sh", "-c", command.second.c_str(),
                       nullptr);
                 return true;
             }
-        }
 
     // handle compositor binds
     if (bind == config->exit) {

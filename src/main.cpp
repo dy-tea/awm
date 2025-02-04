@@ -3,30 +3,36 @@
 int main(int argc, char *argv[]) {
     wlr_log_init(WLR_DEBUG, NULL);
     char *startup_cmd = NULL;
+    char *config_path = NULL;
+
+    std::string usage = "Usage: %s [-s startup command] [-c config file path]\n";
 
     int c;
-    while ((c = getopt(argc, argv, "s:h")) != -1) {
+    while ((c = getopt(argc, argv, "s:c:h")) != -1) {
         switch (c) {
         case 's':
             startup_cmd = optarg;
             break;
+        case 'c':
+            config_path = optarg;
+            break;
         default:
-            printf("Usage: %s [-s startup command]\n", argv[0]);
+            printf(usage.c_str(), argv[0]);
             return 0;
         }
     }
     if (optind < argc) {
-        printf("Usage: %s [-s startup command]\n", argv[0]);
+        printf(usage.c_str(), argv[0]);
         return 0;
     }
 
     std::string paths[] = {"$HOME/.config/awm/awm.toml",
                            "$HOME/.config/awm/config.toml",
                            "$HOME/.config/awm.toml",
-                           "/etc/awm/awm.toml",
-                           "/etc/awm/config.toml",
                            "/usr/local/share/awm/awm.toml",
                            "/usr/local/share/awm/config.toml",
+                           "/etc/awm/awm.toml",
+                           "/etc/awm/config.toml",
                            "./awm.toml",
                            "./config.toml"};
 
@@ -40,7 +46,15 @@ int main(int argc, char *argv[]) {
 
     struct Config *config;
 
-    if (selected_config == -1) {
+    if (config_path) {
+        if (access(config_path, F_OK) == 0) {
+            wlr_log(WLR_INFO, "Loading config at '%s'", config_path);
+            config = new Config(config_path);
+        } else {
+            wlr_log(WLR_ERROR, "Config file '%s' not found", config_path);
+            return 1;
+        }
+    } else if (selected_config == -1) {
         wlr_log(WLR_INFO, "No config found, loading defaults");
         config = new Config();
     } else {

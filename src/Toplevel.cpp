@@ -170,6 +170,8 @@ Toplevel::~Toplevel() {
     wl_list_remove(&request_move.link);
     wl_list_remove(&request_resize.link);
     wl_list_remove(&request_maximize.link);
+    wl_list_remove(&request_maximize.link);
+    wl_list_remove(&request_fullscreen.link);
     wl_list_remove(&request_fullscreen.link);
 }
 

@@ -2,7 +2,7 @@
 
 [startup]
 exec = [
-    #"xwayland-satellite"
+    "xwayland-satellite"
 ]
 env = [
     { "EXAMPLE" = "true" },
@@ -25,5 +25,9 @@ exec = "rofi -show drun"
 [[commands]] # Screenshot
 bind = "Alt c"
 exec = "grim -g \"$(slurp)\" - | swappy -f -"
+
+[[commands]] # Terminal
+bind = "Alt Return"
+exec = "alacritty"
 
 # TODO: keyboard, locale, monitor configuration

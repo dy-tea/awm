@@ -3,9 +3,9 @@
 LayerSurface::LayerSurface(struct LayerShell *shell,
                            struct wlr_layer_surface_v1 *wlr_layer_surface) {
     layer_shell = shell;
+    // create scene layer for surface
     this->wlr_layer_surface = wlr_layer_surface;
     wl_list_init(&popups);
-
     scene_layer_surface = wlr_scene_layer_surface_v1_create(&shell->scene->tree,
                                                             wlr_layer_surface);
 
@@ -14,11 +14,13 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         return;
     }
 
+    // point this surface to data for later
     scene_layer_surface->tree->node.data = this;
     wlr_layer_surface->data = this;
 
     // map surface
     map.notify = [](struct wl_listener *listener, void *data) {
+        // get seat and pointer focus on map
         LayerSurface *surface = wl_container_of(listener, surface, map);
         wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node,
                                    true);
@@ -38,10 +40,12 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
     // commit surface
     commit.notify = [](struct wl_listener *listener, void *data) {
+        // on display
         LayerSurface *surface = wl_container_of(listener, surface, commit);
 
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
+        // configure if not
         if (!layer_surface->configured) {
             wlr_output *output = layer_surface->output;
 
@@ -69,6 +73,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         LayerSurface *layer_surface =
             wl_container_of(listener, layer_surface, new_popup);
 
+        // add to list of popups
         struct Popup *popup = new Popup((wlr_xdg_popup *)data);
         wl_list_insert(&layer_surface->popups, &popup->link);
     };

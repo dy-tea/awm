@@ -1,5 +1,7 @@
 #include "Server.h"
 
+// execute either a wm bind or command bind, returns true if
+// bind is valid, false otherwise
 bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     // retrieve config
     Config *config = server->config;
@@ -67,8 +69,7 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
     this->server = server;
     this->wlr_keyboard = wlr_keyboard_from_input_device(device);
 
-    /* We need to prepare an XKB keymap and assign it to the keyboard. This
-     * assumes the defaults (e.g. layout = "us"). */
+    // assume us layout TODO: add to config
     struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     struct xkb_keymap *keymap =
         xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
@@ -78,38 +79,32 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
     xkb_context_unref(context);
     wlr_keyboard_set_repeat_info(wlr_keyboard, 25, 600);
 
-    /* Here we set up listeners for keyboard events. */
-
     // handle_modifiers
     modifiers.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a modifier key, such as shift or alt,
-         * is pressed. We simply communicate this to the client. */
         struct Keyboard *keyboard =
             wl_container_of(listener, keyboard, modifiers);
-        /*
-         * A seat can only have one keyboard, but this is a limitation of
-         * the Wayland protocol - not wlroots. We assign all connected
-         * keyboards to the same seat. You can swap out the underlying
-         * wlr_keyboard like this and wlr_seat handles this transparently.
-         */
+
+        // set seat keyboard
         wlr_seat_set_keyboard(keyboard->server->seat, keyboard->wlr_keyboard);
-        /* Send modifiers to the client. */
+
+        // send mods to seat
         wlr_seat_keyboard_notify_modifiers(keyboard->server->seat,
                                            &keyboard->wlr_keyboard->modifiers);
     };
     wl_signal_add(&wlr_keyboard->events.modifiers, &modifiers);
 
-    // handle_key (keyboard)
+    // handle_key
     key.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a key is pressed or released. */
+        // key is pressed or released
         struct Keyboard *keyboard = wl_container_of(listener, keyboard, key);
         struct Server *server = keyboard->server;
         struct wlr_keyboard_key_event *event = (wlr_keyboard_key_event *)data;
         struct wlr_seat *seat = server->seat;
 
-        /* Translate libinput keycode -> xkbcommon */
+        // libinput keycode -> xkbcommon
         uint32_t keycode = event->keycode + 8;
-        /* Get a list of keysyms based on the keymap for this keyboard */
+
+        // keysym list based on keymap
         const xkb_keysym_t *syms;
         int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
                                            keycode, &syms);
@@ -124,7 +119,7 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
                                                 event->keycode);
 
         if (!handled) {
-            /* Otherwise, we pass it along to the client. */
+            // send unhandled keypresses to seat
             wlr_seat_set_keyboard(seat, keyboard->wlr_keyboard);
             wlr_seat_keyboard_notify_key(seat, event->time_msec, event->keycode,
                                          event->state);
@@ -132,12 +127,8 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
     };
     wl_signal_add(&wlr_keyboard->events.key, &key);
 
-    // handle_destroy (keyboard)
+    // handle_destroy
     destroy.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised by the keyboard base wlr_input_device to
-         * signal the destruction of the wlr_keyboard. It will no longer
-         * receive events and should be destroyed.
-         */
         struct Keyboard *keyboard =
             wl_container_of(listener, keyboard, destroy);
         delete keyboard;

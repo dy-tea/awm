@@ -182,13 +182,10 @@ Server::Server(struct Config *config) {
     // set config from file
     this->config = config;
 
-    /* The Wayland display is managed by libwayland. It handles accepting
-     * clients from the Unix socket, manging Wayland globals, and so on. */
+    // display
     wl_display = wl_display_create();
-    /* The backend is a wlroots feature which abstracts the underlying input and
-     * output hardware. The autocreate option will choose the most suitable
-     * backend based on the current environment, such as opening an X11 window
-     * if an X11 server is running. */
+
+    // backend
     backend =
         wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
     if (backend == NULL) {
@@ -196,10 +193,7 @@ Server::Server(struct Config *config) {
         exit(1);
     }
 
-    /* Autocreates a renderer, either Pixman, GLES2 or Vulkan for us. The user
-     * can also specify a renderer using the WLR_RENDERER env var.
-     * The renderer is responsible for defining the various pixel formats it
-     * supports for shared memory, this configures that for clients. */
+    // renderer
     renderer = wlr_renderer_autocreate(backend);
     if (renderer == NULL) {
         wlr_log(WLR_ERROR, "failed to create wlr_renderer");
@@ -208,77 +202,52 @@ Server::Server(struct Config *config) {
 
     wlr_renderer_init_wl_display(renderer, wl_display);
 
-    /* Autocreates an allocator for us.
-     * The allocator is the bridge between the renderer and the backend. It
-     * handles the buffer creation, allowing wlroots to render onto the
-     * screen */
+    // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);
     if (allocator == NULL) {
         wlr_log(WLR_ERROR, "failed to create wlr_allocator");
         exit(1);
     }
 
-    /* This creates some hands-off wlroots interfaces. The compositor is
-     * necessary for clients to allocate surfaces, the subcompositor allows to
-     * assign the role of subsurfaces to surfaces and the data device manager
-     * handles the clipboard. Each of these wlroots interfaces has room for you
-     * to dig your fingers in and play with their behavior if you want. Note
-     * that the clients cannot set the selection directly without compositor
-     * approval, see the handling of the request_set_selection event below.*/
+    // wlr compositor
     compositor = wlr_compositor_create(wl_display, 5, renderer);
     wlr_subcompositor_create(wl_display);
     wlr_data_device_manager_create(wl_display);
 
-    /* Creates an output layout, which a wlroots utility for working with an
-     * arrangement of screens in a physical layout. */
+    // outputs
     output_layout = wlr_output_layout_create(wl_display);
-
-    /* Configure a listener to be notified when new outputs are available on the
-     * backend. */
     wl_list_init(&outputs);
 
     // new_output
     new_output.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised by the backend when a new output (aka a display
-         * or monitor) becomes available. */
+        // new display / monitor available
         struct Server *server = wl_container_of(listener, server, new_output);
         struct wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
 
-        /* Configures the output created by the backend to use our allocator
-         * and our renderer. Must be done once, before commiting the output */
+        // set allocator and renderer for output
         wlr_output_init_render(wlr_output, server->allocator, server->renderer);
 
-        /* The output may be disabled, switch it on. */
+        // turn on output if off
         struct wlr_output_state state;
         wlr_output_state_init(&state);
         wlr_output_state_set_enabled(&state, true);
 
-        /* Some backends don't have modes. DRM+KMS does, and we need to set a
-         * mode before we can use the output. The mode is a tuple of (width,
-         * height, refresh rate), and each monitor supports only a specific set
-         * of modes. We just pick the monitor's preferred mode, a more
-         * sophisticated compositor would let the user configure it. */
+        // use monitor's preferred mode
         struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-        if (mode != NULL) {
+        if (mode != NULL)
             wlr_output_state_set_mode(&state, mode);
-        }
 
-        /* Atomically applies the new output state. */
+        // apply output state
         wlr_output_commit_state(wlr_output, &state);
         wlr_output_state_finish(&state);
 
-        /* Allocates and configures our state for this output */
+        // add to outputs list
         struct Output *output = new Output(server, wlr_output);
         wl_list_insert(&server->outputs, &output->link);
     };
     wl_signal_add(&backend->events.new_output, &new_output);
 
-    /* Create a scene graph. This is a wlroots abstraction that handles all
-     * rendering and damage tracking. All the compositor author needs to do
-     * is add things that should be rendered to the scene graph at the proper
-     * positions and then call wlr_scene_output_commit() to render a frame if
-     * necessary.
-     */
+    // scene
     scene = wlr_scene_create();
     scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
 
@@ -287,11 +256,13 @@ Server::Server(struct Config *config) {
 
     // renderer_lost
     renderer_lost.notify = [](struct wl_listener *listener, void *data) {
+        // renderer recovery (thanks sway)
         struct Server *server =
             wl_container_of(listener, server, renderer_lost);
 
         wlr_log(WLR_INFO, "Re-creating renderer after GPU reset");
 
+        // create new renderer
         struct wlr_renderer *renderer =
             wlr_renderer_autocreate(server->backend);
         if (renderer == NULL) {
@@ -299,6 +270,7 @@ Server::Server(struct Config *config) {
             return;
         }
 
+        // create new allocator
         struct wlr_allocator *allocator =
             wlr_allocator_autocreate(server->backend, renderer);
         if (allocator == NULL) {
@@ -307,21 +279,26 @@ Server::Server(struct Config *config) {
             return;
         }
 
+        // replace old and renderer and allocator
         struct wlr_renderer *old_renderer = server->renderer;
         struct wlr_allocator *old_allocator = server->allocator;
         server->renderer = renderer;
         server->allocator = allocator;
 
+        // reset signal
         wl_list_remove(&server->renderer_lost.link);
         wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
 
+        // move compositor to new renderer
         wlr_compositor_set_renderer(server->compositor, renderer);
 
+        // reinint outputs
         struct Output *output, *tmp;
         wl_list_for_each_safe(output, tmp, &server->outputs, link)
             wlr_output_init_render(output->wlr_output, server->allocator,
                                    server->renderer);
 
+        // destroy old renderer and allocator
         wlr_allocator_destroy(old_allocator);
         wlr_renderer_destroy(old_renderer);
     };
@@ -329,12 +306,10 @@ Server::Server(struct Config *config) {
 
     // new_xdg_toplevel
     new_xdg_toplevel.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a client creates a new toplevel
-         * (application window). */
         struct Server *server =
             wl_container_of(listener, server, new_xdg_toplevel);
 
-        /* Allocate a Toplevel for this surface */
+        // toplevels are managed by workspaces
         [[maybe_unused]] struct Toplevel *toplevel =
             new Toplevel(server, (wlr_xdg_toplevel *)data);
     };
@@ -342,51 +317,27 @@ Server::Server(struct Config *config) {
 
     // new_xdg_popup
     new_xdg_popup.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a client creates a new popup. */
         struct wlr_xdg_popup *xdg_popup = (wlr_xdg_popup *)data;
 
+        // popups do not need to be tracked
         [[maybe_unused]] struct Popup *popup = new Popup(xdg_popup);
     };
     wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 
-    /*
-     * Creates a cursor, which is a wlroots utility for tracking the cursor
-     * image shown on screen.
-     */
+    // cursor
     cursor = wlr_cursor_create();
     wlr_cursor_attach_output_layout(cursor, output_layout);
-
-    /* Creates an xcursor manager, another wlroots utility which loads up
-     * Xcursor themes to source cursor images from and makes sure that cursor
-     * images are available at all scale factors on the screen (necessary for
-     * HiDPI support). */
     cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-
-    /*
-     * wlr_cursor *only* displays an image on screen. It does not move around
-     * when the pointer moves. However, we can attach input devices to it, and
-     * it will generate aggregate events for all of them. In these events, we
-     * can choose how we want to process them, forwarding them to clients and
-     * moving the cursor around. More detail on this process is described in
-     * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html.
-     *
-     * And more comments are sprinkled throughout the notify functions above.
-     */
     cursor_mode = CURSORMODE_PASSTHROUGH;
 
     // cursor_motion
     cursor_motion.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is forwarded by the cursor when a pointer emits a
-         * _relative_ pointer motion event (i.e. a delta) */
+        // relative motion event
         struct Server *server =
             wl_container_of(listener, server, cursor_motion);
         struct wlr_pointer_motion_event *event =
             (wlr_pointer_motion_event *)data;
-        /* The cursor doesn't move unless we tell it to. The cursor
-         * automatically handles constraining the motion to the output layout,
-         * as well as any special configuration applied for the specific input
-         * device which generated the event. You can pass NULL for the device if
-         * you want to move the cursor around without any input. */
+
         wlr_cursor_move(server->cursor, &event->pointer->base, event->delta_x,
                         event->delta_y);
         server->process_cursor_motion(event->time_msec);
@@ -396,16 +347,12 @@ Server::Server(struct Config *config) {
     // cursor_motion_absolute
     cursor_motion_absolute.notify = [](struct wl_listener *listener,
                                        void *data) {
-        /* This event is forwarded by the cursor when a pointer emits an
-         * _absolute_ motion event, from 0..1 on each axis. This happens, for
-         * example, when wlroots is running under a Wayland window rather than
-         * KMS+DRM, and you move the mouse over the window. You could enter the
-         * window from any edge, so we have to warp the mouse there. There is
-         * also some hardware which emits these events. */
+        // absolute motion event
         struct Server *server =
             wl_container_of(listener, server, cursor_motion_absolute);
         struct wlr_pointer_motion_absolute_event *event =
             (wlr_pointer_motion_absolute_event *)data;
+
         wlr_cursor_warp_absolute(server->cursor, &event->pointer->base,
                                  event->x, event->y);
         server->process_cursor_motion(event->time_msec);
@@ -414,22 +361,19 @@ Server::Server(struct Config *config) {
 
     // cursor_button
     cursor_button.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is forwarded by the cursor when a pointer emits a button
-         * event. */
         struct Server *server =
             wl_container_of(listener, server, cursor_button);
         struct wlr_pointer_button_event *event =
             (wlr_pointer_button_event *)data;
-        /* Notify the client with pointer focus that a button press has occurred
-         */
+
+        // forward to seat
         wlr_seat_pointer_notify_button(server->seat, event->time_msec,
                                        event->button, event->state);
-        if (event->state == WL_POINTER_BUTTON_STATE_RELEASED) {
-            /* If you released any buttons, we exit interactive move/resize
-             * mode. */
+
+        if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
             server->reset_cursor_mode();
-        } else {
-            /* Focus that client if the button was _pressed_ */
+        else {
+            // focus surface
             double sx, sy;
             struct wlr_surface *surface = NULL;
             struct LayerSurface *layer_surface = server->layer_surface_at(
@@ -450,11 +394,12 @@ Server::Server(struct Config *config) {
 
     // cursor_axis
     cursor_axis.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is forwarded by the cursor when a pointer emits an axis
-         * event, for example when you move the scroll wheel. */
+        // scroll wheel etc
         struct Server *server = wl_container_of(listener, server, cursor_axis);
+
         struct wlr_pointer_axis_event *event = (wlr_pointer_axis_event *)data;
-        /* Notify the client with pointer focus of the axis event. */
+
+        // forward to seat
         wlr_seat_pointer_notify_axis(
             server->seat, event->time_msec, event->orientation, event->delta,
             event->delta_discrete, event->source, event->relative_direction);
@@ -463,31 +408,22 @@ Server::Server(struct Config *config) {
 
     // cursor_frame
     cursor_frame.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is forwarded by the cursor when a pointer emits an frame
-         * event. Frame events are sent after regular pointer events to group
-         * multiple events together. For instance, two axis events may happen at
-         * the same time, in which case a frame event won't be sent in between.
-         */
         struct Server *server = wl_container_of(listener, server, cursor_frame);
-        /* Notify the client with pointer focus of the frame event. */
+
+        // forward to seat
         wlr_seat_pointer_notify_frame(server->seat);
     };
     wl_signal_add(&cursor->events.frame, &cursor_frame);
 
-    /*
-     * Configures a seat, which is a single "seat" at which a user sits and
-     * operates the computer. This conceptually includes up to one keyboard,
-     * pointer, touch, and drawing tablet device. We also rig up a listener to
-     * let us know when new input devices are available on the backend.
-     */
+    // keyboards
     wl_list_init(&keyboards);
 
     // new_input
     new_input.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised by the backend when a new input device becomes
-         * available. */
+        // create input device based on type
         struct Server *server = wl_container_of(listener, server, new_input);
         struct wlr_input_device *device = (wlr_input_device *)data;
+
         switch (device->type) {
         case WLR_INPUT_DEVICE_KEYBOARD:
             server->new_keyboard(device);
@@ -498,106 +434,95 @@ Server::Server(struct Config *config) {
         default:
             break;
         }
-        /* We need to let the wlr_seat know what our capabilities are, which is
-         * communiciated to the client. In TinyWL we always have a cursor, even
-         * if there are no pointer devices, so we always include that
-         * capability. */
+
+        // set input device capabilities
         uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
-        if (!wl_list_empty(&server->keyboards)) {
+        if (!wl_list_empty(&server->keyboards))
             caps |= WL_SEAT_CAPABILITY_KEYBOARD;
-        }
+
         wlr_seat_set_capabilities(server->seat, caps);
     };
     wl_signal_add(&backend->events.new_input, &new_input);
 
+    // seat
     seat = wlr_seat_create(wl_display, "seat0");
 
     // request_cursor (seat)
     request_cursor.notify = [](struct wl_listener *listener, void *data) {
+        // client-provided cursor image
         struct Server *server =
             wl_container_of(listener, server, request_cursor);
-        /* This event is raised by the seat when a client provides a cursor
-         * image */
+
         struct wlr_seat_pointer_request_set_cursor_event *event =
             (wlr_seat_pointer_request_set_cursor_event *)data;
         struct wlr_seat_client *focused_client =
             server->seat->pointer_state.focused_client;
-        /* This can be sent by any client, so we check to make sure this one is
-         * actually has pointer focus first. */
-        if (focused_client == event->seat_client) {
-            /* Once we've vetted the client, we can tell the cursor to use the
-             * provided surface as the cursor image. It will set the hardware
-             * cursor on the output that it's currently on and continue to do so
-             * as the cursor moves between outputs. */
+
+        // only obey focused client
+        if (focused_client == event->seat_client)
             wlr_cursor_set_surface(server->cursor, event->surface,
                                    event->hotspot_x, event->hotspot_y);
-        }
     };
     wl_signal_add(&seat->events.request_set_cursor, &request_cursor);
 
     // request_set_selection (seat)
     request_set_selection.notify = [](struct wl_listener *listener,
                                       void *data) {
-        /* This event is raised by the seat when a client wants to set the
-         * selection, usually when the user copies something. wlroots allows
-         * compositors to ignore such requests if they so choose, but in tinywl
-         * we always honor
-         */
+        // user selection
         struct Server *server =
             wl_container_of(listener, server, request_set_selection);
+
         struct wlr_seat_request_set_selection_event *event =
             (wlr_seat_request_set_selection_event *)data;
+
         wlr_seat_set_selection(server->seat, event->source, event->serial);
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
-    // create wlr_xdg_output manager
+    // wlr_xdg_output manager
     wlr_xdg_output_manager =
         wlr_xdg_output_manager_v1_create(wl_display, output_layout);
 
-    // create layer shell
+    // layer shell
     layer_shell = new LayerShell(wl_display, scene, seat);
 
-    // create xwayland shell
+    // xwayland shell
     // xwayland_shell = new XWaylandShell(wl_display, scene);
 
-    // create screencopy manager
+    // screencopy manager
     wlr_screencopy_manager = wlr_screencopy_manager_v1_create(wl_display);
 
-    // create foreign toplevel manager
-    wlr_foreign_toplevel_manager = wlr_foreign_toplevel_manager_v1_create(wl_display);
+    // foreign toplevel manager
+    wlr_foreign_toplevel_manager =
+        wlr_foreign_toplevel_manager_v1_create(wl_display);
 
-    /* Add a Unix socket to the Wayland display. */
+    // unix socket for display
     const char *socket = wl_display_add_socket_auto(wl_display);
     if (!socket) {
         wlr_backend_destroy(backend);
         exit(1);
     }
 
-    /* Start the backend. This will enumerate outputs and inputs, become the DRM
-     * master, etc */
+    // backend start
     if (!wlr_backend_start(backend)) {
         wlr_backend_destroy(backend);
         wl_display_destroy(wl_display);
         exit(1);
     }
 
-    /* Set the WAYLAND_DISPLAY environment variable to our socket and run the
-     * startup command if requested. */
+    // set wayland diplay to our socket
     setenv("WAYLAND_DISPLAY", socket, true);
 
-    // set env and startup commands according to config
+    // set envvars from config
     for (std::pair<std::string, std::string> kv : config->startup_env)
         setenv(kv.first.c_str(), kv.second.c_str(), true);
 
+    // run startup commands from config
     for (std::string command : config->startup_commands)
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 
-    /* Run the Wayland event loop. This does not return until you exit the
-     * compositor. Starting the backend rigged up all of the necessary event
-     * loop configuration to listen to libinput events, DRM events, generate
-     * frame events at the refresh rate, and so on. */
+    // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
             socket);
     wl_display_run(wl_display);

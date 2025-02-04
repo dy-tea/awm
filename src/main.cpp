@@ -1,12 +1,15 @@
 #include "Server.h"
 
 int main(int argc, char *argv[]) {
+    // start logger
     wlr_log_init(WLR_DEBUG, NULL);
 
+    // startup and config
     std::string startup_cmd = "", config_path = "";
     std::string usage =
         "Usage: %s [-s startup command] [-c config file path]\n";
 
+    // parse command line and set values if provided
     int c;
     while ((c = getopt(argc, argv, "s:c:h")) != -1) {
         switch (c) {
@@ -27,6 +30,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (config_path == "") {
+        // no command line path passed, find in default paths
         std::string paths[] = {"$HOME/.config/awm/awm.toml",
                                "$HOME/.config/awm/config.toml",
                                "$HOME/.config/awm.toml",
@@ -44,6 +48,7 @@ int main(int argc, char *argv[]) {
             }
     }
 
+    // load config
     struct Config *config;
 
     if (config_path == "") {
@@ -58,9 +63,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // add startup command
     if (startup_cmd != "")
         config->startup_commands.push_back(startup_cmd);
 
+    // start server
     struct Server *server = new Server(config);
     delete server;
 }

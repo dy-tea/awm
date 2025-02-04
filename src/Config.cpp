@@ -109,6 +109,7 @@ Config::Config(std::string path) {
 
 Config::~Config() {}
 
+// get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(std::string modifier) {
     const std::string modifiers[] = {
         "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
@@ -121,6 +122,7 @@ uint32_t parse_modifier(std::string modifier) {
     return 69;
 }
 
+// create a bind from a space-seperated string of modifiers and key
 struct Bind *Config::parse_bind(std::string definition) {
     Bind *bind = new Bind;
 
@@ -153,6 +155,7 @@ struct Bind *Config::parse_bind(std::string definition) {
     return bind;
 }
 
+// helper function to bind a variable from a given table and row name
 void Config::set_bind(std::string name, toml::Table *source, Bind *target) {
     auto row = source->getString(name);
     if (row.first)

@@ -479,12 +479,15 @@ Server::Server(struct Config *config) {
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
+    // layer shell
+    layer_shell = new LayerShell(wl_display, scene, seat);
+
+    // data control manager
+    data_control_manager = new DataControlManager(wl_display);
+
     // wlr_xdg_output manager
     wlr_xdg_output_manager =
         wlr_xdg_output_manager_v1_create(wl_display, output_layout);
-
-    // layer shell
-    layer_shell = new LayerShell(wl_display, scene, seat);
 
     // xwayland shell
     // xwayland_shell = new XWaylandShell(wl_display, scene);
@@ -548,6 +551,7 @@ Server::~Server() {
     wl_list_remove(&renderer_lost.link);
 
     delete layer_shell;
+    delete data_control_manager;
     // delete xwayland_shell;
 
     wlr_scene_node_destroy(&scene->tree.node);

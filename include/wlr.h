@@ -48,6 +48,7 @@ extern "C" {
 #include <wlr/util/region.h>
 
 // Unstable
+#include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>

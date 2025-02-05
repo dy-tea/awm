@@ -70,6 +70,7 @@ endforeach
 
 protocols_wlr_unstable = [
     'wlr-layer-shell-unstable-v1',
+    'wlr-data-control-unstable-v1',
     #'wlr-foreign-toplevel-management-unstable-v1',
 ]
 
@@ -129,6 +130,7 @@ executable(
         'src/LayerSurface.cpp',
         'src/Workspace.cpp',
         'src/Config.cpp',
+        'src/DataControlManager.cpp',
         #'src/XWaylandShell.cpp',
         #'src/XWaylandSurface.cpp',
         protocol_sources,

@@ -1,14 +1,16 @@
 #include "Server.h"
-#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
+    // add the toplevel to the scene tree
     this->server = server;
     this->xdg_toplevel = xdg_toplevel;
     scene_tree =
         wlr_scene_xdg_surface_create(&server->scene->tree, xdg_toplevel->base);
     scene_tree->node.data = this;
     xdg_toplevel->base->data = scene_tree;
+
+    // set foreign toplevel initial state if received
     handle = wlr_foreign_toplevel_handle_v1_create(
         server->wlr_foreign_toplevel_manager);
 

@@ -482,10 +482,7 @@ Server::Server(struct Config *config) {
     // layer shell
     layer_shell = new LayerShell(wl_display, scene, seat);
 
-    // data control manager
-    data_control_manager = new DataControlManager(wl_display);
-
-    // wlr_xdg_output manager
+    // xdg output manager
     wlr_xdg_output_manager =
         wlr_xdg_output_manager_v1_create(wl_display, output_layout);
 
@@ -498,6 +495,9 @@ Server::Server(struct Config *config) {
     // foreign toplevel manager
     wlr_foreign_toplevel_manager =
         wlr_foreign_toplevel_manager_v1_create(wl_display);
+
+    // data control manager
+    wlr_data_control_manager = wlr_data_control_manager_v1_create(wl_display);
 
     // unix socket for display
     const char *socket = wl_display_add_socket_auto(wl_display);
@@ -551,7 +551,6 @@ Server::~Server() {
     wl_list_remove(&renderer_lost.link);
 
     delete layer_shell;
-    delete data_control_manager;
     // delete xwayland_shell;
 
     wlr_scene_node_destroy(&scene->tree.node);

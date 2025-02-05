@@ -6,7 +6,7 @@ exec = [
 ]
 env = [
     { "EXAMPLE" = "true" },
-    { "EXAMPLE2" = 122 },
+    { "DISPLAY" = ":1" },
 ]
 
 [binds]

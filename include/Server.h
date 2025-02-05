@@ -1,7 +1,6 @@
 #include <cassert>
 #include <unistd.h>
 
-#include "DataControlManager.h"
 #include "Keyboard.h"
 #include "LayerShell.h"
 #include "Output.h"
@@ -53,11 +52,11 @@ struct Server {
 
     // struct XWaylandShell *xwayland_shell;
     struct LayerShell *layer_shell;
-    struct DataControlManager *data_control_manager;
 
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
     struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
+    struct wlr_data_control_manager_v1 *wlr_data_control_manager;
 
     Server(struct Config *config);
     ~Server();

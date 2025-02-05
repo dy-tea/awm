@@ -130,7 +130,6 @@ executable(
         'src/LayerSurface.cpp',
         'src/Workspace.cpp',
         'src/Config.cpp',
-        'src/DataControlManager.cpp',
         #'src/XWaylandShell.cpp',
         #'src/XWaylandSurface.cpp',
         protocol_sources,

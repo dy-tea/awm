@@ -161,7 +161,7 @@ void Workspace::tile() {
     if (wl_list_empty(&toplevels))
         return;
 
-    // get the output bounds
+    // get the output geometry
     struct wlr_box box;
     wlr_output_layout_get_box(output->server->output_layout, output->wlr_output,
                               &box);
@@ -180,13 +180,13 @@ void Workspace::tile() {
     int i = 0;
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
-        // calculate toplevel bounds
+        // calculate toplevel geometry
         int row = i / cols;
         int col = i % cols;
         int x = box.x + (col * width);
         int y = box.y + (row * height);
 
-        // set toplevel bounds
+        // set toplevel geometry
         toplevel->set_position_size(x, y, width, height);
         ++i;
     }

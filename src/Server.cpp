@@ -1,14 +1,15 @@
 #include "Server.h"
 
+// create a new keyboard
 void Server::new_keyboard(struct wlr_input_device *device) {
     struct Keyboard *keyboard = new Keyboard(this, device);
 
     wlr_seat_set_keyboard(seat, keyboard->wlr_keyboard);
 
-    /* And add the keyboard to our list of keyboards */
     wl_list_insert(&keyboards, &keyboard->link);
 }
 
+// create a new pointer
 void Server::new_pointer(struct wlr_input_device *device) {
     /* We don't do anything special with pointers. All of our pointer handling
      * is proxied through wlr_cursor. On another compositor, you might take this
@@ -17,48 +18,59 @@ void Server::new_pointer(struct wlr_input_device *device) {
     wlr_cursor_attach_input_device(cursor, device);
 }
 
+// get a node tree surface from its location and cast it to the generic
+// type provided
 template <typename T>
 T *Server::surface_at(double lx, double ly, struct wlr_surface **surface,
                       double *sx, double *sy) {
+    // get the scene node and ensure it's a buffer
     struct wlr_scene_node *node =
         wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
     if (node == NULL || node->type != WLR_SCENE_NODE_BUFFER)
         return NULL;
 
+    // get the scene buffer and surface of the node
     struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
     struct wlr_scene_surface *scene_surface =
         wlr_scene_surface_try_from_buffer(scene_buffer);
     if (!scene_surface)
         return NULL;
 
+    // set the scene surface
     *surface = scene_surface->surface;
 
+    // get the scene tree of the node's parent
     struct wlr_scene_tree *tree = node->parent;
-
     if (tree->node.type != WLR_SCENE_NODE_TREE)
         return NULL;
 
+    // find the topmost node of the scene tree
     while (tree != NULL && tree->node.data == NULL)
         tree = tree->node.parent;
 
+    // invalid tree
     if (tree == NULL)
         return NULL;
 
+    // return the topmost node's data
     return static_cast<T *>(tree->node.data);
 }
 
+// find a toplevel by location
 struct Toplevel *Server::toplevel_at(double lx, double ly,
                                      struct wlr_surface **surface, double *sx,
                                      double *sy) {
     return surface_at<Toplevel>(lx, ly, surface, sx, sy);
 }
 
+// find a layer surface by location
 struct LayerSurface *Server::layer_surface_at(double lx, double ly,
                                               struct wlr_surface **surface,
                                               double *sx, double *sy) {
     return surface_at<LayerSurface>(lx, ly, surface, sx, sy);
 }
 
+// get the nth output
 struct Output *Server::get_output(uint32_t index) {
     wl_list *out = &outputs;
 
@@ -69,32 +81,24 @@ struct Output *Server::get_output(uint32_t index) {
     return o;
 }
 
+// unactivated cursor
 void Server::reset_cursor_mode() {
-    /* Reset the cursor mode to passthrough. */
     cursor_mode = CURSORMODE_PASSTHROUGH;
     grabbed_toplevel = NULL;
 }
 
+// move a toplevel
 void Server::process_cursor_move() {
     if (grabbed_toplevel->xdg_toplevel->current.fullscreen)
         return;
 
-    /* Move the grabbed toplevel to the new position. */
     wlr_scene_node_set_position(&grabbed_toplevel->scene_tree->node,
                                 cursor->x - grab_x, cursor->y - grab_y);
 }
 
+// resize a toplevel
 void Server::process_cursor_resize() {
-    /*
-     * Resizing the grabbed toplevel can be a little bit complicated, because we
-     * could be resizing from any corner or edge. This not only resizes the
-     * toplevel on one or two axes, but can also move the toplevel if you resize
-     * from the top or left edges (or top-left corner).
-     *
-     * Note that some shortcuts are taken here. In a more fleshed-out
-     * compositor, you'd wait for the client to prepare a buffer at the new
-     * size, then commit any movement that was prepared.
-     */
+    // tinywl resize
     struct Toplevel *toplevel = grabbed_toplevel;
     double border_x = cursor->x - grab_x;
     double border_y = cursor->y - grab_y;
@@ -130,6 +134,7 @@ void Server::process_cursor_resize() {
                               new_bottom - new_top);
 }
 
+// get the output based on screen coordinates
 struct Output *Server::output_at(double x, double y) {
     struct wlr_output *wlr_output =
         wlr_output_layout_output_at(output_layout, x, y);
@@ -145,7 +150,7 @@ struct Output *Server::output_at(double x, double y) {
 }
 
 void Server::process_cursor_motion(uint32_t time) {
-    /* If the mode is non-passthrough, delegate to those functions. */
+    // move or resize
     if (cursor_mode == CURSORMODE_MOVE) {
         process_cursor_move();
         return;
@@ -154,26 +159,33 @@ void Server::process_cursor_motion(uint32_t time) {
         return;
     }
 
+    // otherwise mode is passthrough
     double sx, sy;
     struct wlr_surface *surface = NULL;
+
+    // get the toplevel under the cursor (if exists)
     struct Toplevel *toplevel =
         toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
     if (toplevel)
         if (surface) {
+            // connect the seat to the toplevel
             wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
             wlr_seat_pointer_notify_motion(seat, time, sx, sy);
             return;
         }
 
+    // get the layer surface under the cursor (if exists)
     struct LayerSurface *layer_surface =
         layer_surface_at(cursor->x, cursor->y, &surface, &sx, &sy);
     if (layer_surface)
         if (surface) {
+            // connect the seat to the layer surface
             wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
             wlr_seat_pointer_notify_motion(seat, time, sx, sy);
             return;
         }
 
+    // set default cursor mode
     wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
     wlr_seat_pointer_clear_focus(seat);
 }

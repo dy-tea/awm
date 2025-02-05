@@ -25,6 +25,7 @@ Toplevel::Toplevel(struct Server *server,
         /* Called when the surface is mapped, or ready to display on-screen. */
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
+        // get the focused output
         Server *server = toplevel->server;
         Output *active =
             server->output_at(server->cursor->x, server->cursor->y);
@@ -39,11 +40,9 @@ Toplevel::Toplevel(struct Server *server,
 
     // xdg_toplevel_unmap
     unmap.notify = [](struct wl_listener *listener, void *data) {
-        /* Called when the surface is unmapped, and should no longer be shown.
-         */
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
 
-        /* Reset the cursor mode if the grabbed toplevel was unmapped. */
+        // deactivate
         if (toplevel == toplevel->server->grabbed_toplevel)
             toplevel->server->reset_cursor_mode();
 
@@ -57,10 +56,7 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
 
         if (toplevel->xdg_toplevel->base->initial_commit)
-            /* When an xdg_surface performs an initial commit, the compositor
-             * must reply with a configure so the client can map the surface.
-             * tinywl configures the xdg_toplevel with 0,0 size to let the
-             * client pick the dimensions itself. */
+            // let client pick dimensions
             wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, 0, 0);
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
@@ -91,12 +87,13 @@ Toplevel::Toplevel(struct Server *server,
          * the provided serial against a list of button press serials sent to
          * this client, to prevent the client from requesting this whenever they
          * want. */
-        struct wlr_xdg_toplevel_resize_event *event =
-            (wlr_xdg_toplevel_resize_event *)data;
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_resize);
-        toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
+        struct wlr_xdg_toplevel_resize_event *event =
+            (wlr_xdg_toplevel_resize_event *)data;
+
         toplevel->update_foreign_toplevel();
+        toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
     };
     wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
 
@@ -220,7 +217,7 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
         if (xdg_toplevel->current.fullscreen)
             return;
 
-        // get toplevel bounds
+        // get toplevel geometry
         struct wlr_box *geo_box = &xdg_toplevel->base->geometry;
 
         // calcualate borders
@@ -256,7 +253,7 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
         // unmaximize if maximized
         wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
     else {
-        // save current bounds
+        // save current geometry
         saved_geometry.x = scene_tree->node.x;
         saved_geometry.y = scene_tree->node.y;
         saved_geometry.width = xdg_toplevel->current.width;
@@ -290,7 +287,7 @@ void Toplevel::set_fullscreen(bool fullscreen) {
     // get output scale
     float scale = wlr_output->scale;
 
-    // get output bounds
+    // get output geometry
     struct wlr_box output_box;
     wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
 
@@ -338,7 +335,7 @@ void Toplevel::set_maximized(bool maximized) {
     // get output scale
     float scale = wlr_output->scale;
 
-    // get output bounds
+    // get output geometry
     struct wlr_box output_box;
     wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
 

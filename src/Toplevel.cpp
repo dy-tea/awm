@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -126,8 +127,8 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_maximize);
 
-        toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
         toplevel->update_foreign_toplevel();
+        toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
     };
     wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
 
@@ -137,8 +138,8 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_fullscreen);
 
-        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
         toplevel->update_foreign_toplevel();
+        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
     };
     wl_signal_add(&handle->events.request_fullscreen,
                   &handle_request_fullscreen);
@@ -367,6 +368,7 @@ void Toplevel::set_maximized(bool maximized) {
 
 // update foreign toplevel on window state change
 void Toplevel::update_foreign_toplevel() {
+    // update foreign state with xdg toplevel state
     wlr_foreign_toplevel_handle_v1_set_maximized(
         handle, xdg_toplevel->current.maximized);
     wlr_foreign_toplevel_handle_v1_set_fullscreen(

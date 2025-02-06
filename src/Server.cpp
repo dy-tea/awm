@@ -334,6 +334,10 @@ Server::Server(struct Config *config) {
     // data control manager
     wlr_data_control_manager = wlr_data_control_manager_v1_create(wl_display);
 
+    // gamma control manager
+    wlr_gamma_control_manager = wlr_gamma_control_manager_v1_create(wl_display);
+    wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager);
+
     // unix socket for display
     const char *socket = wl_display_add_socket_auto(wl_display);
     if (!socket) {

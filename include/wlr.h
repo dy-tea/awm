@@ -54,6 +54,7 @@ extern "C" {
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <wlr/types/wlr_gamma_control_v1.h>
 
 // XWayland
 #include <wlr/xwayland/shell.h>

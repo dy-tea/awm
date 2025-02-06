@@ -8,7 +8,6 @@
 #include "Toplevel.h"
 #include "Workspace.h"
 #include "XWaylandShell.h"
-#include "wlr.h"
 
 struct Server {
     struct Config *config;
@@ -33,6 +32,7 @@ struct Server {
     struct wl_listener new_input;
     struct wl_listener request_cursor;
     struct wl_listener request_set_selection;
+
     struct wl_list keyboards;
 
     struct Toplevel *grabbed_toplevel;
@@ -48,6 +48,7 @@ struct Server {
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
     struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
     struct wlr_data_control_manager_v1 *wlr_data_control_manager;
+    struct wlr_gamma_control_manager_v1 *wlr_gamma_control_manager;
 
     Server(struct Config *config);
     ~Server();

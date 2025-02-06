@@ -21,7 +21,7 @@ workspace.open = "Alt Number"
 workspace.window_to = "Alt Shift Number"
 
 [[commands]] # Launcher
-bind = "Alt l"
+bind = "Alt space"
 exec = "wofi --show drun"
 
 [[commands]] # Screenshot

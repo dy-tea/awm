@@ -49,6 +49,7 @@ struct Server {
     struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
     struct wlr_data_control_manager_v1 *wlr_data_control_manager;
     struct wlr_gamma_control_manager_v1 *wlr_gamma_control_manager;
+    struct wlr_ext_image_copy_capture_manager_v1 *ext_image_copy_capture_manager;
 
     Server(struct Config *config);
     ~Server();

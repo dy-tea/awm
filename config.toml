@@ -1,12 +1,11 @@
 # Example awm config
 
 [startup]
-exec = [
-    "xwayland-satellite"
-]
+exec = ["xwayland-satellite"]
 env = [
     { "EXAMPLE" = "true" },
     { "DISPLAY" = ":1" },
+    { "MOZ_ENABLE_WAYLAND" = 1 },
 ]
 
 [binds]

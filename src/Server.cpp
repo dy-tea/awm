@@ -338,6 +338,10 @@ Server::Server(struct Config *config) {
     wlr_gamma_control_manager = wlr_gamma_control_manager_v1_create(wl_display);
     wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager);
 
+    // image copy capture manager
+   	ext_image_copy_capture_manager = wlr_ext_image_copy_capture_manager_v1_create(wl_display, 1);
+	wlr_ext_output_image_capture_source_manager_v1_create(wl_display, 1);
+
     // unix socket for display
     const char *socket = wl_display_add_socket_auto(wl_display);
     if (!socket) {

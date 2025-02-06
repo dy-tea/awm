@@ -46,6 +46,7 @@ struct Server {
 
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
+    struct wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
     struct wlr_data_control_manager_v1 *wlr_data_control_manager;
     struct wlr_gamma_control_manager_v1 *wlr_gamma_control_manager;

@@ -28,6 +28,9 @@ struct Config {
     // focus the next toplevel in the active workspace
     struct Bind window_next{WLR_MODIFIER_ALT, XKB_KEY_p};
 
+    // close the active toplevel
+    struct Bind window_close{WLR_MODIFIER_ALT, XKB_KEY_q};
+
     // set workspace to tile
     struct Bind workspace_tile{WLR_MODIFIER_ALT, XKB_KEY_t};
 

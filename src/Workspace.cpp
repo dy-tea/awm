@@ -16,6 +16,14 @@ void Workspace::add_toplevel(struct Toplevel *toplevel) {
     active_toplevel->focus();
 }
 
+// close the active toplevel
+void Workspace::close_active() {
+    if (active_toplevel) {
+        active_toplevel->close();
+        active_toplevel = nullptr;
+    }
+}
+
 // returns true if the workspace contains the passed toplevel
 bool Workspace::contains(struct Toplevel *toplevel) {
     if (wl_list_empty(&toplevels))

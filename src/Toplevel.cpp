@@ -145,6 +145,8 @@ Toplevel::Toplevel(struct Server *server,
 }
 
 Toplevel::~Toplevel() {
+    wl_list_remove(&link);
+
     wl_list_remove(&map.link);
     wl_list_remove(&unmap.link);
     wl_list_remove(&commit.link);
@@ -374,4 +376,13 @@ void Toplevel::update_foreign_toplevel() {
         handle, xdg_toplevel->current.maximized);
     wlr_foreign_toplevel_handle_v1_set_activated(
         handle, xdg_toplevel->current.maximized);
+}
+
+// tell the toplevel to close
+void Toplevel::close() {
+    if (xdg_toplevel == nullptr)
+        return;
+
+    wlr_xdg_toplevel_send_close(xdg_toplevel);
+    delete this;
 }

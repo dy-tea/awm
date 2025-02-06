@@ -14,13 +14,14 @@ exit = "Alt Escape"
 window.fullscreen = "Alt f"
 window.previous = "Alt o"
 window.next = "Alt p"
+window.close = "Alt q"
 workspace.tile = "Alt t"
 workspace.open = "Alt Number"
 workspace.window_to = "Alt Shift Number"
 
 [[commands]] # Launcher
 bind = "Alt space"
-exec = "rofi -show drun"
+exec = "wofi --show drun"
 
 [[commands]] # Screenshot
 bind = "Alt c"

@@ -38,6 +38,9 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     } else if (bind == config->window_next) {
         // focus the next toplevel in the active workspace
         output->get_active()->focus_next();
+    } else if (bind == config->window_close) {
+        // close the active toplevel
+        output->get_active()->close_active();
     } else if (bind == config->workspace_tile) {
         // set workspace to tile
         output->get_active()->tile();
@@ -56,7 +59,8 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
             if (target == nullptr)
                 return false;
 
-            current->move_to(current->active_toplevel, target);
+            if (current->active_toplevel)
+                current->move_to(current->active_toplevel, target);
         } else
             return false;
     } else

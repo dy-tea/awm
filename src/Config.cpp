@@ -69,6 +69,9 @@ Config::Config(std::string path) {
 
             // window_next bind
             set_bind("next", window_bind.get(), &window_next);
+
+            // window_close bind
+            set_bind("close", window_bind.get(), &window_close);
         }
 
         // workspace binds

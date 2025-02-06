@@ -39,6 +39,7 @@ struct Toplevel {
     void set_hidden(bool hidden);
     void set_fullscreen(bool fullscreen);
     void set_maximized(bool maximized);
+    void close();
 
     void update_foreign_toplevel();
 };

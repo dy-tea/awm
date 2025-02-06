@@ -27,7 +27,8 @@ void Workspace::close_active() {
             active_toplevel = nullptr;
         else {
             // set a new active toplevel
-            active_toplevel = wl_container_of(toplevels.prev, active_toplevel, link);
+            active_toplevel =
+                wl_container_of(toplevels.prev, active_toplevel, link);
             active_toplevel->focus();
         }
     }

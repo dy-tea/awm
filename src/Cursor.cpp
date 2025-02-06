@@ -11,8 +11,7 @@ Cursor::Cursor(struct Server *server) {
     // cursor_motion
     motion.notify = [](struct wl_listener *listener, void *data) {
         // relative motion event
-        struct Cursor *cursor =
-            wl_container_of(listener, cursor, motion);
+        struct Cursor *cursor = wl_container_of(listener, cursor, motion);
         struct wlr_pointer_motion_event *event =
             (wlr_pointer_motion_event *)data;
 
@@ -23,8 +22,7 @@ Cursor::Cursor(struct Server *server) {
     wl_signal_add(&cursor->events.motion, &motion);
 
     // cursor_motion_absolute
-    motion_absolute.notify = [](struct wl_listener *listener,
-                                        void *data) {
+    motion_absolute.notify = [](struct wl_listener *listener, void *data) {
         // absolute motion event
         struct Cursor *cursor =
             wl_container_of(listener, cursor, motion_absolute);
@@ -32,21 +30,20 @@ Cursor::Cursor(struct Server *server) {
             (wlr_pointer_motion_absolute_event *)data;
 
         wlr_cursor_warp_absolute(cursor->cursor, &event->pointer->base,
-                                    event->x, event->y);
+                                 event->x, event->y);
         cursor->process_motion(event->time_msec);
     };
     wl_signal_add(&cursor->events.motion_absolute, &motion_absolute);
 
     // cursor_button
     button.notify = [](struct wl_listener *listener, void *data) {
-        struct Cursor *cursor =
-            wl_container_of(listener, cursor, button);
+        struct Cursor *cursor = wl_container_of(listener, cursor, button);
         struct wlr_pointer_button_event *event =
             (wlr_pointer_button_event *)data;
 
         // forward to seat
         wlr_seat_pointer_notify_button(cursor->server->seat, event->time_msec,
-                                        event->button, event->state);
+                                       event->button, event->state);
 
         if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
             cursor->reset_mode();
@@ -80,9 +77,10 @@ Cursor::Cursor(struct Server *server) {
         struct wlr_pointer_axis_event *event = (wlr_pointer_axis_event *)data;
 
         // forward to seat
-        wlr_seat_pointer_notify_axis(
-            cursor->server->seat, event->time_msec, event->orientation, event->delta,
-            event->delta_discrete, event->source, event->relative_direction);
+        wlr_seat_pointer_notify_axis(cursor->server->seat, event->time_msec,
+                                     event->orientation, event->delta,
+                                     event->delta_discrete, event->source,
+                                     event->relative_direction);
     };
     wl_signal_add(&cursor->events.axis, &axis);
 

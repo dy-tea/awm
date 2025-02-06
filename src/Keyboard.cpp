@@ -38,6 +38,11 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     } else if (bind == config->window_next) {
         // focus the next toplevel in the active workspace
         output->get_active()->focus_next();
+    } else if (bind == config->window_move) {
+        // move the active toplevel with the mouse
+        Toplevel *active = output->get_active()->active_toplevel;
+        if (active)
+            active->begin_interactive(CURSORMODE_MOVE, 0);
     } else if (bind == config->window_close) {
         // close the active toplevel
         output->get_active()->close_active();

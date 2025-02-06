@@ -26,15 +26,13 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
         // get the focused output
-        Server *server = toplevel->server;
-        Output *active =
-            server->output_at(server->cursor->x, server->cursor->y);
+        Output *active = toplevel->server->focused_output();
 
-        // add toplevel to active workspace
-        if (active)
+        // add toplevel to active workspace and focus it
+        if (active) {
             active->get_active()->add_toplevel(toplevel);
-
-        toplevel->focus();
+            toplevel->focus();
+        }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.map, &map);
 
@@ -44,7 +42,7 @@ Toplevel::Toplevel(struct Server *server,
 
         // deactivate
         if (toplevel == toplevel->server->grabbed_toplevel)
-            toplevel->server->reset_cursor_mode();
+            toplevel->server->cursor->reset_mode();
 
         wl_list_remove(&toplevel->link);
     };
@@ -200,7 +198,9 @@ void Toplevel::focus() {
 // move or resize toplevel
 void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
     server->grabbed_toplevel = this;
-    server->cursor_mode = mode;
+
+    Cursor *cursor = server->cursor;
+    cursor->cursor_mode = mode;
 
     if (mode == CURSORMODE_MOVE) {
         if (xdg_toplevel->current.maximized) {
@@ -212,8 +212,8 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
         }
 
         // follow cursor
-        server->grab_x = server->cursor->x - scene_tree->node.x;
-        server->grab_y = server->cursor->y - scene_tree->node.y;
+        cursor->grab_x = cursor->cursor->x - scene_tree->node.x;
+        cursor->grab_y = cursor->cursor->y - scene_tree->node.y;
     } else {
         // don't resize fullscreened windows
         if (xdg_toplevel->current.fullscreen)
@@ -229,24 +229,25 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
                           ((edges & WLR_EDGE_BOTTOM) ? geo_box->height : 0);
 
         // move with border
-        server->grab_x = server->cursor->x - border_x;
-        server->grab_y = server->cursor->y - border_y;
+        cursor->grab_x = cursor->cursor->x - border_x;
+        cursor->grab_y = cursor->cursor->y - border_y;
 
         // change size
-        server->grab_geobox = *geo_box;
-        server->grab_geobox.x += scene_tree->node.x;
-        server->grab_geobox.y += scene_tree->node.y;
+        cursor->grab_geobox = *geo_box;
+        cursor->grab_geobox.x += scene_tree->node.x;
+        cursor->grab_geobox.y += scene_tree->node.y;
 
         // set edges
-        server->resize_edges = edges;
+        cursor->resize_edges = edges;
     }
 }
 
 // set the position and size of a toplevel, send a configure
 void Toplevel::set_position_size(double x, double y, int width, int height) {
     // get output layout at cursor
+    wlr_cursor *cursor = server->cursor->cursor;
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
-        server->output_layout, server->cursor->x, server->cursor->y);
+        server->output_layout, cursor->x, cursor->y);
 
     // get output scale
     float scale = wlr_output->scale;
@@ -283,8 +284,9 @@ void Toplevel::set_fullscreen(bool fullscreen) {
         return;
 
     // get output layout
+    wlr_cursor *cursor = server->cursor->cursor;
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
-        server->output_layout, server->cursor->x, server->cursor->y);
+        server->output_layout, cursor->x, cursor->y);
 
     // get output scale
     float scale = wlr_output->scale;
@@ -331,8 +333,9 @@ void Toplevel::set_maximized(bool maximized) {
         wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, false);
 
     // get output layout
+    wlr_cursor *cursor = server->cursor->cursor;
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
-        server->output_layout, server->cursor->x, server->cursor->y);
+        server->output_layout, cursor->x, cursor->y);
 
     // get output scale
     float scale = wlr_output->scale;

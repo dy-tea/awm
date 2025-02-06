@@ -15,7 +15,7 @@ void Server::new_pointer(struct wlr_input_device *device) {
      * is proxied through wlr_cursor. On another compositor, you might take this
      * opportunity to do libinput configuration on the device to set
      * acceleration, etc. */
-    wlr_cursor_attach_input_device(cursor, device);
+    wlr_cursor_attach_input_device(cursor->cursor, device);
 }
 
 // get a node tree surface from its location and cast it to the generic
@@ -81,59 +81,6 @@ struct Output *Server::get_output(uint32_t index) {
     return o;
 }
 
-// unactivated cursor
-void Server::reset_cursor_mode() {
-    cursor_mode = CURSORMODE_PASSTHROUGH;
-    grabbed_toplevel = NULL;
-}
-
-// move a toplevel
-void Server::process_cursor_move() {
-    if (grabbed_toplevel->xdg_toplevel->current.fullscreen)
-        return;
-
-    wlr_scene_node_set_position(&grabbed_toplevel->scene_tree->node,
-                                cursor->x - grab_x, cursor->y - grab_y);
-}
-
-// resize a toplevel
-void Server::process_cursor_resize() {
-    // tinywl resize
-    struct Toplevel *toplevel = grabbed_toplevel;
-    double border_x = cursor->x - grab_x;
-    double border_y = cursor->y - grab_y;
-    int new_left = grab_geobox.x;
-    int new_right = grab_geobox.x + grab_geobox.width;
-    int new_top = grab_geobox.y;
-    int new_bottom = grab_geobox.y + grab_geobox.height;
-
-    if (resize_edges & WLR_EDGE_TOP) {
-        new_top = border_y;
-        if (new_top >= new_bottom)
-            new_top = new_bottom - 1;
-    } else if (resize_edges & WLR_EDGE_BOTTOM) {
-        new_bottom = border_y;
-        if (new_bottom <= new_top)
-            new_bottom = new_top + 1;
-    }
-    if (resize_edges & WLR_EDGE_LEFT) {
-        new_left = border_x;
-        if (new_left >= new_right)
-            new_left = new_right - 1;
-    } else if (resize_edges & WLR_EDGE_RIGHT) {
-        new_right = border_x;
-        if (new_right <= new_left)
-            new_right = new_left + 1;
-    }
-
-    struct wlr_box *geo_box = &toplevel->xdg_toplevel->base->geometry;
-    wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                new_left - geo_box->x, new_top - geo_box->y);
-
-    wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_right - new_left,
-                              new_bottom - new_top);
-}
-
 // get the output based on screen coordinates
 struct Output *Server::output_at(double x, double y) {
     struct wlr_output *wlr_output =
@@ -149,45 +96,9 @@ struct Output *Server::output_at(double x, double y) {
     return NULL;
 }
 
-void Server::process_cursor_motion(uint32_t time) {
-    // move or resize
-    if (cursor_mode == CURSORMODE_MOVE) {
-        process_cursor_move();
-        return;
-    } else if (cursor_mode == CURSORMODE_RESIZE) {
-        process_cursor_resize();
-        return;
-    }
-
-    // otherwise mode is passthrough
-    double sx, sy;
-    struct wlr_surface *surface = NULL;
-
-    // get the toplevel under the cursor (if exists)
-    struct Toplevel *toplevel =
-        toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
-    if (toplevel)
-        if (surface) {
-            // connect the seat to the toplevel
-            wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-            wlr_seat_pointer_notify_motion(seat, time, sx, sy);
-            return;
-        }
-
-    // get the layer surface under the cursor (if exists)
-    struct LayerSurface *layer_surface =
-        layer_surface_at(cursor->x, cursor->y, &surface, &sx, &sy);
-    if (layer_surface)
-        if (surface) {
-            // connect the seat to the layer surface
-            wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-            wlr_seat_pointer_notify_motion(seat, time, sx, sy);
-            return;
-        }
-
-    // set default cursor mode
-    wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
-    wlr_seat_pointer_clear_focus(seat);
+// get the focused output
+struct Output *Server::focused_output() {
+    return output_at(cursor->cursor->x, cursor->cursor->y);
 }
 
 Server::Server(struct Config *config) {
@@ -337,95 +248,7 @@ Server::Server(struct Config *config) {
     wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 
     // cursor
-    cursor = wlr_cursor_create();
-    wlr_cursor_attach_output_layout(cursor, output_layout);
-    cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-    cursor_mode = CURSORMODE_PASSTHROUGH;
-
-    // cursor_motion
-    cursor_motion.notify = [](struct wl_listener *listener, void *data) {
-        // relative motion event
-        struct Server *server =
-            wl_container_of(listener, server, cursor_motion);
-        struct wlr_pointer_motion_event *event =
-            (wlr_pointer_motion_event *)data;
-
-        wlr_cursor_move(server->cursor, &event->pointer->base, event->delta_x,
-                        event->delta_y);
-        server->process_cursor_motion(event->time_msec);
-    };
-    wl_signal_add(&cursor->events.motion, &cursor_motion);
-
-    // cursor_motion_absolute
-    cursor_motion_absolute.notify = [](struct wl_listener *listener,
-                                       void *data) {
-        // absolute motion event
-        struct Server *server =
-            wl_container_of(listener, server, cursor_motion_absolute);
-        struct wlr_pointer_motion_absolute_event *event =
-            (wlr_pointer_motion_absolute_event *)data;
-
-        wlr_cursor_warp_absolute(server->cursor, &event->pointer->base,
-                                 event->x, event->y);
-        server->process_cursor_motion(event->time_msec);
-    };
-    wl_signal_add(&cursor->events.motion_absolute, &cursor_motion_absolute);
-
-    // cursor_button
-    cursor_button.notify = [](struct wl_listener *listener, void *data) {
-        struct Server *server =
-            wl_container_of(listener, server, cursor_button);
-        struct wlr_pointer_button_event *event =
-            (wlr_pointer_button_event *)data;
-
-        // forward to seat
-        wlr_seat_pointer_notify_button(server->seat, event->time_msec,
-                                       event->button, event->state);
-
-        if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
-            server->reset_cursor_mode();
-        else {
-            // focus surface
-            double sx, sy;
-            struct wlr_surface *surface = NULL;
-            struct LayerSurface *layer_surface = server->layer_surface_at(
-                server->cursor->x, server->cursor->y, &surface, &sx, &sy);
-            if (layer_surface && surface)
-                if (layer_surface->should_focus()) {
-                    layer_surface->handle_focus();
-                    return;
-                }
-
-            struct Toplevel *toplevel = server->toplevel_at(
-                server->cursor->x, server->cursor->y, &surface, &sx, &sy);
-            if (toplevel != NULL)
-                toplevel->focus();
-        }
-    };
-    wl_signal_add(&cursor->events.button, &cursor_button);
-
-    // cursor_axis
-    cursor_axis.notify = [](struct wl_listener *listener, void *data) {
-        // scroll wheel etc
-        struct Server *server = wl_container_of(listener, server, cursor_axis);
-
-        struct wlr_pointer_axis_event *event = (wlr_pointer_axis_event *)data;
-
-        // forward to seat
-        wlr_seat_pointer_notify_axis(
-            server->seat, event->time_msec, event->orientation, event->delta,
-            event->delta_discrete, event->source, event->relative_direction);
-    };
-    wl_signal_add(&cursor->events.axis, &cursor_axis);
-
-    // cursor_frame
-    cursor_frame.notify = [](struct wl_listener *listener, void *data) {
-        struct Server *server = wl_container_of(listener, server, cursor_frame);
-
-        // forward to seat
-        wlr_seat_pointer_notify_frame(server->seat);
-    };
-    wl_signal_add(&cursor->events.frame, &cursor_frame);
+    cursor = new Cursor(this);
 
     // keyboards
     wl_list_init(&keyboards);
@@ -472,7 +295,7 @@ Server::Server(struct Config *config) {
 
         // only obey focused client
         if (focused_client == event->seat_client)
-            wlr_cursor_set_surface(server->cursor, event->surface,
+            wlr_cursor_set_surface(server->cursor->cursor, event->surface,
                                    event->hotspot_x, event->hotspot_y);
     };
     wl_signal_add(&seat->events.request_set_cursor, &request_cursor);
@@ -549,11 +372,7 @@ Server::~Server() {
     wl_list_remove(&new_xdg_toplevel.link);
     wl_list_remove(&new_xdg_popup.link);
 
-    wl_list_remove(&cursor_motion.link);
-    wl_list_remove(&cursor_motion_absolute.link);
-    wl_list_remove(&cursor_button.link);
-    wl_list_remove(&cursor_axis.link);
-    wl_list_remove(&cursor_frame.link);
+    delete cursor;
 
     wl_list_remove(&new_input.link);
     wl_list_remove(&request_cursor.link);
@@ -566,8 +385,6 @@ Server::~Server() {
     // delete xwayland_shell;
 
     wlr_scene_node_destroy(&scene->tree.node);
-    wlr_xcursor_manager_destroy(cursor_mgr);
-    wlr_cursor_destroy(cursor);
     wlr_allocator_destroy(allocator);
     wlr_renderer_destroy(renderer);
     wlr_backend_destroy(backend);

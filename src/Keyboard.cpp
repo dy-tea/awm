@@ -7,7 +7,7 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     Config *config = server->config;
 
     // get current output
-    Output *output = server->output_at(server->cursor->x, server->cursor->y);
+    Output *output = server->focused_output();
     if (output == NULL)
         return false;
 

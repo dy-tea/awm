@@ -1,5 +1,4 @@
-#include "CursorMode.h"
-#include "wlr.h"
+#include "Cursor.h"
 
 struct Toplevel {
     struct wl_list link;

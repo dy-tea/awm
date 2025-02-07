@@ -87,6 +87,21 @@ Config::Config(std::string path) {
 
             // window_close bind
             set_bind("close", window_bind.get(), &window_close);
+
+            auto swap_bind = window_bind->getTable("swap");
+            if (swap_bind) {
+                // window_swap_up bind
+                set_bind("up", swap_bind.get(), &window_swap_up);
+
+                // window_swap_down bind
+                set_bind("down", swap_bind.get(), &window_swap_down);
+
+                // window_swap_left bind
+                set_bind("left", swap_bind.get(), &window_swap_left);
+
+                // window_swap_right bind
+                set_bind("right", swap_bind.get(), &window_swap_right);
+            }
         }
 
         // workspace binds

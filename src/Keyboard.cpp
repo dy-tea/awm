@@ -67,6 +67,29 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     } else if (bind == config->window_close) {
         // close the active toplevel
         output->get_active()->close_active();
+    } else if (bind == config->window_swap_up) {
+        // swap the active toplevel with the one above it
+        Toplevel *other = output->get_active()->in_direction(WLR_DIRECTION_UP);
+        if (other)
+            output->get_active()->swap(other);
+    } else if (bind == config->window_swap_down) {
+        // swap the active toplevel with the one below it
+        Toplevel *other =
+            output->get_active()->in_direction(WLR_DIRECTION_DOWN);
+        if (other)
+            output->get_active()->swap(other);
+    } else if (bind == config->window_swap_left) {
+        // swap the active toplevel with the one to the left of it
+        Toplevel *other =
+            output->get_active()->in_direction(WLR_DIRECTION_LEFT);
+        if (other)
+            output->get_active()->swap(other);
+    } else if (bind == config->window_swap_right) {
+        // swap the active toplevel with the one to the right of it
+        Toplevel *other =
+            output->get_active()->in_direction(WLR_DIRECTION_RIGHT);
+        if (other)
+            output->get_active()->swap(other);
     } else if (bind == config->workspace_tile) {
         // set workspace to tile
         output->get_active()->tile();

@@ -31,9 +31,6 @@ struct Config {
     // move the active toplevel with the mouse
     struct Bind window_move{WLR_MODIFIER_ALT, XKB_KEY_m};
 
-    // close the active toplevel
-    struct Bind window_close{WLR_MODIFIER_ALT, XKB_KEY_q};
-
     // focus the window above the active one
     struct Bind window_up{WLR_MODIFIER_ALT, XKB_KEY_k};
 
@@ -45,6 +42,25 @@ struct Config {
 
     // focus the window right of the active one
     struct Bind window_right{WLR_MODIFIER_ALT, XKB_KEY_l};
+
+    // close the active toplevel
+    struct Bind window_close{WLR_MODIFIER_ALT, XKB_KEY_q};
+
+    // swap active and above toplevels
+    struct Bind window_swap_up{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
+                               XKB_KEY_K};
+
+    // swap active and below toplevels
+    struct Bind window_swap_down{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
+                                 XKB_KEY_J};
+
+    // swap active and left toplevels
+    struct Bind window_swap_left{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
+                                 XKB_KEY_H};
+
+    // swap active and above toplevels
+    struct Bind window_swap_right{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
+                                  XKB_KEY_L};
 
     // set workspace to tile
     struct Bind workspace_tile{WLR_MODIFIER_ALT, XKB_KEY_t};

@@ -63,6 +63,7 @@ Toplevel::Toplevel(struct Server *server,
     destroy.notify = [](struct wl_listener *listener, void *data) {
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, destroy);
+
         delete toplevel;
     };
     wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
@@ -143,8 +144,6 @@ Toplevel::Toplevel(struct Server *server,
 }
 
 Toplevel::~Toplevel() {
-    wl_list_remove(&link);
-
     wl_list_remove(&map.link);
     wl_list_remove(&unmap.link);
     wl_list_remove(&commit.link);
@@ -271,6 +270,20 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
     wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 }
 
+void Toplevel::set_position_size(struct wlr_fbox geometry) {
+    set_position_size(geometry.x, geometry.y, geometry.width, geometry.height);
+}
+
+// get the geometry of the toplevel
+struct wlr_fbox Toplevel::get_geometry() {
+    struct wlr_fbox geometry;
+    geometry.x = scene_tree->node.x;
+    geometry.y = scene_tree->node.y;
+    geometry.width = xdg_toplevel->current.width;
+    geometry.height = xdg_toplevel->current.height;
+    return geometry;
+}
+
 // set the visibility of the toplevel
 void Toplevel::set_hidden(bool hidden) {
     this->hidden = hidden;
@@ -387,5 +400,4 @@ void Toplevel::close() {
         return;
 
     wlr_xdg_toplevel_send_close(xdg_toplevel);
-    delete this;
 }

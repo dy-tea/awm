@@ -34,6 +34,18 @@ struct Config {
     // close the active toplevel
     struct Bind window_close{WLR_MODIFIER_ALT, XKB_KEY_q};
 
+    // focus the window above the active one
+    struct Bind window_up{WLR_MODIFIER_ALT, XKB_KEY_k};
+
+    // focus the window below the active one
+    struct Bind window_down{WLR_MODIFIER_ALT, XKB_KEY_j};
+
+    // focus the window left of the active one
+    struct Bind window_left{WLR_MODIFIER_ALT, XKB_KEY_h};
+
+    // focus the window right of the active one
+    struct Bind window_right{WLR_MODIFIER_ALT, XKB_KEY_l};
+
     // set workspace to tile
     struct Bind workspace_tile{WLR_MODIFIER_ALT, XKB_KEY_t};
 

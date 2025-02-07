@@ -26,7 +26,7 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
         wl_display_terminate(server->wl_display);
     } else if (bind == config->window_fullscreen) {
         // fullscreen the active toplevel
-        Toplevel *active = output->get_active()->active_toplevel;
+        Toplevel *active = output->get_active()->get_active();
 
         if (active == nullptr)
             return false;
@@ -40,9 +40,30 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
         output->get_active()->focus_next();
     } else if (bind == config->window_move) {
         // move the active toplevel with the mouse
-        Toplevel *active = output->get_active()->active_toplevel;
+        Toplevel *active = output->get_active()->get_active();
         if (active)
             active->begin_interactive(CURSORMODE_MOVE, 0);
+    } else if (bind == config->window_up) {
+        // focus the toplevel in the up direction
+        Toplevel *up = output->get_active()->in_direction(WLR_DIRECTION_UP);
+        if (up)
+            output->get_active()->focus_toplevel(up);
+    } else if (bind == config->window_down) {
+        // focus the toplevel in the down direction
+        Toplevel *down = output->get_active()->in_direction(WLR_DIRECTION_DOWN);
+        if (down)
+            output->get_active()->focus_toplevel(down);
+    } else if (bind == config->window_left) {
+        // focus the toplevel in the left direction
+        Toplevel *left = output->get_active()->in_direction(WLR_DIRECTION_LEFT);
+        if (left)
+            output->get_active()->focus_toplevel(left);
+    } else if (bind == config->window_right) {
+        // focus the toplevel in the right direction
+        Toplevel *right =
+            output->get_active()->in_direction(WLR_DIRECTION_RIGHT);
+        if (right)
+            output->get_active()->focus_toplevel(right);
     } else if (bind == config->window_close) {
         // close the active toplevel
         output->get_active()->close_active();
@@ -64,8 +85,8 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
             if (target == nullptr)
                 return false;
 
-            if (current->active_toplevel)
-                current->move_to(current->active_toplevel, target);
+            if (current->get_active())
+                current->move_to(current->get_active(), target);
         } else
             return false;
     } else

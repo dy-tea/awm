@@ -1,36 +1,40 @@
 #include "Server.h"
+#include <climits>
 
 Workspace::Workspace(struct Output *output, uint32_t num) {
     this->output = output;
     this->num = num;
-    this->active_toplevel = nullptr;
     wl_list_init(&toplevels);
 }
 
 Workspace::~Workspace() {}
 
+// get the active toplevel
+struct Toplevel *Workspace::get_active() {
+    if (wl_list_empty(&toplevels))
+        return nullptr;
+    Toplevel *active = wl_container_of(toplevels.next, active, link);
+    return active;
+}
+
 // add a toplevel to the workspace
 void Workspace::add_toplevel(struct Toplevel *toplevel) {
     wl_list_insert(&toplevels, &toplevel->link);
-    active_toplevel = toplevel;
-    active_toplevel->focus();
+    toplevel->focus();
 }
 
 // close the active toplevel
 void Workspace::close_active() {
-    if (active_toplevel) {
-        // tell the toplevel to close
-        active_toplevel->close();
-
-        if (wl_list_empty(&toplevels))
-            // no more toplevels means no active toplevel
-            active_toplevel = nullptr;
-        else {
-            // set a new active toplevel
-            active_toplevel =
-                wl_container_of(toplevels.prev, active_toplevel, link);
-            active_toplevel->focus();
+    if (Toplevel *active = get_active()) {
+        if (wl_list_length(&toplevels) > 1) {
+            // focus the next toplevel
+            Toplevel *new_active =
+                wl_container_of(toplevels.prev, new_active, link);
+            new_active->focus();
         }
+
+        // tell the toplevel to close
+        active->close();
     }
 }
 
@@ -56,17 +60,7 @@ bool Workspace::move_to(struct Toplevel *toplevel,
 
     // ensure toplevel is part of workspace
     if (contains(toplevel)) {
-
-        // update the active toplevel for the current workspace
-        if (toplevel == active_toplevel) {
-            if (wl_list_length(&toplevels) == 1)
-                active_toplevel = nullptr;
-            else
-                active_toplevel =
-                    wl_container_of(toplevels.next, active_toplevel, link);
-        }
-
-        // hide toplevel, remove from this workspace, add to other workspace
+        // move to other workspace
         toplevel->set_hidden(true);
         wl_list_remove(&toplevel->link);
         workspace->add_toplevel(toplevel);
@@ -77,37 +71,79 @@ bool Workspace::move_to(struct Toplevel *toplevel,
     return false;
 }
 
-// get the nth toplevel
-struct Toplevel *Workspace::get_toplevel(uint32_t n) {
-    Toplevel *toplevel, *tmp;
-    uint32_t current = 0;
-    wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
-        if (current == n)
-            return toplevel;
-        ++current;
-    }
-
-    return nullptr;
-}
-
-// move the nth toplevel to another workspace
-bool Workspace::move_to(uint32_t n, struct Workspace *workspace) {
-    if (wl_list_empty(&toplevels))
-        return false;
-
-    Toplevel *toplevel = get_toplevel(n);
-
-    if (toplevel == nullptr)
-        return false;
-
-    return move_to(toplevel, workspace);
-}
-
 // set the workspace's visibility
 void Workspace::set_hidden(bool hidden) {
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link)
         toplevel->set_hidden(hidden);
+}
+
+// swap the active toplevel geometry with other toplevel geometry
+void Workspace::swap(struct Toplevel *other) {
+    struct wlr_fbox active = get_active()->get_geometry();
+    struct wlr_fbox swapped = other->get_geometry();
+
+    get_active()->set_position_size(swapped);
+    other->set_position_size(active);
+}
+
+// get the toplevel relative to the active one in the specified direction
+// returns nullptr if no toplevel matches query
+struct Toplevel *Workspace::in_direction(enum wlr_direction direction) {
+    // no other toplevel to focus
+    if (wl_list_length(&toplevels) < 2)
+        return nullptr;
+
+    // get the geometry of the active toplevel
+    wlr_fbox active_geometry = get_active()->get_geometry();
+
+    // define a target
+    Toplevel *curr, *tmp;
+    double min_distance = std::numeric_limits<double>::max();
+    double other = std::numeric_limits<double>::max();
+    Toplevel *target = nullptr;
+
+    // find the smallest positive distance, absolute axis
+    auto validate = [&](double distance, double axis) {
+        // note the greater or equals is needed for tiled windows since they
+        // are placed perfectly on the same axis
+        if (distance > 0 && distance <= min_distance && axis < other) {
+            target = curr;
+            min_distance = distance;
+            other = axis;
+        }
+    };
+
+    // get the non-negative displacement for each direction,
+    // - find the smallest distance
+    // - find the smallest absolute difference in the other axis
+    switch (direction) {
+    case WLR_DIRECTION_UP:
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            validate(active_geometry.y - curr->get_geometry().y,
+                     std::abs(active_geometry.x - curr->get_geometry().x));
+        break;
+    case WLR_DIRECTION_DOWN:
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            validate(curr->get_geometry().y - active_geometry.y,
+                     std::abs(active_geometry.x - curr->get_geometry().x));
+        break;
+    case WLR_DIRECTION_LEFT:
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            validate(active_geometry.x - curr->get_geometry().x,
+                     std::abs(active_geometry.y - curr->get_geometry().y));
+        break;
+    case WLR_DIRECTION_RIGHT:
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            validate(curr->get_geometry().x - active_geometry.x,
+                     std::abs(active_geometry.y - curr->get_geometry().y));
+        break;
+    default:
+        break;
+    }
+
+    // this will be null if a toplevel is not found in the specified direction
+    return target;
 }
 
 // focus the workspace
@@ -118,9 +154,21 @@ void Workspace::focus() {
     if (!wl_list_empty(&toplevels)) {
         // focus the first toplevel and set is as active
         Toplevel *toplevel = wl_container_of(toplevels.prev, toplevel, link);
-        active_toplevel = toplevel;
-        active_toplevel->focus();
+        toplevel->focus();
     }
+}
+
+// focus the passed toplevel
+void Workspace::focus_toplevel(struct Toplevel *toplevel) {
+    if (!contains(toplevel))
+        return;
+
+    // move toplevel to the front
+    wl_list_remove(&toplevel->link);
+    wl_list_insert(&toplevels, &toplevel->link);
+
+    // call keyboard focus
+    toplevel->focus();
 }
 
 // focus the toplevel following the active one, looping around to the start
@@ -129,23 +177,12 @@ void Workspace::focus_next() {
     if (wl_list_length(&toplevels) < 2)
         return;
 
-    // set the active toplevel if not set and focus it
-    if (!active_toplevel) {
-        active_toplevel =
-            wl_container_of(toplevels.next, active_toplevel, link);
-        active_toplevel->focus();
+    // find active
+    Toplevel *active = get_active();
 
-        return;
-    }
-
-    // find next toplevel
-    struct wl_list *next = active_toplevel->link.next;
-    if (next == &toplevels)
-        next = toplevels.next;
-
-    // focus next toplevel
-    active_toplevel = wl_container_of(next, active_toplevel, link);
-    active_toplevel->focus();
+    // focus next
+    Toplevel *next = wl_container_of(active->link.next, next, link);
+    focus_toplevel(next);
 }
 
 // focus the toplevel preceding the active one, looping around to the end
@@ -154,22 +191,12 @@ void Workspace::focus_prev() {
     if (wl_list_length(&toplevels) < 2)
         return;
 
-    // set the active toplevel if not set and focus it
-    if (!active_toplevel) {
-        active_toplevel =
-            wl_container_of(toplevels.prev, active_toplevel, link);
-        active_toplevel->focus();
-        return;
-    }
+    // find active
+    Toplevel *active = get_active();
 
-    // find previous toplevel
-    struct wl_list *prev = active_toplevel->link.prev;
-    if (prev == &toplevels)
-        prev = toplevels.prev;
-
-    // focus previous toplevel
-    active_toplevel = wl_container_of(prev, active_toplevel, link);
-    active_toplevel->focus();
+    // focus prev
+    Toplevel *prev = wl_container_of(active->link.prev, prev, link);
+    focus_toplevel(prev);
 }
 
 // auto-tile the toplevels of a workspace, not currently reversible or

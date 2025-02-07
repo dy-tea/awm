@@ -73,6 +73,18 @@ Config::Config(std::string path) {
             // window_move bind
             set_bind("move", window_bind.get(), &window_move);
 
+            // window_up bind
+            set_bind("up", window_bind.get(), &window_up);
+
+            // window_down bind
+            set_bind("down", window_bind.get(), &window_down);
+
+            // window_left bind
+            set_bind("left", window_bind.get(), &window_left);
+
+            // window_right bind
+            set_bind("right", window_bind.get(), &window_right);
+
             // window_close bind
             set_bind("close", window_bind.get(), &window_close);
         }

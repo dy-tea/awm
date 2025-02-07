@@ -3,9 +3,10 @@
 [startup]
 exec = ["xwayland-satellite"]
 env = [
-    { "EXAMPLE" = "true" },
-    { "DISPLAY" = ":1" },
-    { "MOZ_ENABLE_WAYLAND" = 1 },
+    { XDG_CURRENT_DESKTOP = "awm" },
+    { DISPLAY = ":0" },
+    { MOZ_ENABLE_WAYLAND = 1 },
+    { EXAMPLE = "true" },
 ]
 
 [binds]

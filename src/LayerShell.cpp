@@ -1,12 +1,10 @@
 #include "Server.h"
 
-LayerShell::LayerShell(struct wl_display *wl_display, struct wlr_scene *scene,
-                       struct wlr_seat *seat) {
+LayerShell::LayerShell(struct Server *server) {
     // create wlr_layer_shell
-    this->scene = scene;
-    this->seat = seat;
+    this->server = server;
     wl_list_init(&layer_surfaces);
-    wlr_layer_shell = wlr_layer_shell_v1_create(wl_display, 5);
+    wlr_layer_shell = wlr_layer_shell_v1_create(server->wl_display, 5);
 
     if (!wlr_layer_shell) {
         wlr_log(WLR_ERROR, "Failed to create wlr_layer_shell_v1");

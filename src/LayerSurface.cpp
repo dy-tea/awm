@@ -6,8 +6,8 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
     // create scene layer for surface
     this->wlr_layer_surface = wlr_layer_surface;
     wl_list_init(&popups);
-    scene_layer_surface = wlr_scene_layer_surface_v1_create(&shell->scene->tree,
-                                                            wlr_layer_surface);
+    scene_layer_surface = wlr_scene_layer_surface_v1_create(
+        &shell->server->scene->tree, wlr_layer_surface);
 
     if (!scene_layer_surface) {
         wlr_log(WLR_ERROR, "failed to create scene layer surface");
@@ -47,22 +47,44 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
         // configure if not
         if (!layer_surface->configured) {
-            wlr_output *output = layer_surface->output;
+            // get focused output
+            Output *output = surface->layer_shell->server->focused_output();
 
-            if (output == nullptr) {
-                wlr_log(WLR_ERROR, "Layer surface has no output");
-                return;
-            }
+            // get output size
+            uint32_t output_width = output->wlr_output->width;
+            uint32_t output_height = output->wlr_output->height;
 
-            uint32_t dw = layer_surface->current.desired_width;
-            uint32_t dh = layer_surface->current.desired_height;
+            // get output layout position
+            struct wlr_box box;
+            wlr_output_layout_get_box(
+                surface->layer_shell->server->output_layout, output->wlr_output,
+                &box);
 
-            if (!dw)
-                dw = output->width;
-            if (!dh)
-                dh = output->height;
+            // get desired size
+            uint32_t width = layer_surface->current.desired_width;
+            uint32_t height = layer_surface->current.desired_height;
 
-            wlr_layer_surface_v1_configure(layer_surface, dw, dh);
+            // if client's desired size is too small take half the output
+            if (width <= 100)
+                width = output_width / 2;
+            if (height <= 100)
+                height = output_height / 2;
+
+            // calculate target position
+            int32_t x = (output_width - width) / 2 + box.x;
+            int32_t y = (output_height - height) / 2 + box.y;
+
+            // ensure the target position is on-screen
+            x = std::max(0, x);
+            y = std::max(0, y);
+
+            // set the postion to the center of the screen
+            wlr_scene_node_set_position(
+                &surface->scene_layer_surface->tree->node, x, y);
+
+            // send configure with size
+            wlr_layer_surface_v1_configure(layer_surface, width, height);
+
             return;
         }
     };
@@ -109,11 +131,12 @@ void LayerSurface::handle_focus() {
         return;
 
     struct wlr_surface *surface = wlr_layer_surface->surface;
-    struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(layer_shell->seat);
+    struct wlr_keyboard *keyboard =
+        wlr_seat_get_keyboard(layer_shell->server->seat);
 
     if (keyboard != NULL)
         wlr_seat_keyboard_notify_enter(
-            layer_shell->seat, surface, keyboard->keycodes,
+            layer_shell->server->seat, surface, keyboard->keycodes,
             keyboard->num_keycodes, &keyboard->modifiers);
 }
 

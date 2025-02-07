@@ -315,7 +315,7 @@ Server::Server(struct Config *config) {
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
     // layer shell
-    layer_shell = new LayerShell(wl_display, scene, seat);
+    layer_shell = new LayerShell(this);
 
     // xdg output manager
     wlr_xdg_output_manager =
@@ -328,7 +328,8 @@ Server::Server(struct Config *config) {
     wlr_screencopy_manager = wlr_screencopy_manager_v1_create(wl_display);
 
     // foreign toplevel list
-    wlr_foreign_toplevel_list = wlr_ext_foreign_toplevel_list_v1_create(wl_display, 1);
+    wlr_foreign_toplevel_list =
+        wlr_ext_foreign_toplevel_list_v1_create(wl_display, 1);
 
     // foreign toplevel manager
     wlr_foreign_toplevel_manager =
@@ -342,8 +343,9 @@ Server::Server(struct Config *config) {
     wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager);
 
     // image copy capture manager
-    ext_image_copy_capture_manager = wlr_ext_image_copy_capture_manager_v1_create(wl_display, 1);
-	wlr_ext_output_image_capture_source_manager_v1_create(wl_display, 1);
+    ext_image_copy_capture_manager =
+        wlr_ext_image_copy_capture_manager_v1_create(wl_display, 1);
+    wlr_ext_output_image_capture_source_manager_v1_create(wl_display, 1);
 
     // unix socket for display
     const char *socket = wl_display_add_socket_auto(wl_display);

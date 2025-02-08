@@ -64,15 +64,16 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
             uint32_t width = layer_surface->current.desired_width;
             uint32_t height = layer_surface->current.desired_height;
 
-            // if client's desired size is too small take half the output
-            if (width <= 100)
-                width = output_width / 2;
-            if (height <= 100)
-                height = output_height / 2;
+            // if client's desired size is too small or too big give it the full
+            // size for the client to decide
+            if (width <= 100 || width > output_width)
+                width = output_width;
+            if (height <= 100 || height > output_height)
+                height = output_height;
 
             // calculate target position
-            int32_t x = (output_width - width) / 2 + box.x;
-            int32_t y = (output_height - height) / 2 + box.y;
+            int32_t x = output_width / 2 - width / 2 + box.x;
+            int32_t y = output_height / 2 - height / 2 + box.y;
 
             // ensure the target position is on-screen
             x = std::max(0, x);
@@ -110,6 +111,9 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 }
 
 LayerSurface::~LayerSurface() {
+    if (scene_layer_surface)
+        wlr_scene_node_destroy(&scene_layer_surface->tree->node);
+
     struct Popup *popup, *tmp;
     wl_list_for_each_safe(popup, tmp, &popups, link) delete popup;
 
@@ -122,7 +126,7 @@ LayerSurface::~LayerSurface() {
 }
 
 void LayerSurface::handle_focus() {
-    if (!wlr_layer_surface->surface->mapped)
+    if (!wlr_layer_surface || !wlr_layer_surface->surface || !wlr_layer_surface->surface->mapped || !scene_layer_surface)
         return;
 
     if (wlr_layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY &&
@@ -134,13 +138,16 @@ void LayerSurface::handle_focus() {
     struct wlr_keyboard *keyboard =
         wlr_seat_get_keyboard(layer_shell->server->seat);
 
-    if (keyboard != NULL)
+    if (keyboard)
         wlr_seat_keyboard_notify_enter(
             layer_shell->server->seat, surface, keyboard->keycodes,
             keyboard->num_keycodes, &keyboard->modifiers);
 }
 
 bool LayerSurface::should_focus() {
+    if (!wlr_layer_surface)
+        return false;
+
     return wlr_layer_surface->current.keyboard_interactive !=
            ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
 }

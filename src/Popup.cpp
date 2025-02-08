@@ -3,13 +3,38 @@
 Popup::Popup(struct wlr_xdg_popup *xdg_popup) {
     this->xdg_popup = xdg_popup;
 
-    // add popup to scene graph
-    struct wlr_xdg_surface *parent =
-        wlr_xdg_surface_try_from_wlr_surface(xdg_popup->parent);
-    assert(parent != NULL);
-    struct wlr_scene_tree *parent_tree = (wlr_scene_tree *)parent->data;
-    xdg_popup->base->data =
-        wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
+    // get parent scene tree
+    struct wlr_scene_tree *parent_tree = NULL;
+
+    if (!xdg_popup->parent) {
+        wlr_log(WLR_ERROR, "popup parent surface is null");
+        return;
+    }
+
+    // check if parent is layer surface
+    struct wlr_layer_surface_v1 *layer =
+        wlr_layer_surface_v1_try_from_wlr_surface(xdg_popup->parent);
+
+    if (layer) {
+        // parent tree is layer surface
+        LayerSurface *layer_surface = (LayerSurface *)layer->data;
+        parent_tree = layer_surface->scene_layer_surface->tree;
+    } else {
+        // parent tree is xdg surface
+        struct wlr_xdg_surface *parent =
+            wlr_xdg_surface_try_from_wlr_surface(xdg_popup->parent);
+        if (parent)
+            parent_tree = (wlr_scene_tree *)parent->data;
+        else {
+            wlr_log(WLR_ERROR, "failed to get parent tree");
+            return;
+        }
+    }
+
+    // create scene node for popup
+    if (parent_tree)
+        xdg_popup->base->data =
+            wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
 
     // xdg_popup_commit
     commit.notify = [](struct wl_listener *listener, void *data) {
@@ -31,6 +56,7 @@ Popup::Popup(struct wlr_xdg_popup *xdg_popup) {
 }
 
 Popup::~Popup() {
+    wl_list_remove(&link);
     wl_list_remove(&commit.link);
     wl_list_remove(&destroy.link);
 }

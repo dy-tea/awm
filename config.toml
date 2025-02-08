@@ -1,7 +1,7 @@
 # Example awm config
 
 [startup]
-exec = ["xwayland-satellite"]
+exec = ["xwayland-satellite", "hyprpaper"]
 env = [
     { XDG_CURRENT_DESKTOP = "awm" },
     { DISPLAY = ":0" },
@@ -30,7 +30,7 @@ workspace.window_to = "Alt Shift Number"
 
 [[commands]] # Launcher
 bind = "Alt space"
-exec = "wofi --show drun"
+exec = "rofi -show drun"
 
 [[commands]] # Screenshot
 bind = "Alt c"

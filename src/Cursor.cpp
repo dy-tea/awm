@@ -55,15 +55,16 @@ Cursor::Cursor(struct Server *server) {
             struct wlr_surface *surface = NULL;
             struct LayerSurface *layer_surface = server->layer_surface_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-            if (layer_surface && surface)
+            if (layer_surface && surface) {
                 if (layer_surface->should_focus()) {
                     layer_surface->handle_focus();
-                    return;
                 }
+                return;
+            }
 
             struct Toplevel *toplevel = server->toplevel_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-            if (toplevel != NULL)
+            if (toplevel && surface)
                 toplevel->focus();
         }
     };
@@ -128,24 +129,22 @@ void Cursor::process_motion(uint32_t time) {
     // get the toplevel under the cursor (if exists)
     struct Toplevel *toplevel =
         server->toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
-    if (toplevel)
-        if (surface) {
-            // connect the seat to the toplevel
-            wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
-            wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
-            return;
-        }
+    if (toplevel && surface) {
+        // connect the seat to the toplevel
+        wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
+        wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
+        return;
+    }
 
     // get the layer surface under the cursor (if exists)
     struct LayerSurface *layer_surface =
         server->layer_surface_at(cursor->x, cursor->y, &surface, &sx, &sy);
-    if (layer_surface)
-        if (surface) {
-            // connect the seat to the layer surface
-            wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
-            wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
-            return;
-        }
+    if (layer_surface && surface) {
+        // connect the seat to the layer surface
+        wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
+        wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
+        return;
+    }
 
     // set default cursor mode
     wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");

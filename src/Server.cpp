@@ -26,14 +26,14 @@ T *Server::surface_at(double lx, double ly, struct wlr_surface **surface,
     // get the scene node and ensure it's a buffer
     struct wlr_scene_node *node =
         wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
-    if (node == NULL || node->type != WLR_SCENE_NODE_BUFFER)
+    if (!node || node->type != WLR_SCENE_NODE_BUFFER)
         return NULL;
 
     // get the scene buffer and surface of the node
     struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
     struct wlr_scene_surface *scene_surface =
         wlr_scene_surface_try_from_buffer(scene_buffer);
-    if (!scene_surface)
+    if (!scene_surface || !scene_surface->surface)
         return NULL;
 
     // set the scene surface
@@ -41,15 +41,15 @@ T *Server::surface_at(double lx, double ly, struct wlr_surface **surface,
 
     // get the scene tree of the node's parent
     struct wlr_scene_tree *tree = node->parent;
-    if (tree->node.type != WLR_SCENE_NODE_TREE)
+    if (!tree || tree->node.type != WLR_SCENE_NODE_TREE)
         return NULL;
 
     // find the topmost node of the scene tree
-    while (tree != NULL && tree->node.data == NULL)
+    while (tree && tree->node.data == NULL)
         tree = tree->node.parent;
 
     // invalid tree
-    if (tree == NULL)
+    if (!tree || !tree->node.parent)
         return NULL;
 
     // return the topmost node's data

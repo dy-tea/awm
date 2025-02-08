@@ -158,7 +158,8 @@ void LayerSurface::handle_focus() {
 }
 
 bool LayerSurface::should_focus() {
-    if (!wlr_layer_surface)
+    if (!wlr_layer_surface || !wlr_layer_surface->surface ||
+        !wlr_layer_surface->surface->mapped)
         return false;
 
     return wlr_layer_surface->current.keyboard_interactive !=

@@ -50,22 +50,30 @@ Cursor::Cursor(struct Server *server) {
         else {
             Server *server = cursor->server;
 
-            // focus surface
-            double sx, sy;
-            struct wlr_surface *surface = NULL;
-            struct LayerSurface *layer_surface = server->layer_surface_at(
-                cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-            if (layer_surface && surface) {
-                if (layer_surface->should_focus()) {
-                    layer_surface->handle_focus();
-                }
-                return;
+            // layer surface
+            {
+                double sx, sy;
+                struct wlr_surface *surface = NULL;
+
+                struct LayerSurface *layer_surface = server->layer_surface_at(
+                    cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+                if (layer_surface && surface && surface->mapped)
+                    if (layer_surface->should_focus()) {
+                        layer_surface->handle_focus();
+                        return;
+                    }
             }
 
-            struct Toplevel *toplevel = server->toplevel_at(
-                cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-            if (toplevel && surface)
-                toplevel->focus();
+            // toplevel
+            {
+                double sx, sy;
+                struct wlr_surface *surface = NULL;
+
+                struct Toplevel *toplevel = server->toplevel_at(
+                    cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+                if (toplevel && surface && surface->mapped)
+                    toplevel->focus();
+            }
         }
     };
     wl_signal_add(&cursor->events.button, &button);
@@ -129,7 +137,7 @@ void Cursor::process_motion(uint32_t time) {
     // get the toplevel under the cursor (if exists)
     struct Toplevel *toplevel =
         server->toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
-    if (toplevel && surface) {
+    if (toplevel && surface && surface->mapped) {
         // connect the seat to the toplevel
         wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
         wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
@@ -139,7 +147,7 @@ void Cursor::process_motion(uint32_t time) {
     // get the layer surface under the cursor (if exists)
     struct LayerSurface *layer_surface =
         server->layer_surface_at(cursor->x, cursor->y, &surface, &sx, &sy);
-    if (layer_surface && surface) {
+    if (layer_surface && surface && surface->mapped) {
         // connect the seat to the layer surface
         wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
         wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);

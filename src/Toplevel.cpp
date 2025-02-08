@@ -159,12 +159,16 @@ Toplevel::~Toplevel() {
 
 // focus keyboard to surface
 void Toplevel::focus() {
-    if (xdg_toplevel == NULL)
+    if (!xdg_toplevel || !xdg_toplevel->base || !xdg_toplevel->base->surface)
         return;
 
     struct wlr_seat *seat = server->seat;
     struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
     struct wlr_surface *surface = xdg_toplevel->base->surface;
+
+    // cannot focus unmapped surface
+    if (!surface->mapped)
+        return;
 
     // already focused
     if (prev_surface == surface)

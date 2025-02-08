@@ -18,6 +18,12 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         return;
     }
 
+    // set the fractional scale for this surface
+    wlr_fractional_scale_v1_notify_scale(wlr_layer_surface->surface,
+                                         output->wlr_output->scale);
+    wlr_surface_set_preferred_buffer_scale(wlr_layer_surface->surface,
+                                           ceil(output->wlr_output->scale));
+
     // create scene layer for surface
     struct wlr_scene_tree *layer_tree =
         shell->get_layer_scene(wlr_layer_surface->pending.layer);

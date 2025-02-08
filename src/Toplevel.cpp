@@ -28,8 +28,15 @@ Toplevel::Toplevel(struct Server *server,
         // get the focused output
         Output *active = toplevel->server->focused_output();
 
-        // add toplevel to active workspace and focus it
         if (active) {
+            // set the fractional scale for this surface
+            float scale = active->wlr_output->scale;
+            wlr_fractional_scale_v1_notify_scale(
+                toplevel->xdg_toplevel->base->surface, scale);
+            wlr_surface_set_preferred_buffer_scale(
+                toplevel->xdg_toplevel->base->surface, ceil(scale));
+
+            // add toplevel to active workspace and focus it
             active->get_active()->add_toplevel(toplevel);
             toplevel->focus();
         }

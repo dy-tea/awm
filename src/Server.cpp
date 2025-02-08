@@ -373,6 +373,10 @@ Server::Server(struct Config *config) {
         wlr_ext_image_copy_capture_manager_v1_create(wl_display, 1);
     wlr_ext_output_image_capture_source_manager_v1_create(wl_display, 1);
 
+    // fractional scale manager
+    wlr_fractional_scale_manager =
+        wlr_fractional_scale_manager_v1_create(wl_display, 1);
+
     // unix socket for display
     const char *socket = wl_display_add_socket_auto(wl_display);
     if (!socket) {

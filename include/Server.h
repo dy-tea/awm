@@ -20,6 +20,8 @@ struct Server {
     struct wlr_scene *scene;
     struct wlr_scene_output_layout *scene_layout;
 
+    struct wlr_scene_tree *toplevel_tree;
+
     struct wlr_xdg_shell *xdg_shell;
     struct wl_listener new_xdg_toplevel;
     struct wl_listener new_xdg_popup;

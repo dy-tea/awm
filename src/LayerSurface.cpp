@@ -40,6 +40,8 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node,
                                    true);
 
+        wlr_log(WLR_INFO, "Type %d", surface->wlr_layer_surface->current.layer);
+
         // rearrange
         surface->layer_shell->arrange_layers(
             (Output *)surface->wlr_layer_surface->output->data);

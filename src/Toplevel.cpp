@@ -6,7 +6,7 @@ Toplevel::Toplevel(struct Server *server,
     this->server = server;
     this->xdg_toplevel = xdg_toplevel;
     scene_tree =
-        wlr_scene_xdg_surface_create(&server->scene->tree, xdg_toplevel->base);
+        wlr_scene_xdg_surface_create(server->toplevel_tree, xdg_toplevel->base);
     scene_tree->node.data = this;
     xdg_toplevel->base->data = scene_tree;
 

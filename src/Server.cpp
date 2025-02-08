@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 // create a new keyboard
 void Server::new_keyboard(struct wlr_input_device *device) {
@@ -180,6 +181,18 @@ Server::Server(struct Config *config) {
     scene = wlr_scene_create();
     scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
 
+    // layer shell
+    layer_shell = new LayerShell(this);
+
+    // create scene tree for toplevels between layer shell bottom and top layers
+    toplevel_tree = wlr_scene_tree_create(&scene->tree);
+    wlr_scene_node_place_below(
+        &toplevel_tree->node,
+        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_TOP)->node);
+    wlr_scene_node_place_above(
+        &toplevel_tree->node,
+        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM)->node);
+
     // create xdg shell
     xdg_shell = wlr_xdg_shell_create(wl_display, 6);
 
@@ -319,9 +332,6 @@ Server::Server(struct Config *config) {
         wlr_seat_set_selection(server->seat, event->source, event->serial);
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
-
-    // layer shell
-    layer_shell = new LayerShell(this);
 
     // xdg output manager
     wlr_xdg_output_manager =

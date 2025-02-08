@@ -324,12 +324,19 @@ void Toplevel::set_fullscreen(bool fullscreen) {
                                     output_box.y);
         wlr_xdg_toplevel_set_size(xdg_toplevel, output_box.width / scale,
                                   output_box.height / scale);
+
+        // move scene tree node to fullscreen tree
+        wlr_scene_node_raise_to_top(&scene_tree->node);
+        wlr_scene_node_reparent(&scene_tree->node, server->fullscreen_tree);
     } else {
         // set back to saved geometry
         wlr_scene_node_set_position(&scene_tree->node, output_box.x,
                                     output_box.y);
         wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width / scale,
                                   saved_geometry.height / scale);
+
+        // move scene tree node to toplevel tree
+        wlr_scene_node_reparent(&scene_tree->node, server->toplevel_tree);
     }
 
     // set toplevel window mode to fullscreen

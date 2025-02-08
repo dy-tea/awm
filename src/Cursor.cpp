@@ -58,10 +58,8 @@ Cursor::Cursor(struct Server *server) {
                 struct LayerSurface *layer_surface = server->layer_surface_at(
                     cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
                 if (layer_surface && surface && surface->mapped)
-                    if (layer_surface->should_focus()) {
+                    if (layer_surface->should_focus())
                         layer_surface->handle_focus();
-                        return;
-                    }
             }
 
             // toplevel

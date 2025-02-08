@@ -183,9 +183,8 @@ void LayerSurface::handle_focus() {
         !wlr_layer_surface->surface->mapped || !scene_layer_surface)
         return;
 
-    if (wlr_layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY &&
-        wlr_layer_surface->current.keyboard_interactive ==
-            ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE)
+    if (wlr_layer_surface->current.keyboard_interactive ==
+        ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE)
         return;
 
     struct wlr_surface *surface = wlr_layer_surface->surface;

@@ -76,9 +76,6 @@ void LayerShell::arrange_layers(struct Output *output) {
         return;
     }
 
-    if (!output || !output->wlr_output)
-        return;
-
     struct wlr_box usable_area = {0};
     wlr_output_effective_resolution(output->wlr_output, &usable_area.width,
                                     &usable_area.height);
@@ -117,16 +114,5 @@ void LayerShell::arrange_layers(struct Output *output) {
 
 struct wlr_scene_tree *
 LayerShell::get_layer_scene(enum zwlr_layer_shell_v1_layer type) {
-    switch (type) {
-    case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
-        return layers[0];
-    case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
-        return layers[1];
-    case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
-        return layers[2];
-    case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
-        return layers[3];
-    default:
-        return layers[0];
-    };
+    return layers[type];
 }

@@ -193,6 +193,16 @@ Server::Server(struct Config *config) {
         &toplevel_tree->node,
         &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM)->node);
 
+    // create scene tree for fullscreened toplevels between layer shell top and
+    // overlay layers
+    fullscreen_tree = wlr_scene_tree_create(&scene->tree);
+    wlr_scene_node_place_below(
+        &fullscreen_tree->node,
+        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY)->node);
+    wlr_scene_node_place_above(
+        &fullscreen_tree->node,
+        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_TOP)->node);
+
     // create xdg shell
     xdg_shell = wlr_xdg_shell_create(wl_display, 6);
 

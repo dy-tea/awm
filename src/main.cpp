@@ -45,11 +45,12 @@ int main(int argc, char *argv[]) {
                                "./awm.toml",
                                "./config.toml"};
 
-        for (const std::string& path : paths) {
-            if (wordexp(path.c_str(), &p, p.we_wordc != 0 ? WRDE_REUSE : 0) != 0)
+        for (const std::string &path : paths) {
+            if (wordexp(path.c_str(), &p, p.we_wordc != 0 ? WRDE_REUSE : 0) !=
+                0)
                 continue; // ignore expansion failure
             if (access(p.we_wordv[0], F_OK) == 0) {
-                config_path = path;
+                config_path = p.we_wordv[0];
                 break;
             }
         }

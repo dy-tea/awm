@@ -45,47 +45,61 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
-        // configure if not
-        if (!layer_surface->configured) {
-            // get focused output
-            Output *output = surface->layer_shell->server->focused_output();
+        // get focused output
+        Output *output = surface->layer_shell->server->focused_output();
 
-            // get output size
-            uint32_t output_width = output->wlr_output->width;
-            uint32_t output_height = output->wlr_output->height;
+        // get output size
+        uint32_t output_width = output->wlr_output->width;
+        uint32_t output_height = output->wlr_output->height;
 
-            // get output layout position
-            struct wlr_box box;
+        // get current size
+        uint32_t width = layer_surface->current.actual_width;
+        uint32_t height = layer_surface->current.actual_height;
+
+        // check if size has been configured
+        if (layer_surface->configured) {
+            struct wlr_box usable_area = {0};
+            // get usable area of the output
             wlr_output_layout_get_box(
                 surface->layer_shell->server->output_layout, output->wlr_output,
-                &box);
+                &usable_area);
 
-            // get desired size
-            uint32_t width = layer_surface->current.desired_width;
-            uint32_t height = layer_surface->current.desired_height;
+            // Get the actual dimensions of the surface
+            uint32_t width = layer_surface->current.actual_width;
+            uint32_t height = layer_surface->current.actual_height;
 
-            // if client's desired size is too small or too big give it the full
-            // size for the client to decide
-            if (width <= 100 || width > output_width)
-                width = output_width;
-            if (height <= 100 || height > output_height)
-                height = output_height;
+            // calculate target position based on anchor points
+            int32_t x = usable_area.x;
+            int32_t y = usable_area.y;
 
-            // calculate target position
-            int32_t x = output_width / 2 - width / 2 + box.x;
-            int32_t y = output_height / 2 - height / 2 + box.y;
+            // center horizontally if not anchored horizontally
+            if (!(layer_surface->current.anchor &
+                  (ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+                   ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT)))
+                x += (usable_area.width - width) / 2;
 
-            // ensure the target position is on-screen
-            x = std::max(0, x);
-            y = std::max(0, y);
+            // center vertically if not anchored vertically
+            if (!(layer_surface->current.anchor &
+                  (ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+                   ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM)))
+                y += (usable_area.height - height) / 2;
 
-            // set the postion to the center of the screen
+            // set the postion
             wlr_scene_node_set_position(
                 &surface->scene_layer_surface->tree->node, x, y);
+        } else {
+            // get desired size
+            width = layer_surface->current.desired_width;
+            height = layer_surface->current.desired_height;
+            wlr_log(WLR_INFO, "%d, %d", width, height);
+
+            if (!width)
+                width = output_width;
+            if (!height)
+                height = output_height;
 
             // send configure with size
             wlr_layer_surface_v1_configure(layer_surface, width, height);
-
             return;
         }
     };
@@ -98,7 +112,8 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
         // add to list of popups
         struct Popup *popup = new Popup((wlr_xdg_popup *)data);
-        wl_list_insert(&layer_surface->popups, &popup->link);
+        if (popup)
+            wl_list_insert(&layer_surface->popups, &popup->link);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 
@@ -111,9 +126,6 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 }
 
 LayerSurface::~LayerSurface() {
-    if (scene_layer_surface)
-        wlr_scene_node_destroy(&scene_layer_surface->tree->node);
-
     struct Popup *popup, *tmp;
     wl_list_for_each_safe(popup, tmp, &popups, link) delete popup;
 
@@ -126,7 +138,8 @@ LayerSurface::~LayerSurface() {
 }
 
 void LayerSurface::handle_focus() {
-    if (!wlr_layer_surface || !wlr_layer_surface->surface || !wlr_layer_surface->surface->mapped || !scene_layer_surface)
+    if (!wlr_layer_surface || !wlr_layer_surface->surface ||
+        !wlr_layer_surface->surface->mapped || !scene_layer_surface)
         return;
 
     if (wlr_layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY &&

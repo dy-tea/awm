@@ -32,9 +32,8 @@ Popup::Popup(struct wlr_xdg_popup *xdg_popup) {
     }
 
     // create scene node for popup
-    if (parent_tree)
-        xdg_popup->base->data =
-            wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
+    xdg_popup->base->data =
+        wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
 
     // xdg_popup_commit
     commit.notify = [](struct wl_listener *listener, void *data) {
@@ -56,7 +55,6 @@ Popup::Popup(struct wlr_xdg_popup *xdg_popup) {
 }
 
 Popup::~Popup() {
-    wl_list_remove(&link);
     wl_list_remove(&commit.link);
     wl_list_remove(&destroy.link);
 }

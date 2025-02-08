@@ -72,7 +72,8 @@ Cursor::Cursor(struct Server *server) {
                 struct Toplevel *toplevel = server->toplevel_at(
                     cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
                 if (toplevel && surface && surface->mapped)
-                    toplevel->focus();
+                    server->focused_output()->get_active()->focus_toplevel(
+                        toplevel);
             }
         }
     };

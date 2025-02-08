@@ -1,12 +1,14 @@
 #include "Server.h"
 
+#include <wordexp.h>
+
 int main(int argc, char *argv[]) {
     // start logger
     wlr_log_init(WLR_DEBUG, NULL);
 
     // startup and config
-    std::string startup_cmd = "", config_path = "";
-    std::string usage =
+    std::string startup_cmd, config_path;
+    const std::string usage =
         "Usage: %s [-s startup command] [-c config file path]\n";
 
     // parse command line and set values if provided
@@ -29,7 +31,9 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    if (config_path == "") {
+    if (config_path.empty()) {
+        wordexp_t p = {.we_wordc = 0};
+
         // no command line path passed, find in default paths
         std::string paths[] = {"$HOME/.config/awm/awm.toml",
                                "$HOME/.config/awm/config.toml",
@@ -41,17 +45,23 @@ int main(int argc, char *argv[]) {
                                "./awm.toml",
                                "./config.toml"};
 
-        for (std::string path : paths)
-            if (access(path.c_str(), F_OK) == 0) {
+        for (const std::string& path : paths) {
+            if (wordexp(path.c_str(), &p, p.we_wordc != 0 ? WRDE_REUSE : 0) != 0)
+                continue; // ignore expansion failure
+            if (access(p.we_wordv[0], F_OK) == 0) {
                 config_path = path;
                 break;
             }
+        }
+
+        if (p.we_wordc != 0)
+            wordfree(&p);
     }
 
     // load config
     struct Config *config;
 
-    if (config_path == "") {
+    if (config_path.empty()) {
         wlr_log(WLR_INFO, "No config found, loading defaults");
         config = new Config();
     } else if (access(config_path.c_str(), F_OK) == 0) {
@@ -64,7 +74,7 @@ int main(int argc, char *argv[]) {
     }
 
     // add startup command
-    if (startup_cmd != "")
+    if (!startup_cmd.empty())
         config->startup_commands.push_back(startup_cmd);
 
     // start server

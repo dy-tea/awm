@@ -3,6 +3,7 @@
 Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     this->wlr_output = wlr_output;
     this->server = server;
+    this->wlr_output->data = this;
     wl_list_init(&workspaces);
 
     // create workspaces

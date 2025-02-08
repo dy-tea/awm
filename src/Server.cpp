@@ -72,13 +72,19 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
 
 // get the nth output
 struct Output *Server::get_output(uint32_t index) {
-    wl_list *out = &outputs;
+    if (wl_list_empty(&outputs))
+        return nullptr;
 
-    for (uint32_t i = 0; i != index && out->next != nullptr; ++i)
-        out = out->next;
+    Output *output, *tmp;
+    uint32_t i = 0;
 
-    Output *o = wl_container_of(out, o, link);
-    return o;
+    wl_list_for_each_safe(output, tmp, &outputs, link) {
+        if (i == index)
+            return output;
+        ++i;
+    }
+
+    return nullptr;
 }
 
 // get the output based on screen coordinates

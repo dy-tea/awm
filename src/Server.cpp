@@ -377,6 +377,13 @@ Server::Server(struct Config *config) {
     wlr_fractional_scale_manager =
         wlr_fractional_scale_manager_v1_create(wl_display, 1);
 
+    // drm syncobj manager
+    if (wlr_renderer_get_drm_fd(renderer) >= 0 && renderer->features.timeline &&
+        backend->features.timeline) {
+        wlr_linux_drm_syncobj_manager_v1_create(
+            wl_display, 1, wlr_renderer_get_drm_fd(renderer));
+    }
+
     // unix socket for display
     const char *socket = wl_display_add_socket_auto(wl_display);
     if (!socket) {

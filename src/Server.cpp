@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 // create a new keyboard
 void Server::new_keyboard(struct wlr_input_device *device) {
@@ -106,6 +105,42 @@ struct Output *Server::output_at(double x, double y) {
 // get the focused output
 struct Output *Server::focused_output() {
     return output_at(cursor->cursor->x, cursor->cursor->y);
+}
+
+// attempt to apply a config passed from a client to an output
+void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
+                                 bool test_only) {
+    // copy current output config to configs
+    std::vector<OutputConfig *> configs;
+    for (OutputConfig *c : config->outputs)
+        configs.push_back(c);
+
+    // add the passed cfg heads to configs
+    struct wlr_output_configuration_head_v1 *config_head;
+    wl_list_for_each(config_head, &cfg->heads, link) {
+        struct OutputConfig *oc = new OutputConfig(config_head);
+        configs.emplace_back(oc);
+    }
+
+    // match configs to output
+    std::vector<MatchOutputConfig *> matches;
+    Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &outputs, link) {
+        struct MatchOutputConfig *match = new MatchOutputConfig;
+        match->output = output;
+        for (OutputConfig *oc : configs)
+            if (oc->name == output->wlr_output->name) {
+                match->config = oc;
+                break;
+            }
+        matches.push_back(match);
+    }
+
+    // ????
+    for (MatchOutputConfig *moc : matches) {
+    }
+
+    wlr_output_configuration_v1_send_succeeded(cfg);
 }
 
 Server::Server(struct Config *config) {
@@ -347,6 +382,31 @@ Server::Server(struct Config *config) {
     wlr_xdg_output_manager =
         wlr_xdg_output_manager_v1_create(wl_display, output_layout);
 
+    // output manager
+    wlr_output_manager = wlr_output_manager_v1_create(wl_display);
+
+    // output manager apply
+    output_apply.notify = [](struct wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, output_apply);
+
+        wlr_output_configuration_v1 *config =
+            (wlr_output_configuration_v1 *)data;
+
+        server->apply_output_config(config, false);
+    };
+    wl_signal_add(&wlr_output_manager->events.apply, &output_apply);
+
+    // output manager test
+    output_test.notify = [](struct wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, output_apply);
+
+        wlr_output_configuration_v1 *config =
+            (wlr_output_configuration_v1 *)data;
+
+        server->apply_output_config(config, true);
+    };
+    wl_signal_add(&wlr_output_manager->events.test, &output_test);
+
     // xwayland shell
     // xwayland_shell = new XWaylandShell(wl_display, scene);
 
@@ -430,6 +490,9 @@ Server::~Server() {
 
     wl_list_remove(&new_output.link);
     wl_list_remove(&renderer_lost.link);
+
+    wl_list_remove(&output_apply.link);
+    wl_list_remove(&output_test.link);
 
     delete layer_shell;
     // delete xwayland_shell;

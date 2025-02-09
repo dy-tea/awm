@@ -11,6 +11,43 @@ struct Bind {
     }
 };
 
+struct OutputConfig {
+    std::string name;
+    bool enabled{true};
+    int32_t width{0}, height{0}, x{0}, y{0};
+    double refresh{0.0};
+    enum wl_output_transform transform { WL_OUTPUT_TRANSFORM_NORMAL };
+    double scale{1.0};
+    bool adaptive_sync{false};
+
+    OutputConfig() {};
+
+    OutputConfig(struct wlr_output_configuration_head_v1 *config_head) {
+        enabled = config_head->state.enabled;
+
+        if (config_head->state.mode != NULL) {
+            struct wlr_output_mode *mode = config_head->state.mode;
+            width = mode->width;
+            height = mode->height;
+            refresh = mode->refresh / 1000.f;
+        } else {
+            width = config_head->state.custom_mode.width;
+            height = config_head->state.custom_mode.height;
+            refresh = config_head->state.custom_mode.refresh / 1000.f;
+        }
+        x = config_head->state.x;
+        y = config_head->state.y;
+        transform = config_head->state.transform;
+        scale = config_head->state.scale;
+        adaptive_sync = config_head->state.adaptive_sync_enabled;
+    }
+};
+
+struct MatchOutputConfig {
+    struct Output *output;
+    struct OutputConfig *config;
+};
+
 struct Config {
     std::vector<std::string> startup_commands;
     std::vector<std::pair<std::string, std::string>> startup_env;
@@ -72,10 +109,14 @@ struct Config {
     struct Bind workspace_window_to{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
                                     XKB_KEY_NoSymbol};
 
+    std::vector<OutputConfig *> outputs;
+
     Config();
     Config(std::string path);
     ~Config();
 
     void set_bind(std::string name, toml::Table *source, Bind *target);
     struct Bind *parse_bind(std::string definition);
+
+    template <typename T> void connect(std::pair<bool, T> pair, T *target);
 };

@@ -48,6 +48,10 @@ struct Server {
     struct LayerShell *layer_shell;
 
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
+    struct wlr_output_manager_v1 *wlr_output_manager;
+    struct wl_listener output_apply;
+    struct wl_listener output_test;
+
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
     struct wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     struct wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
@@ -76,4 +80,7 @@ struct Server {
                                           struct wlr_surface **surface,
                                           double *sx, double *sy);
     struct Output *output_at(double x, double y);
+
+    void apply_output_config(struct wlr_output_configuration_v1 *config,
+                             bool test_only);
 };

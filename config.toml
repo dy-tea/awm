@@ -28,6 +28,13 @@ workspace.tile = "Alt t"
 workspace.open = "Alt Number"
 workspace.window_to = "Alt Shift Number"
 
+[[monitors]]
+name = "HDMI-A-1"
+enabled = true
+width = 1920
+height = 1080
+refresh = 60.0
+
 [[commands]] # Launcher
 bind = "Alt space"
 exec = "rofi -show drun"
@@ -40,4 +47,4 @@ exec = "grim -g \"$(slurp)\" - | swappy -f -"
 bind = "Alt Return"
 exec = "alacritty"
 
-# TODO: keyboard, locale, monitor configuration
+# TODO: keyboard, locale

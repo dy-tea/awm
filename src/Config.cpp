@@ -138,6 +138,67 @@ Config::Config(std::string path) {
     } else {
         wlr_log(WLR_INFO, "No user-defined commands set, ignoring");
     }
+
+    // monitor configs
+    std::unique_ptr<toml::Array> monitor_tables =
+        config_file.table->getArray("monitors");
+    if (monitor_tables) {
+        auto tables = monitor_tables->getTableVector();
+        if (tables)
+            for (toml::Table &table : *tables.get()) {
+                // create new output config
+                OutputConfig *oc = new OutputConfig();
+
+                // name
+                connect(table.getString("name"), &oc->name);
+
+                // enabled
+                connect(table.getBool("enabled"), &oc->enabled);
+
+                // width
+                connect<int32_t>(table.getInt("width"), &oc->width);
+
+                // height
+                connect<int32_t>(table.getInt("height"), &oc->height);
+
+                // x
+                connect<int32_t>(table.getInt("x"), &oc->x);
+
+                // y
+                connect<int32_t>(table.getInt("y"), &oc->y);
+
+                // refresh rate
+                connect(table.getDouble("refresh"), &oc->refresh);
+
+                // transform
+                auto transform = table.getString("transform");
+                std::string transform_values[] = {
+                    "none", "90", "180", "270", "f", "f90", "f180", "f270"};
+                if (transform.first)
+                    for (int i = 0; i != WL_OUTPUT_TRANSFORM_FLIPPED_270 + 1;
+                         ++i)
+                        if (transform.second == transform_values[i]) {
+                            oc->transform = (wl_output_transform)i;
+                            break;
+                        }
+
+                // scale
+                connect(table.getDouble("scale"), &oc->scale);
+
+                // adaptive sync
+                connect(table.getBool("adaptive"), &oc->adaptive_sync);
+
+                // add to output configs if enough values are set
+                if (oc->name.empty() || !oc->width || !oc->height ||
+                    oc->refresh <= 0.0) {
+                    wlr_log(WLR_INFO,
+                            "Monitor config is missing one of the "
+                            "required fields: name, width, height, refresh");
+                    delete oc;
+                } else
+                    outputs.emplace_back(oc);
+            }
+    }
 }
 
 Config::~Config() {}
@@ -194,4 +255,10 @@ void Config::set_bind(std::string name, toml::Table *source, Bind *target) {
     if (row.first)
         if (Bind *parsed = parse_bind(row.second))
             *target = *parsed;
+}
+
+// helper function to connect the second pair if the first bool is true
+template <typename T> void Config::connect(std::pair<bool, T> pair, T *target) {
+    if (pair.first)
+        *target = pair.second;
 }

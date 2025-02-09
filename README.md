@@ -3,6 +3,7 @@
 ### Supported protocols
 - `xdg-shell`
 - `xdg-output-unstable-v1`
+- `wlr-output-management-unstable-v1`
 - `wlr-layer-shell-unstable-v1`
 - `wlr-screencopy-unstable-v1`
 - `wlr-data-control-unstable-v1`

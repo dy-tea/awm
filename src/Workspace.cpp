@@ -9,23 +9,16 @@ Workspace::Workspace(struct Output *output, uint32_t num) {
 
 Workspace::~Workspace() {}
 
-// get the active toplevel
-struct Toplevel *Workspace::get_active() {
-    if (wl_list_empty(&toplevels))
-        return nullptr;
-    Toplevel *active = wl_container_of(toplevels.next, active, link);
-    return active;
-}
-
 // add a toplevel to the workspace
 void Workspace::add_toplevel(struct Toplevel *toplevel) {
     wl_list_insert(&toplevels, &toplevel->link);
+    active_toplevel = toplevel;
     toplevel->focus();
 }
 
 // close the active toplevel
 void Workspace::close_active() {
-    if (Toplevel *active = get_active()) {
+    if (active_toplevel) {
         if (wl_list_length(&toplevels) > 1) {
             // focus the next toplevel
             Toplevel *new_active =
@@ -34,7 +27,7 @@ void Workspace::close_active() {
         }
 
         // tell the toplevel to close
-        active->close();
+        active_toplevel->close();
     }
 }
 
@@ -58,6 +51,18 @@ bool Workspace::move_to(struct Toplevel *toplevel,
     if (workspace == this)
         return false;
 
+    // active toplevel needs to be updated
+    if (toplevel == active_toplevel) {
+        if (wl_list_length(&toplevels) > 1) {
+            // focus the next toplevel
+            Toplevel *new_active =
+                wl_container_of(toplevels.prev, new_active, link);
+            new_active->focus();
+        } else
+            // no more active toplevel
+            active_toplevel = nullptr;
+    }
+
     // ensure toplevel is part of workspace
     if (contains(toplevel)) {
         // move to other workspace
@@ -80,10 +85,10 @@ void Workspace::set_hidden(bool hidden) {
 
 // swap the active toplevel geometry with other toplevel geometry
 void Workspace::swap(struct Toplevel *other) {
-    struct wlr_fbox active = get_active()->get_geometry();
+    struct wlr_fbox active = active_toplevel->get_geometry();
     struct wlr_fbox swapped = other->get_geometry();
 
-    get_active()->set_position_size(swapped);
+    active_toplevel->set_position_size(swapped);
     other->set_position_size(active);
 }
 
@@ -95,7 +100,7 @@ struct Toplevel *Workspace::in_direction(enum wlr_direction direction) {
         return nullptr;
 
     // get the geometry of the active toplevel
-    wlr_fbox active_geometry = get_active()->get_geometry();
+    wlr_fbox active_geometry = active_toplevel->get_geometry();
 
     // define a target
     Toplevel *curr, *tmp;
@@ -163,9 +168,8 @@ void Workspace::focus_toplevel(struct Toplevel *toplevel) {
     if (!contains(toplevel))
         return;
 
-    // move toplevel to the front
-    wl_list_remove(&toplevel->link);
-    wl_list_insert(&toplevels, &toplevel->link);
+    // set toplevel to active
+    active_toplevel = toplevel;
 
     // call keyboard focus
     toplevel->focus();
@@ -177,12 +181,13 @@ void Workspace::focus_next() {
     if (wl_list_length(&toplevels) < 2)
         return;
 
-    // find active
-    Toplevel *active = get_active();
+    // focus next, wrapping around if at end
+    struct wl_list *next = active_toplevel->link.next;
+    if (next == &toplevels)
+        next = toplevels.next;
 
-    // focus next
-    Toplevel *next = wl_container_of(active->link.next, next, link);
-    focus_toplevel(next);
+    Toplevel *next_toplevel = wl_container_of(next, next_toplevel, link);
+    focus_toplevel(next_toplevel);
 }
 
 // focus the toplevel preceding the active one, looping around to the end
@@ -191,12 +196,13 @@ void Workspace::focus_prev() {
     if (wl_list_length(&toplevels) < 2)
         return;
 
-    // find active
-    Toplevel *active = get_active();
+    // focus prev, wrapping around if at start
+    struct wl_list *prev = active_toplevel->link.prev;
+    if (prev == &toplevels)
+        prev = toplevels.prev;
 
-    // focus prev
-    Toplevel *prev = wl_container_of(active->link.prev, prev, link);
-    focus_toplevel(prev);
+    Toplevel *prev_toplevel = wl_container_of(prev, prev_toplevel, link);
+    focus_toplevel(prev_toplevel);
 }
 
 // auto-tile the toplevels of a workspace, not currently reversible or

@@ -26,7 +26,7 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
         wl_display_terminate(server->wl_display);
     } else if (bind == config->window_fullscreen) {
         // fullscreen the active toplevel
-        Toplevel *active = output->get_active()->get_active();
+        Toplevel *active = output->get_active()->active_toplevel;
 
         if (active == nullptr)
             return false;
@@ -40,7 +40,7 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
         output->get_active()->focus_next();
     } else if (bind == config->window_move) {
         // move the active toplevel with the mouse
-        Toplevel *active = output->get_active()->get_active();
+        Toplevel *active = output->get_active()->active_toplevel;
         if (active)
             active->begin_interactive(CURSORMODE_MOVE, 0);
     } else if (bind == config->window_up) {
@@ -108,8 +108,8 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
             if (target == nullptr)
                 return false;
 
-            if (current->get_active())
-                current->move_to(current->get_active(), target);
+            if (current->active_toplevel)
+                current->move_to(current->active_toplevel, target);
         } else
             return false;
     } else

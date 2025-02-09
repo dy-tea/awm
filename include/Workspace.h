@@ -5,11 +5,11 @@ struct Workspace {
     uint32_t num;
     struct Output *output;
     struct wl_list toplevels;
+    struct Toplevel *active_toplevel;
 
     Workspace(struct Output *output, uint32_t num);
     ~Workspace();
 
-    struct Toplevel *get_active();
     void add_toplevel(struct Toplevel *toplevel);
     void close_active();
     bool contains(struct Toplevel *toplevel);

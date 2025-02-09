@@ -136,11 +136,80 @@ void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
         matches.push_back(match);
     }
 
-    // ????
+    // apply config to each output
+    bool success = true;
     for (MatchOutputConfig *moc : matches) {
+        if (!moc->config)
+            continue;
+
+        struct wlr_output *wlr_output = moc->output->wlr_output;
+        OutputConfig *config = moc->config;
+
+        // create new state
+        struct wlr_output_state state;
+        wlr_output_state_init(&state);
+
+        // enabled
+        wlr_output_state_set_enabled(&state, config->enabled);
+
+        if (config->enabled) {
+            // width / height / refresh
+            if (config->width > 0 && config->height > 0 &&
+                config->refresh > 0) {
+                // try to find a matching mode
+                struct wlr_output_mode *mode;
+                bool found = false;
+                wl_list_for_each(mode, &wlr_output->modes,
+                                 link) if (mode->width == config->width &&
+                                           mode->height == config->height &&
+                                           abs((int)(mode->refresh / 1000.0 -
+                                                     config->refresh)) < 1) {
+                    wlr_output_state_set_mode(&state, mode);
+                    found = true;
+                    break;
+                }
+
+                // no matching mode, try custom one
+                if (!found)
+                    wlr_output_state_set_custom_mode(
+                        &state, config->width, config->height,
+                        (int)(config->refresh * 1000));
+            }
+
+            // position
+            wlr_output_layout_output_coords(output_layout, wlr_output,
+                                            &config->x, &config->y);
+
+            // scale
+            if (config->scale > 0)
+                wlr_output_state_set_scale(&state, config->scale);
+
+            // transform
+            wlr_output_state_set_transform(&state, config->transform);
+
+            // adaptive sync
+            wlr_output_state_set_adaptive_sync_enabled(&state,
+                                                       config->adaptive_sync);
+        }
+
+        // test or apply
+        if (test_only)
+            success &= wlr_output_test_state(wlr_output, &state);
+        else
+            success &= wlr_output_commit_state(wlr_output, &state);
+
+        wlr_output_state_finish(&state);
     }
 
-    wlr_output_configuration_v1_send_succeeded(cfg);
+    // dealloc
+    for (MatchOutputConfig *moc : matches)
+        delete moc;
+
+    // send cfg status
+    if (success)
+        wlr_output_configuration_v1_send_succeeded(cfg);
+    else
+        wlr_output_configuration_v1_send_failed(cfg);
 }
 
 Server::Server(struct Config *config) {
@@ -192,23 +261,99 @@ Server::Server(struct Config *config) {
         // set allocator and renderer for output
         wlr_output_init_render(wlr_output, server->allocator, server->renderer);
 
-        // turn on output if off
+        // find matching config
+        OutputConfig *matching_config = nullptr;
+        for (OutputConfig *config : server->config->outputs) {
+            if (config->name == wlr_output->name) {
+                matching_config = config;
+                break;
+            }
+        }
+
+        // create new state
         struct wlr_output_state state;
         wlr_output_state_init(&state);
-        wlr_output_state_set_enabled(&state, true);
 
-        // use monitor's preferred mode
-        struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
-        if (mode != NULL)
-            wlr_output_state_set_mode(&state, mode);
+        // try with saved configuration
+        bool config_success = false;
+        if (matching_config) {
+            wlr_log(WLR_INFO, "attempting to apply saved configuration for %s",
+                    wlr_output->name);
 
-        // apply output state
-        wlr_output_commit_state(wlr_output, &state);
+            // enable
+            wlr_output_state_set_enabled(&state, matching_config->enabled);
+
+            if (matching_config->enabled) {
+                if (matching_config->width > 0 && matching_config->height > 0 &&
+                    matching_config->refresh > 0) {
+                    // try to find a matching mode
+                    struct wlr_output_mode *mode, *best_mode = nullptr;
+                    wl_list_for_each(mode, &wlr_output->modes, link) if (
+                        mode->width == matching_config->width &&
+                        mode->height ==
+                            matching_config
+                                ->height) if (!best_mode ||
+                                              abs((int)(mode->refresh / 1000.0 -
+                                                        matching_config
+                                                            ->refresh)) <
+                                                  abs((int)(best_mode->refresh /
+                                                                1000.0 -
+                                                            matching_config
+                                                                ->refresh)))
+                        best_mode = mode;
+
+                    // set mode if found
+                    if (best_mode)
+                        wlr_output_state_set_mode(&state, best_mode);
+                }
+
+                // scale
+                if (matching_config->scale > 0)
+                    wlr_output_state_set_scale(&state, matching_config->scale);
+
+                // transform
+                wlr_output_state_set_transform(&state,
+                                               matching_config->transform);
+            }
+
+            // try to commit the configuration
+            config_success = wlr_output_test_state(wlr_output, &state);
+        }
+
+        // try default config
+        if (!config_success) {
+            wlr_log(WLR_INFO, "falling back to default configuration for %s",
+                    wlr_output->name);
+
+            wlr_output_state_finish(&state);
+            wlr_output_state_init(&state);
+
+            wlr_output_state_set_enabled(&state, true);
+
+            // set preferred mode
+            struct wlr_output_mode *mode =
+                wlr_output_preferred_mode(wlr_output);
+            if (mode != NULL)
+                wlr_output_state_set_mode(&state, mode);
+        }
+
+        // commit final config
+        if (!wlr_output_commit_state(wlr_output, &state))
+            wlr_log(WLR_ERROR, "Failed to commit output state for %s",
+                    wlr_output->name);
+
         wlr_output_state_finish(&state);
 
         // add to outputs list
         struct Output *output = new Output(server, wlr_output);
         wl_list_insert(&server->outputs, &output->link);
+
+        // position
+        if (matching_config && config_success)
+            wlr_output_layout_add(server->output_layout, wlr_output,
+                                  matching_config->x, matching_config->y);
+        else
+            wlr_output_layout_add_auto(server->output_layout, wlr_output);
     };
     wl_signal_add(&backend->events.new_output, &new_output);
 
@@ -389,10 +534,7 @@ Server::Server(struct Config *config) {
     output_apply.notify = [](struct wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, output_apply);
 
-        wlr_output_configuration_v1 *config =
-            (wlr_output_configuration_v1 *)data;
-
-        server->apply_output_config(config, false);
+        server->apply_output_config((wlr_output_configuration_v1 *)data, false);
     };
     wl_signal_add(&wlr_output_manager->events.apply, &output_apply);
 
@@ -400,10 +542,7 @@ Server::Server(struct Config *config) {
     output_test.notify = [](struct wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, output_apply);
 
-        wlr_output_configuration_v1 *config =
-            (wlr_output_configuration_v1 *)data;
-
-        server->apply_output_config(config, true);
+        server->apply_output_config((wlr_output_configuration_v1 *)data, true);
     };
     wl_signal_add(&wlr_output_manager->events.test, &output_test);
 

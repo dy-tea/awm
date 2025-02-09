@@ -35,6 +35,14 @@ width = 1920
 height = 1080
 refresh = 60.0
 
+[[monitors]]
+name = "WL-1"
+enabled = true
+width = 1280
+height = 720
+refresh = 60.0
+transform = "f180"
+
 [[commands]] # Launcher
 bind = "Alt space"
 exec = "rofi -show drun"

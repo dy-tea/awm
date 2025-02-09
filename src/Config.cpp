@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "tomlcpp.hpp"
+#include <bits/types/wint_t.h>
 #include <sstream>
 
 Config::Config() {}
@@ -162,10 +163,10 @@ Config::Config(std::string path) {
                 connect<int32_t>(table.getInt("height"), &oc->height);
 
                 // x
-                connect<int32_t>(table.getInt("x"), &oc->x);
+                connect(table.getDouble("x"), &oc->x);
 
                 // y
-                connect<int32_t>(table.getInt("y"), &oc->y);
+                connect(table.getDouble("y"), &oc->y);
 
                 // refresh rate
                 connect(table.getDouble("refresh"), &oc->refresh);
@@ -192,11 +193,15 @@ Config::Config(std::string path) {
                 if (oc->name.empty() || !oc->width || !oc->height ||
                     oc->refresh <= 0.0) {
                     wlr_log(WLR_INFO,
-                            "Monitor config is missing one of the "
+                            "monitor config is missing one of the "
                             "required fields: name, width, height, refresh");
                     delete oc;
-                } else
+                } else {
+                    wlr_log(WLR_INFO, "added monitor config for %s: %dx%d@%.1f",
+                            oc->name.c_str(), oc->width, oc->height,
+                            oc->refresh);
                     outputs.emplace_back(oc);
+                }
             }
     }
 }

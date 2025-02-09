@@ -14,7 +14,8 @@ struct Bind {
 struct OutputConfig {
     std::string name;
     bool enabled{true};
-    int32_t width{0}, height{0}, x{0}, y{0};
+    int32_t width{0}, height{0};
+    double x{0.0}, y{0.0};
     double refresh{0.0};
     enum wl_output_transform transform { WL_OUTPUT_TRANSFORM_NORMAL };
     double scale{1.0};

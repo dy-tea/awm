@@ -157,9 +157,15 @@ void Workspace::focus() {
 
     // ensure there is a toplevel to focus
     if (!wl_list_empty(&toplevels)) {
-        // focus the first toplevel and set is as active
-        Toplevel *toplevel = wl_container_of(toplevels.prev, toplevel, link);
-        toplevel->focus();
+        if (active_toplevel)
+            // focus the active toplevel if available
+            active_toplevel->focus();
+        else {
+            // focus the first toplevel and set is as active
+            Toplevel *toplevel =
+                wl_container_of(toplevels.prev, toplevel, link);
+            toplevel->focus();
+        }
     }
 }
 

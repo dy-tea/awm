@@ -41,7 +41,6 @@ enabled = true
 width = 1280
 height = 720
 refresh = 60.0
-transform = "f180"
 
 [[commands]] # Launcher
 bind = "Alt space"

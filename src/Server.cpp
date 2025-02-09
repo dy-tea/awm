@@ -252,7 +252,7 @@ Server::Server(struct Config *config) {
     output_layout = wlr_output_layout_create(wl_display);
     wl_list_init(&outputs);
 
-    // new_output
+    // new_output FIXME holy code duplication (apply_output_configuration)
     new_output.notify = [](struct wl_listener *listener, void *data) {
         // new display / monitor available
         struct Server *server = wl_container_of(listener, server, new_output);

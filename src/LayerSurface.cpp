@@ -12,11 +12,10 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         return;
     }
 
+    // get associated output, fall back to focused output
     Output *output = (Output *)wlr_layer_surface->output->data;
-    if (!output) {
-        wlr_log(WLR_ERROR, "layer surface has no associated Output instance");
-        return;
-    }
+    if (!output)
+        output = shell->server->focused_output();
 
     // set the fractional scale for this surface
     wlr_fractional_scale_v1_notify_scale(wlr_layer_surface->surface,
@@ -46,9 +45,13 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node,
                                    true);
 
+        // get associated output, fall back to focused output
+        Output *output = (Output *)surface->wlr_layer_surface->output->data;
+        if (!output)
+            output = surface->layer_shell->server->focused_output();
+
         // rearrange
-        surface->layer_shell->arrange_layers(
-            (Output *)surface->wlr_layer_surface->output->data);
+        surface->layer_shell->arrange_layers(output);
 
         // handle focus
         if (surface->wlr_layer_surface->current.keyboard_interactive)
@@ -86,8 +89,11 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
-        // get focused output
+
+        // get associated output, fall back to focused output
         Output *output = (Output *)surface->wlr_layer_surface->output->data;
+        if (!output)
+            output = surface->layer_shell->server->focused_output();
 
         // get output size
         uint32_t output_width = output->wlr_output->width;
@@ -141,7 +147,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         // rearrange if needed
         if (needs_arrange)
             surface->layer_shell->arrange_layers(
-                (Output *)surface->wlr_layer_surface->output->data);
+                output);
     };
     wl_signal_add(&wlr_layer_surface->surface->events.commit, &commit);
 

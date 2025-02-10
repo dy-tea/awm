@@ -38,9 +38,9 @@ refresh = 60.0
 [[monitors]]
 name = "WL-1"
 enabled = true
-width = 1280
-height = 720
-refresh = 60.0
+width = 1920
+height = 1080
+refresh = 90.0
 
 [[commands]] # Launcher
 bind = "Alt space"

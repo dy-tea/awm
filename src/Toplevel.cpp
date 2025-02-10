@@ -22,22 +22,22 @@ Toplevel::Toplevel(struct Server *server,
 
     // xdg_toplevel_map
     map.notify = [](struct wl_listener *listener, void *data) {
-        /* Called when the surface is mapped, or ready to display on-screen. */
+        // on map or display
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
         // get the focused output
-        Output *active = toplevel->server->focused_output();
+        Output *output = toplevel->server->focused_output();
 
-        if (active) {
+        if (output) {
             // set the fractional scale for this surface
-            float scale = active->wlr_output->scale;
+            float scale = output->wlr_output->scale;
             wlr_fractional_scale_v1_notify_scale(
                 toplevel->xdg_toplevel->base->surface, scale);
             wlr_surface_set_preferred_buffer_scale(
                 toplevel->xdg_toplevel->base->surface, ceil(scale));
 
             // add toplevel to active workspace and focus it
-            active->get_active()->add_toplevel(toplevel);
+            output->get_active()->add_toplevel(toplevel);
             toplevel->focus();
         }
     };
@@ -57,7 +57,7 @@ Toplevel::Toplevel(struct Server *server,
 
     // xdg_toplevel_commit
     commit.notify = [](struct wl_listener *listener, void *data) {
-        /* Called when a new surface state is committed. */
+        // on surface state change
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
 
         if (toplevel->xdg_toplevel->base->initial_commit)

@@ -14,6 +14,7 @@ struct Output {
     Output(struct Server *server, struct wlr_output *wlr_output);
     ~Output();
 
+    struct wlr_box get_usable_area();
     struct Workspace *new_workspace();
     struct Workspace *get_active();
     struct Workspace *get_workspace(uint32_t n);

@@ -68,6 +68,15 @@ Output::~Output() {
     wl_list_remove(&link);
 }
 
+// get usbale area of the output
+struct wlr_box Output::get_usable_area() {
+    struct wlr_box usable_area = {0};
+    wlr_output_layout_get_box(
+                    server->output_layout, wlr_output,
+                    &usable_area);
+    return usable_area;
+}
+
 // create a new workspace for this output
 struct Workspace *Output::new_workspace() {
     struct Workspace *workspace = new Workspace(this, max_workspace++);

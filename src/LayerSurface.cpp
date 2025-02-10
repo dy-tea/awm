@@ -102,10 +102,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         // set default location to center of screen
         if (!layer_surface->configured) {
             // get usable area of the output
-            struct wlr_box usable_area = {0};
-            wlr_output_layout_get_box(
-                surface->layer_shell->server->output_layout, output->wlr_output,
-                &usable_area);
+            struct wlr_box usable_area = output->get_usable_area();
 
             // Get the actual dimensions of the surface
             uint32_t width = layer_surface->current.actual_width;

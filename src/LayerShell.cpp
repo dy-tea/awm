@@ -22,9 +22,9 @@ LayerShell::LayerShell(struct Server *server) {
         wlr_layer_surface_v1 *shell_surface =
             static_cast<wlr_layer_surface_v1 *>(data);
 
-        // assume output 0 if not set
+        // assume focused output if not set
         if (!shell_surface->output) {
-            Output *output = shell->server->get_output(0);
+            Output *output = shell->server->focused_output();
 
             if (!output) {
                 wlr_log(WLR_ERROR, "no available output for layer surface");

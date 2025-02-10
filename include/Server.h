@@ -81,6 +81,8 @@ struct Server {
                                           double *sx, double *sy);
     struct Output *output_at(double x, double y);
 
+    struct Workspace *get_workspace(struct Toplevel *toplevel);
+
     void apply_output_config(struct wlr_output_configuration_v1 *config,
                              bool test_only);
 };

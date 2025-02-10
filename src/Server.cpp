@@ -18,6 +18,19 @@ void Server::new_pointer(struct wlr_input_device *device) {
     wlr_cursor_attach_input_device(cursor->cursor, device);
 }
 
+// get workspace by toplevel
+struct Workspace *Server::get_workspace(struct Toplevel *toplevel) {
+    Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &outputs, link) {
+        Workspace *workspace, *tmp1;
+        wl_list_for_each_safe(
+            workspace, tmp1, &output->workspaces,
+            link) if (workspace->contains(toplevel)) return workspace;
+    }
+
+    return nullptr;
+}
+
 // get a node tree surface from its location and cast it to the generic
 // type provided
 template <typename T>
@@ -166,7 +179,8 @@ void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
                                                      config->refresh)) < 1) {
                     wlr_output_state_set_mode(&state, mode);
                     found = true;
-                    wlr_log(WLR_INFO, "found matching output mode: %dx%d@%.1f", mode->width, mode->height, mode->refresh / 1000.0);
+                    wlr_log(WLR_INFO, "found matching output mode: %dx%d@%.1f",
+                            mode->width, mode->height, mode->refresh / 1000.0);
                     break;
                 }
 
@@ -175,7 +189,9 @@ void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
                     wlr_output_state_set_custom_mode(
                         &state, config->width, config->height,
                         (int)(config->refresh * 1000));
-                    wlr_log(WLR_INFO, "attempting to set custom mode: %dx%d@%.1f", config->width, config->height, config->refresh);
+                    wlr_log(WLR_INFO,
+                            "attempting to set custom mode: %dx%d@%.1f",
+                            config->width, config->height, config->refresh);
                 }
             }
 
@@ -303,12 +319,15 @@ Server::Server(struct Config *config) {
                                                                 1000.0 -
                                                             matching_config
                                                                 ->refresh)))
-                                                                    best_mode = mode;
+                        best_mode = mode;
 
                     // set mode if found
                     if (best_mode) {
                         wlr_output_state_set_mode(&state, best_mode);
-                        wlr_log(WLR_INFO, "found matching output mode: %dx%d@%.1f", best_mode->width, best_mode->height, best_mode->refresh / 1000.0);
+                        wlr_log(WLR_INFO,
+                                "found matching output mode: %dx%d@%.1f",
+                                best_mode->width, best_mode->height,
+                                best_mode->refresh / 1000.0);
                     }
                 }
 
@@ -381,9 +400,7 @@ Server::Server(struct Config *config) {
     // create scene tree for fullscreened toplevels between layer shell top and
     // overlay layers
     fullscreen_tree = wlr_scene_tree_create(&scene->tree);
-    wlr_scene_node_place_below(
-        &fullscreen_tree->node,
-        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY)->node);
+    wlr_scene_node_place_below(&fullscreen_tree->node, &toplevel_tree->node);
     wlr_scene_node_place_above(
         &fullscreen_tree->node,
         &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_TOP)->node);

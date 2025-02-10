@@ -32,19 +32,21 @@ Toplevel::Toplevel(struct Server *server,
         if (output) {
             // set the fractional scale for this surface
             float scale = output->wlr_output->scale;
-            wlr_fractional_scale_v1_notify_scale(
-                xdg_toplevel->base->surface, scale);
-            wlr_surface_set_preferred_buffer_scale(
-                xdg_toplevel->base->surface, ceil(scale));
+            wlr_fractional_scale_v1_notify_scale(xdg_toplevel->base->surface,
+                                                 scale);
+            wlr_surface_set_preferred_buffer_scale(xdg_toplevel->base->surface,
+                                                   ceil(scale));
 
             // get usable area of the output
             struct wlr_box usable_area = output->get_usable_area();
 
             // get scheduled width and height
-            uint32_t width = xdg_toplevel->scheduled.width > 0 ?
-                xdg_toplevel->scheduled.width : xdg_toplevel->current.width;
-            uint32_t height = xdg_toplevel->scheduled.height > 0 ?
-                xdg_toplevel->scheduled.height : xdg_toplevel->current.height;
+            uint32_t width = xdg_toplevel->scheduled.width > 0
+                                 ? xdg_toplevel->scheduled.width
+                                 : xdg_toplevel->current.width;
+            uint32_t height = xdg_toplevel->scheduled.height > 0
+                                  ? xdg_toplevel->scheduled.height
+                                  : xdg_toplevel->current.height;
 
             // set current width and height if not scheduled
             if (!width || !height) {
@@ -257,6 +259,14 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
         // follow cursor
         cursor->grab_x = cursor->cursor->x - scene_tree->node.x;
         cursor->grab_y = cursor->cursor->y - scene_tree->node.y;
+
+        // move toplevel to different workspace if it's moved into other output
+        Workspace *current = server->get_workspace(this);
+        Workspace *target =
+            server->output_at(cursor->cursor->x, cursor->cursor->y)
+                ->get_active();
+        if (!target->contains(this) && current)
+            current->move_to(this, target);
     } else {
         // don't resize fullscreened windows
         if (xdg_toplevel->current.fullscreen)

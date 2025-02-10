@@ -94,10 +94,15 @@ Toplevel::Toplevel(struct Server *server,
     commit.notify = [](struct wl_listener *listener, void *data) {
         // on surface state change
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
+        struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
 
-        if (toplevel->xdg_toplevel->base->initial_commit)
+        if (xdg_toplevel->base->initial_commit)
             // let client pick dimensions
-            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, 0, 0);
+            wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
+        else
+            // no idea if this does anything
+            wlr_xdg_toplevel_set_size(xdg_toplevel, xdg_toplevel->current.width,
+                                      xdg_toplevel->current.height);
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 

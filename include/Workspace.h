@@ -5,7 +5,7 @@ struct Workspace {
     uint32_t num;
     struct Output *output;
     struct wl_list toplevels;
-    struct Toplevel *active_toplevel;
+    struct Toplevel *active_toplevel{nullptr};
 
     Workspace(struct Output *output, uint32_t num);
     ~Workspace();

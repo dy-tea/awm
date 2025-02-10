@@ -24,6 +24,7 @@ Toplevel::Toplevel(struct Server *server,
     map.notify = [](struct wl_listener *listener, void *data) {
         // on map or display
         struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
+        struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
 
         // get the focused output
         Output *output = toplevel->server->focused_output();
@@ -32,9 +33,41 @@ Toplevel::Toplevel(struct Server *server,
             // set the fractional scale for this surface
             float scale = output->wlr_output->scale;
             wlr_fractional_scale_v1_notify_scale(
-                toplevel->xdg_toplevel->base->surface, scale);
+                xdg_toplevel->base->surface, scale);
             wlr_surface_set_preferred_buffer_scale(
-                toplevel->xdg_toplevel->base->surface, ceil(scale));
+                xdg_toplevel->base->surface, ceil(scale));
+
+            // get usable area of the output
+            struct wlr_box usable_area = output->get_usable_area();
+
+            // get scheduled width and height
+            uint32_t width = xdg_toplevel->scheduled.width > 0 ?
+                xdg_toplevel->scheduled.width : xdg_toplevel->current.width;
+            uint32_t height = xdg_toplevel->scheduled.height > 0 ?
+                xdg_toplevel->scheduled.height : xdg_toplevel->current.height;
+
+            // set current width and height if not scheduled
+            if (!width || !height) {
+                width = xdg_toplevel->base->surface->current.width;
+                height = xdg_toplevel->base->surface->current.height;
+            }
+
+            if (width > 0 && height > 0) {
+                // Ensure the window fits within usable area
+                width = std::min(width, (uint32_t)usable_area.width);
+                height = std::min(height, (uint32_t)usable_area.height);
+
+                // calculate position to center the window
+                int32_t x = usable_area.x + (usable_area.width - width) / 2;
+                int32_t y = usable_area.y + (usable_area.height - height) / 2;
+
+                // ensure coordinates are positive
+                x = std::max(x, usable_area.x);
+                y = std::max(y, usable_area.y);
+
+                // set the position
+                wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
+            }
 
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel);

@@ -166,14 +166,17 @@ void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
                                                      config->refresh)) < 1) {
                     wlr_output_state_set_mode(&state, mode);
                     found = true;
+                    wlr_log(WLR_INFO, "found matching output mode: %dx%d@%.1f", mode->width, mode->height, mode->refresh / 1000.0);
                     break;
                 }
 
                 // no matching mode, try custom one
-                if (!found)
+                if (!found) {
                     wlr_output_state_set_custom_mode(
                         &state, config->width, config->height,
                         (int)(config->refresh * 1000));
+                    wlr_log(WLR_INFO, "attempting to set custom mode: %dx%d@%.1f", config->width, config->height, config->refresh);
+                }
             }
 
             // position
@@ -300,11 +303,13 @@ Server::Server(struct Config *config) {
                                                                 1000.0 -
                                                             matching_config
                                                                 ->refresh)))
-                        best_mode = mode;
+                                                                    best_mode = mode;
 
                     // set mode if found
-                    if (best_mode)
+                    if (best_mode) {
                         wlr_output_state_set_mode(&state, best_mode);
+                        wlr_log(WLR_INFO, "found matching output mode: %dx%d@%.1f", best_mode->width, best_mode->height, best_mode->refresh / 1000.0);
+                    }
                 }
 
                 // scale
@@ -339,7 +344,7 @@ Server::Server(struct Config *config) {
 
         // commit final config
         if (!wlr_output_commit_state(wlr_output, &state))
-            wlr_log(WLR_ERROR, "Failed to commit output state for %s",
+            wlr_log(WLR_ERROR, "failed to commit output state for %s",
                     wlr_output->name);
 
         wlr_output_state_finish(&state);

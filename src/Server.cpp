@@ -652,6 +652,10 @@ Server::Server(struct Config *config) {
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 
+    // set the linux dmabuf if supported
+    if (wlr_linux_dmabuf)
+        wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
+
     // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
             socket);

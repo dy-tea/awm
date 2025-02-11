@@ -99,10 +99,12 @@ Toplevel::Toplevel(struct Server *server,
         if (xdg_toplevel->base->initial_commit)
             // let client pick dimensions
             wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
-        else
+        else {
             // no idea if this does anything
             wlr_xdg_toplevel_set_size(xdg_toplevel, xdg_toplevel->current.width,
                                       xdg_toplevel->current.height);
+            wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+        }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 

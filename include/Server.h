@@ -1,5 +1,6 @@
 #include <cassert>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "Keyboard.h"
 #include "LayerShell.h"

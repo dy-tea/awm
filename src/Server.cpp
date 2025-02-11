@@ -619,6 +619,15 @@ Server::Server(struct Config *config) {
         exit(1);
     }
 
+    // set up SIGCHLD handler to reap zombie processes
+    struct sigaction sa;
+    sa.sa_handler = [](int sig) {
+        while (waitpid(-1, NULL, WNOHANG) > 0);
+    };
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
+    sigaction(SIGCHLD, &sa, NULL);
+
     // set wayland diplay to our socket
     setenv("WAYLAND_DISPLAY", socket, true);
 

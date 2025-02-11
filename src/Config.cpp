@@ -131,8 +131,10 @@ Config::Config(std::string path) {
                 auto exec = table.getString("exec");
 
                 if (bind.first && exec.first)
-                    if (Bind *parsed = parse_bind(bind.second))
+                    if (Bind *parsed = parse_bind(bind.second)) {
                         commands.emplace_back(*parsed, exec.second);
+                        delete parsed;
+                    }
             }
 
     } else {
@@ -257,8 +259,10 @@ struct Bind *Config::parse_bind(std::string definition) {
 void Config::set_bind(std::string name, toml::Table *source, Bind *target) {
     auto row = source->getString(name);
     if (row.first)
-        if (Bind *parsed = parse_bind(row.second))
+        if (Bind *parsed = parse_bind(row.second)) {
             *target = *parsed;
+            delete parsed;
+        }
 }
 
 // helper function to connect the second pair if the first bool is true

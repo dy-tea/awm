@@ -81,4 +81,5 @@ int main(int argc, char *argv[]) {
     // start server
     struct Server *server = new Server(config);
     delete server;
+    delete config;
 }

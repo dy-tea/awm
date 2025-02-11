@@ -254,7 +254,6 @@ Server::Server(struct Config *config) {
     }
 
     wlr_renderer_init_wl_display(renderer, wl_display);
-    wlr_renderer_init_wl_shm(renderer, wl_display);
 
     // linux dmabuf
     if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF) != NULL)

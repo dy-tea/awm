@@ -23,6 +23,7 @@ protocols = [
   wl_protocols_dir / 'staging' / 'ext-image-capture-source' / 'ext-image-capture-source-v1.xml',
   wl_protocols_dir / 'staging' / 'ext-image-copy-capture' / 'ext-image-copy-capture-v1.xml',
   wl_protocols_dir / 'unstable' / 'xdg-output' / 'xdg-output-unstable-v1.xml',
+  wl_protocols_dir / 'unstable' / 'linux-dmabuf' / 'linux-dmabuf-unstable-v1.xml',
   'protocols' / 'wlr-layer-shell-unstable-v1.xml',
   'protocols' / 'wlr-data-control-unstable-v1.xml',
 ]

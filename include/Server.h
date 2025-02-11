@@ -21,6 +21,8 @@ struct Server {
     struct wlr_scene *scene;
     struct wlr_scene_output_layout *scene_layout;
 
+    struct wlr_linux_dmabuf_v1* wlr_linux_dmabuf;
+
     struct wlr_scene_tree *toplevel_tree;
     struct wlr_scene_tree *fullscreen_tree;
 

@@ -80,5 +80,10 @@ int main(int argc, char *argv[]) {
 
     // start server
     struct Server *server = new Server(config);
+
+    // set the linux dmabuf if supported
+    if (server->wlr_linux_dmabuf)
+		wlr_scene_set_linux_dmabuf_v1(server->scene, server->wlr_linux_dmabuf);
+
     delete server;
 }

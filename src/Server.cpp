@@ -254,6 +254,12 @@ Server::Server(struct Config *config) {
     }
 
     wlr_renderer_init_wl_display(renderer, wl_display);
+    wlr_renderer_init_wl_shm(renderer, wl_display);
+
+    // linux dmabuf
+    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF) != NULL)
+	wlr_linux_dmabuf = wlr_linux_dmabuf_v1_create_with_renderer(
+		wl_display, 4, renderer);
 
     // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);

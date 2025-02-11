@@ -272,6 +272,7 @@ Server::Server(struct Config *config) {
     wl_list_init(&outputs);
 
     // new_output FIXME holy code duplication (apply_output_configuration)
+    // potentially move this and apply_output_configuration to Output.cpp
     new_output.notify = [](struct wl_listener *listener, void *data) {
         // new display / monitor available
         struct Server *server = wl_container_of(listener, server, new_output);
@@ -373,11 +374,16 @@ Server::Server(struct Config *config) {
         wl_list_insert(&server->outputs, &output->link);
 
         // position
-        if (matching_config && config_success)
+        wlr_output_layout_output *output_layout_output = matching_config && config_success ?
             wlr_output_layout_add(server->output_layout, wlr_output,
-                                  matching_config->x, matching_config->y);
-        else
+                                  matching_config->x, matching_config->y)
+            :
             wlr_output_layout_add_auto(server->output_layout, wlr_output);
+
+        // add to scene output
+        // NOTE: not being done in apply_output_configuration, unsure if necessary
+        wlr_scene_output *scene_output = wlr_scene_output_create(server->scene, wlr_output);
+        wlr_scene_output_layout_add_output(server->scene_layout, output_layout_output, scene_output);
     };
     wl_signal_add(&backend->events.new_output, &new_output);
 

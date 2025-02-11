@@ -109,7 +109,7 @@ void LayerShell::arrange_layers(struct Output *output) {
         }
     }
 
-    // output->usable_area = usable_area;
+    // output->usable_area = usable_area; TODO
 }
 
 struct wlr_scene_tree *

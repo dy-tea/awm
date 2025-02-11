@@ -256,9 +256,10 @@ Server::Server(struct Config *config) {
     wlr_renderer_init_wl_display(renderer, wl_display);
 
     // linux dmabuf
-    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF) != NULL)
-	wlr_linux_dmabuf = wlr_linux_dmabuf_v1_create_with_renderer(
-		wl_display, 4, renderer);
+    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF) !=
+        NULL)
+        wlr_linux_dmabuf =
+            wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, renderer);
 
     // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);
@@ -379,16 +380,19 @@ Server::Server(struct Config *config) {
         wl_list_insert(&server->outputs, &output->link);
 
         // position
-        wlr_output_layout_output *output_layout_output = matching_config && config_success ?
-            wlr_output_layout_add(server->output_layout, wlr_output,
-                                  matching_config->x, matching_config->y)
-            :
-            wlr_output_layout_add_auto(server->output_layout, wlr_output);
+        wlr_output_layout_output *output_layout_output =
+            matching_config && config_success
+                ? wlr_output_layout_add(server->output_layout, wlr_output,
+                                        matching_config->x, matching_config->y)
+                : wlr_output_layout_add_auto(server->output_layout, wlr_output);
 
         // add to scene output
-        // NOTE: not being done in apply_output_configuration, unsure if necessary
-        wlr_scene_output *scene_output = wlr_scene_output_create(server->scene, wlr_output);
-        wlr_scene_output_layout_add_output(server->scene_layout, output_layout_output, scene_output);
+        // NOTE: not being done in apply_output_configuration, unsure if
+        // necessary
+        wlr_scene_output *scene_output =
+            wlr_scene_output_create(server->scene, wlr_output);
+        wlr_scene_output_layout_add_output(server->scene_layout,
+                                           output_layout_output, scene_output);
     };
     wl_signal_add(&backend->events.new_output, &new_output);
 
@@ -633,7 +637,8 @@ Server::Server(struct Config *config) {
     // set up SIGCHLD handler to reap zombie processes
     struct sigaction sa;
     sa.sa_handler = [](int sig) {
-        while (waitpid(-1, NULL, WNOHANG) > 0);
+        while (waitpid(-1, NULL, WNOHANG) > 0)
+            ;
     };
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;

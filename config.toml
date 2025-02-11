@@ -37,11 +37,17 @@ enabled = true     # set to true by default
 width = 1920
 height = 1080
 refresh = 60.0
-x = 0
-y = 0
+x = 2560
+y = 720
 transform = "none" # "none", "90", "180", "270", "f", "f90", "f180", f270"
 scale = 1.0
 adaptive = false   # adaptive sync
+
+[[monitors]]
+name = "DP-1"
+width = 2560
+height = 1440
+refresh = 180.0
 
 [[monitors]]
 name = "WL-1"

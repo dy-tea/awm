@@ -89,7 +89,6 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
-
         // get associated output, fall back to focused output
         Output *output = (Output *)surface->wlr_layer_surface->output->data;
         if (!output)
@@ -143,8 +142,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
         // rearrange if needed
         if (needs_arrange)
-            surface->layer_shell->arrange_layers(
-                output);
+            surface->layer_shell->arrange_layers(output);
     };
     wl_signal_add(&wlr_layer_surface->surface->events.commit, &commit);
 

@@ -377,6 +377,8 @@ Server::Server(struct Config *config) {
             return;
         }
 
+        shell_surface->output = output->wlr_output;
+
         // add to layer surfaces
         LayerSurface *layer_surface = new LayerSurface(output, shell_surface);
         if (layer_surface)

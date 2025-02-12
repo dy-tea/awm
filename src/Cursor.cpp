@@ -51,28 +51,22 @@ Cursor::Cursor(struct Server *server) {
             Server *server = cursor->server;
 
             // layer surface
-            {
-                double sx, sy;
-                struct wlr_surface *surface = NULL;
+            double sx, sy;
+            struct wlr_surface *surface = NULL;
 
-                struct LayerSurface *layer_surface = server->layer_surface_at(
-                    cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-                if (layer_surface && surface && surface->mapped)
-                    if (layer_surface->should_focus())
-                        layer_surface->handle_focus();
-            }
+            struct LayerSurface *layer_surface = server->layer_surface_at(
+                cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+            if (layer_surface && surface && surface->mapped)
+                if (layer_surface->should_focus())
+                    layer_surface->handle_focus();
 
             // toplevel
-            {
-                double sx, sy;
-                struct wlr_surface *surface = NULL;
 
-                struct Toplevel *toplevel = server->toplevel_at(
-                    cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-                if (toplevel && surface && surface->mapped)
-                    server->focused_output()->get_active()->focus_toplevel(
-                        toplevel);
-            }
+            struct Toplevel *toplevel = server->toplevel_at(
+                cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+            if (toplevel && surface && surface->mapped)
+                server->focused_output()->get_active()->focus_toplevel(
+                    toplevel);
         }
     };
     wl_signal_add(&cursor->events.button, &button);

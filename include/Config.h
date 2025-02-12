@@ -44,11 +44,6 @@ struct OutputConfig {
     }
 };
 
-struct MatchOutputConfig {
-    struct Output *output;
-    struct OutputConfig *config;
-};
-
 struct Config {
     std::vector<std::string> startup_commands;
     std::vector<std::pair<std::string, std::string>> startup_env;

@@ -1,31 +1,14 @@
 #include "Server.h"
 
-LayerSurface::LayerSurface(struct LayerShell *shell,
+LayerSurface::LayerSurface(struct Output *output,
                            struct wlr_layer_surface_v1 *wlr_layer_surface) {
-    layer_shell = shell;
+    this->output = output;
     this->wlr_layer_surface = wlr_layer_surface;
     wl_list_init(&popups);
 
-    // layer shells must have an output
-    if (!wlr_layer_surface->output) {
-        wlr_log(WLR_ERROR, "layer surface created without an output");
-        return;
-    }
-
-    // get associated output, fall back to focused output
-    Output *output = (Output *)wlr_layer_surface->output->data;
-    if (!output)
-        output = shell->server->focused_output();
-
-    // set the fractional scale for this surface
-    wlr_fractional_scale_v1_notify_scale(wlr_layer_surface->surface,
-                                         output->wlr_output->scale);
-    wlr_surface_set_preferred_buffer_scale(wlr_layer_surface->surface,
-                                           ceil(output->wlr_output->scale));
-
     // create scene layer for surface
     struct wlr_scene_tree *layer_tree =
-        shell->get_layer_scene(wlr_layer_surface->pending.layer);
+        output->shell_layer(wlr_layer_surface->pending.layer);
     scene_layer_surface =
         wlr_scene_layer_surface_v1_create(layer_tree, wlr_layer_surface);
 
@@ -45,13 +28,8 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node,
                                    true);
 
-        // get associated output, fall back to focused output
-        Output *output = (Output *)surface->wlr_layer_surface->output->data;
-        if (!output)
-            output = surface->layer_shell->server->focused_output();
-
         // rearrange
-        surface->layer_shell->arrange_layers(output);
+        surface->output->arrange_layers();
 
         // handle focus
         if (surface->wlr_layer_surface->current.keyboard_interactive)
@@ -66,6 +44,9 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         // disable surface
         wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node,
                                    false);
+
+        // arrange layers
+        surface->output->arrange_layers();
     };
     wl_signal_add(&wlr_layer_surface->surface->events.unmap, &unmap);
 
@@ -74,42 +55,41 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
         // on display
         LayerSurface *surface = wl_container_of(listener, surface, commit);
 
-        bool needs_arrange = false;
+        // get associated output
+        Output *output = surface->output;
 
         // layer changed reparent to new layer tree
+        bool needs_arrange = false;
         if (surface->wlr_layer_surface->current.committed &
             WLR_LAYER_SURFACE_V1_STATE_LAYER) {
             struct wlr_scene_tree *new_tree =
-                surface->layer_shell->get_layer_scene(
-                    surface->wlr_layer_surface->current.layer);
+                output->shell_layer(surface->wlr_layer_surface->current.layer);
             wlr_scene_node_reparent(&surface->scene_layer_surface->tree->node,
                                     new_tree);
+            wlr_scene_node_raise_to_top(
+                &surface->scene_layer_surface->tree->node);
             needs_arrange = true;
         }
 
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
-        // get associated output, fall back to focused output
-        Output *output = (Output *)surface->wlr_layer_surface->output->data;
-        if (!output)
-            output = surface->layer_shell->server->focused_output();
+        // get usable area of the output
+        struct wlr_box usable_area = output->usable_area;
 
-        // get output size
-        uint32_t output_width = output->wlr_output->width;
-        uint32_t output_height = output->wlr_output->height;
+        // get output box
+        struct wlr_box output_box;
+        wlr_output_layout_get_box(output->server->output_layout,
+                                  output->wlr_output, &output_box);
 
         // set default location to center of screen
         if (!layer_surface->configured) {
-            // get usable area of the output
-            struct wlr_box usable_area = output->get_usable_area();
-
-            // Get the actual dimensions of the surface
+            // get the actual dimensions of the surface
             uint32_t width = layer_surface->current.actual_width;
             uint32_t height = layer_surface->current.actual_height;
 
             // calculate target position based on anchor points
-            int32_t x = usable_area.x;
-            int32_t y = usable_area.y;
+            int32_t x = output_box.x;
+            int32_t y = output_box.y;
 
             // center horizontally if not anchored horizontally
             if (!(layer_surface->current.anchor &
@@ -132,9 +112,13 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
             height = layer_surface->current.desired_height;
 
             if (!width)
-                width = output_width;
+                width = output_box.width;
             if (!height)
-                height = output_height;
+                height = output_box.height;
+
+            wlr_log(WLR_INFO,
+                    "layer surface configured to %dx%d at position %d, %d",
+                    width, height, x, y);
 
             // send configure with size
             wlr_layer_surface_v1_configure(layer_surface, width, height);
@@ -142,7 +126,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
         // rearrange if needed
         if (needs_arrange)
-            surface->layer_shell->arrange_layers(output);
+            output->arrange_layers();
     };
     wl_signal_add(&wlr_layer_surface->surface->events.commit, &commit);
 
@@ -168,8 +152,7 @@ LayerSurface::LayerSurface(struct LayerShell *shell,
 
 LayerSurface::~LayerSurface() {
     // rearrange on destroy
-    if (wlr_layer_surface->output && wlr_layer_surface->output->data)
-        layer_shell->arrange_layers((Output *)wlr_layer_surface->output->data);
+    output->arrange_layers();
 
     // remove associated popups
     struct Popup *popup, *tmp;
@@ -195,12 +178,11 @@ void LayerSurface::handle_focus() {
         return;
 
     struct wlr_surface *surface = wlr_layer_surface->surface;
-    struct wlr_keyboard *keyboard =
-        wlr_seat_get_keyboard(layer_shell->server->seat);
+    struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(output->server->seat);
 
     if (keyboard)
         wlr_seat_keyboard_notify_enter(
-            layer_shell->server->seat, surface, keyboard->keycodes,
+            output->server->seat, surface, keyboard->keycodes,
             keyboard->num_keycodes, &keyboard->modifiers);
 }
 

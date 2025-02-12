@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include "Keyboard.h"
-#include "LayerShell.h"
+#include "LayerSurface.h"
 #include "Output.h"
 #include "Popup.h"
 #include "Toplevel.h"
@@ -22,9 +22,6 @@ struct Server {
     struct wlr_scene_output_layout *scene_layout;
 
     struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf;
-
-    struct wlr_scene_tree *toplevel_tree;
-    struct wlr_scene_tree *fullscreen_tree;
 
     struct wlr_xdg_shell *xdg_shell;
     struct wl_listener new_xdg_toplevel;
@@ -47,8 +44,15 @@ struct Server {
     struct wl_list outputs;
     struct wl_listener new_output;
 
+    struct {
+        struct wlr_scene_tree *floating;
+        struct wlr_scene_tree *fullscreen;
+    } layers;
+
     // struct XWaylandShell *xwayland_shell;
-    struct LayerShell *layer_shell;
+    struct wl_list layer_surfaces;
+    struct wlr_layer_shell_v1 *wlr_layer_shell;
+    struct wl_listener new_shell_surface;
 
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
     struct wlr_output_manager_v1 *wlr_output_manager;
@@ -70,7 +74,7 @@ struct Server {
     void new_keyboard(struct wlr_input_device *device);
     void new_pointer(struct wlr_input_device *device);
 
-    struct Output *get_output(uint32_t index);
+    struct Output *get_output(struct wlr_output *wlr_output);
     struct Output *focused_output();
 
     template <typename T>
@@ -86,6 +90,8 @@ struct Server {
 
     struct Workspace *get_workspace(struct Toplevel *toplevel);
 
+    bool apply_output_config_to_output(Output *output, OutputConfig *config,
+                                       bool test_only);
     void apply_output_config(struct wlr_output_configuration_v1 *config,
                              bool test_only);
 };

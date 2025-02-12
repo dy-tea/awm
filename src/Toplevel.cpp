@@ -5,8 +5,8 @@ Toplevel::Toplevel(struct Server *server,
     // add the toplevel to the scene tree
     this->server = server;
     this->xdg_toplevel = xdg_toplevel;
-    scene_tree =
-        wlr_scene_xdg_surface_create(server->toplevel_tree, xdg_toplevel->base);
+    scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
+                                              xdg_toplevel->base);
     scene_tree->node.data = this;
     xdg_toplevel->base->data = scene_tree;
 
@@ -38,7 +38,7 @@ Toplevel::Toplevel(struct Server *server,
                                                    ceil(scale));
 
             // get usable area of the output
-            struct wlr_box usable_area = output->get_usable_area();
+            struct wlr_box usable_area = output->usable_area;
 
             // get scheduled width and height
             uint32_t width = xdg_toplevel->scheduled.width > 0
@@ -54,22 +54,23 @@ Toplevel::Toplevel(struct Server *server,
                 height = xdg_toplevel->base->surface->current.height;
             }
 
-            if (width > 0 && height > 0) {
-                // Ensure the window fits within usable area
-                width = std::min(width, (uint32_t)usable_area.width);
-                height = std::min(height, (uint32_t)usable_area.height);
+            // ensure size does not exceed output
+            width = std::min(width, (uint32_t)usable_area.width);
+            height = std::min(height, (uint32_t)usable_area.height);
 
-                // calculate position to center the window
-                int32_t x = usable_area.x + (usable_area.width - width) / 2;
-                int32_t y = usable_area.y + (usable_area.height - height) / 2;
+            struct wlr_box output_box;
+            wlr_output_layout_get_box(toplevel->server->output_layout,
+                                      output->wlr_output, &output_box);
 
-                // ensure coordinates are positive
-                x = std::max(x, usable_area.x);
-                y = std::max(y, usable_area.y);
+            int32_t x = output_box.x + (usable_area.width - width) / 2;
+            int32_t y = output_box.y + (usable_area.height - height) / 2;
 
-                // set the position
-                wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
-            }
+            // ensure position falls in bounds
+            x = std::max(x, usable_area.x);
+            y = std::max(y, usable_area.y);
+
+            // set the position
+            wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
 
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel);
@@ -272,8 +273,22 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
         Workspace *target =
             server->output_at(cursor->cursor->x, cursor->cursor->y)
                 ->get_active();
-        if (!target->contains(this) && current)
+        if (!target->contains(this) && current) {
             current->move_to(this, target);
+
+            struct wlr_box output_box;
+            wlr_output_layout_get_box(server->output_layout,
+                                      target->output->wlr_output, &output_box);
+
+            double new_x = cursor->cursor->x - cursor->grab_x;
+            double new_y = cursor->cursor->y - cursor->grab_y;
+
+            // Adjust for output offset
+            new_x -= output_box.x;
+            new_y -= output_box.y;
+
+            wlr_scene_node_set_position(&scene_tree->node, new_x, new_y);
+        }
     } else {
         // don't resize fullscreened windows
         if (xdg_toplevel->current.fullscreen)
@@ -384,7 +399,7 @@ void Toplevel::set_fullscreen(bool fullscreen) {
 
         // move scene tree node to fullscreen tree
         wlr_scene_node_raise_to_top(&scene_tree->node);
-        wlr_scene_node_reparent(&scene_tree->node, server->fullscreen_tree);
+        wlr_scene_node_reparent(&scene_tree->node, server->layers.fullscreen);
     } else {
         // set back to saved geometry
         wlr_scene_node_set_position(&scene_tree->node, output_box.x,
@@ -393,7 +408,7 @@ void Toplevel::set_fullscreen(bool fullscreen) {
                                   saved_geometry.height / scale);
 
         // move scene tree node to toplevel tree
-        wlr_scene_node_reparent(&scene_tree->node, server->toplevel_tree);
+        wlr_scene_node_reparent(&scene_tree->node, server->layers.floating);
     }
 
     // set toplevel window mode to fullscreen

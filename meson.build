@@ -78,7 +78,6 @@ executable(
     'src/Toplevel.cpp',
     'src/Output.cpp',
     'src/Popup.cpp',
-    'src/LayerShell.cpp',
     'src/LayerSurface.cpp',
     'src/Workspace.cpp',
     'src/Config.cpp',

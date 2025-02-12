@@ -63,8 +63,11 @@ bool Workspace::move_to(struct Toplevel *toplevel,
 
     // ensure toplevel is part of workspace
     if (contains(toplevel)) {
+        // only hide toplevel if moving to a workspace on the same output
+        if (output == output->server->focused_output())
+            toplevel->set_hidden(true);
+
         // move to other workspace
-        toplevel->set_hidden(true);
         wl_list_remove(&toplevel->link);
         workspace->add_toplevel(toplevel);
 

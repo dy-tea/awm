@@ -1,11 +1,16 @@
 #include "Server.h"
-#include "wlr.h"
 
 Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     this->wlr_output = wlr_output;
     this->server = server;
     this->wlr_output->data = this;
     wl_list_init(&workspaces);
+
+    // create layers
+    layers.background = wlr_scene_tree_create(&server->scene->tree);
+    layers.bottom = wlr_scene_tree_create(&server->scene->tree);
+    layers.top = wlr_scene_tree_create(&server->scene->tree);
+    layers.overlay = wlr_scene_tree_create(&server->scene->tree);
 
     // create workspaces
     for (int i = 0; i != 9; ++i)
@@ -61,13 +66,94 @@ Output::~Output() {
     wl_list_remove(&link);
 }
 
-// get usbale area of the output
-struct wlr_box Output::get_usable_area() {
-    struct wlr_box usable_area = {0};
-    wlr_output_layout_get_box(
-                    server->output_layout, wlr_output,
-                    &usable_area);
-    return usable_area;
+void Output::arrange_layers() {
+    struct wlr_box usable = {0};
+    wlr_output_effective_resolution(wlr_output, &usable.width, &usable.height);
+    const struct wlr_box full_area = usable;
+
+    // set z order
+    wlr_scene_node_raise_to_top(&layers.background->node);
+    wlr_scene_node_raise_to_top(&layers.bottom->node);
+    wlr_scene_node_raise_to_top(&server->layers.floating->node);
+    wlr_scene_node_raise_to_top(&server->layers.fullscreen->node);
+    wlr_scene_node_raise_to_top(&layers.top->node);
+    wlr_scene_node_raise_to_top(&layers.overlay->node);
+
+    // exclusive surfaces
+    arrange_layer_surface(this, &full_area, &usable, layers.overlay, true);
+    arrange_layer_surface(this, &full_area, &usable, layers.top, true);
+    arrange_layer_surface(this, &full_area, &usable, layers.bottom, true);
+    arrange_layer_surface(this, &full_area, &usable, layers.background, true);
+
+    // non-exclusive surfaces
+    arrange_layer_surface(this, &full_area, &usable, layers.overlay, false);
+    arrange_layer_surface(this, &full_area, &usable, layers.top, false);
+    arrange_layer_surface(this, &full_area, &usable, layers.bottom, false);
+    arrange_layer_surface(this, &full_area, &usable, layers.background, false);
+
+    // check if usable area changed TODO rearrange
+    if (memcmp(&usable, &usable_area, sizeof(struct wlr_box)) != 0)
+        usable_area = usable;
+
+    // handle keyboard interactive layers
+    LayerSurface *topmost = nullptr;
+    struct wlr_scene_tree *layers_above_shell[] = {layers.overlay, layers.top};
+
+    for (auto layer : layers_above_shell) {
+        struct wlr_scene_node *node;
+        wl_list_for_each_reverse(node, &layer->children, link) {
+            LayerSurface *surface = (LayerSurface *)node->data;
+            if (surface &&
+                surface->wlr_layer_surface->current.keyboard_interactive ==
+                    ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
+                surface->wlr_layer_surface->surface->mapped) {
+                topmost = surface;
+                break;
+            }
+        }
+        if (topmost)
+            break;
+    }
+
+    // TODO update keyboard focus
+}
+
+// arrange a surface layer
+void Output::arrange_layer_surface(Output *output,
+                                   const struct wlr_box *full_area,
+                                   struct wlr_box *usable_area,
+                                   struct wlr_scene_tree *tree,
+                                   bool exclusive) {
+    struct wlr_scene_node *node;
+    wl_list_for_each(node, &tree->children, link) {
+        LayerSurface *surface = (LayerSurface *)node->data;
+        if (!surface || !surface->wlr_layer_surface->initialized)
+            continue;
+
+        if ((surface->wlr_layer_surface->current.exclusive_zone > 0) !=
+            exclusive)
+            continue;
+
+        wlr_scene_layer_surface_v1_configure(surface->scene_layer_surface,
+                                             full_area, usable_area);
+    }
+}
+
+// get a layer shell layer
+struct wlr_scene_tree *
+Output::shell_layer(enum zwlr_layer_shell_v1_layer layer) {
+    switch (layer) {
+    case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
+        return layers.background;
+    case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
+        return layers.bottom;
+    case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
+        return layers.top;
+    case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
+        return layers.overlay;
+    default:
+        return layers.background;
+    }
 }
 
 // create a new workspace for this output

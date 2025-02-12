@@ -1,4 +1,5 @@
 #include "Server.h"
+#include <map>
 
 // create a new keyboard
 void Server::new_keyboard(struct wlr_input_device *device) {
@@ -66,7 +67,7 @@ T *Server::surface_at(double lx, double ly, struct wlr_surface **surface,
         return NULL;
 
     // return the topmost node's data
-    return static_cast<T *>(tree->node.data);
+    return (T *)(tree->node.data);
 }
 
 // find a toplevel by location
@@ -83,20 +84,12 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
     return surface_at<LayerSurface>(lx, ly, surface, sx, sy);
 }
 
-// get the nth output
-struct Output *Server::get_output(uint32_t index) {
-    if (wl_list_empty(&outputs))
-        return nullptr;
-
+// get output by wlr_output
+struct Output *Server::get_output(struct wlr_output *wlr_output) {
     Output *output, *tmp;
-    uint32_t i = 0;
-
-    wl_list_for_each_safe(output, tmp, &outputs, link) {
-        if (i == index)
-            return output;
-        ++i;
-    }
-
+    wl_list_for_each_safe(output, tmp, &outputs,
+                          link) if (output->wlr_output ==
+                                    wlr_output) return output;
     return nullptr;
 }
 
@@ -108,11 +101,7 @@ struct Output *Server::output_at(double x, double y) {
     if (wlr_output == NULL)
         return NULL;
 
-    struct Output *output;
-    wl_list_for_each(output, &outputs,
-                     link) if (output->wlr_output == wlr_output) return output;
-
-    return NULL;
+    return get_output(wlr_output);
 }
 
 // get the focused output
@@ -120,109 +109,105 @@ struct Output *Server::focused_output() {
     return output_at(cursor->cursor->x, cursor->cursor->y);
 }
 
-// attempt to apply a config passed from a client to an output
-void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
-                                 bool test_only) {
-    // copy current output config to configs
-    std::vector<OutputConfig *> configs;
-    for (OutputConfig *c : config->outputs)
-        configs.push_back(c);
+bool Server::apply_output_config_to_output(Output *output, OutputConfig *config,
+                                           bool test_only) {
+    struct wlr_output *wlr_output = output->wlr_output;
 
-    // add the passed cfg heads to configs
-    struct wlr_output_configuration_head_v1 *config_head;
-    wl_list_for_each(config_head, &cfg->heads, link) {
-        struct OutputConfig *oc = new OutputConfig(config_head);
-        configs.emplace_back(oc);
-    }
+    struct wlr_output_state state;
+    wlr_output_state_init(&state);
 
-    // match configs to output
-    std::vector<MatchOutputConfig *> matches;
-    Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &outputs, link) {
-        struct MatchOutputConfig *match = new MatchOutputConfig;
-        match->output = output;
-        for (OutputConfig *oc : configs)
-            if (oc->name == output->wlr_output->name) {
-                match->config = oc;
-                break;
+    // enabled
+    wlr_output_state_set_enabled(&state, config->enabled);
+
+    if (config->enabled) {
+        // set mode
+        bool mode_set = false;
+        if (config->width > 0 && config->height > 0 && config->refresh > 0) {
+            // find matching mode
+            struct wlr_output_mode *mode, *best_mode = nullptr;
+            wl_list_for_each(mode, &wlr_output->modes, link) if (
+                mode->width == config->width &&
+                mode->height ==
+                    config->height) if (!best_mode ||
+                                        (abs((int)(mode->refresh / 1000.0 -
+                                                   config->refresh)) < 1.5 &&
+                                         abs((int)(mode->refresh / 1000.0 -
+                                                   config->refresh)) <
+                                             abs((int)(best_mode->refresh /
+                                                           1000.0 -
+                                                       config->refresh))))
+                best_mode = mode;
+
+            if (best_mode) {
+                wlr_output_state_set_mode(&state, best_mode);
+                mode_set = true;
             }
-        matches.push_back(match);
-    }
-
-    // apply config to each output
-    bool success = true;
-    for (MatchOutputConfig *moc : matches) {
-        if (!moc->config)
-            continue;
-
-        struct wlr_output *wlr_output = moc->output->wlr_output;
-        OutputConfig *config = moc->config;
-
-        // create new state
-        struct wlr_output_state state;
-        wlr_output_state_init(&state);
-
-        // enabled
-        wlr_output_state_set_enabled(&state, config->enabled);
-
-        if (config->enabled) {
-            // width / height / refresh
-            if (config->width > 0 && config->height > 0 &&
-                config->refresh > 0) {
-                // try to find a matching mode
-                struct wlr_output_mode *mode;
-                bool found = false;
-                wl_list_for_each(mode, &wlr_output->modes,
-                                 link) if (mode->width == config->width &&
-                                           mode->height == config->height &&
-                                           abs((int)(mode->refresh / 1000.0 -
-                                                     config->refresh)) < 1) {
-                    wlr_output_state_set_mode(&state, mode);
-                    found = true;
-                    wlr_log(WLR_INFO, "found matching output mode: %dx%d@%.1f",
-                            mode->width, mode->height, mode->refresh / 1000.0);
-                    break;
-                }
-
-                // no matching mode, try custom one
-                if (!found) {
-                    wlr_output_state_set_custom_mode(
-                        &state, config->width, config->height,
-                        (int)(config->refresh * 1000));
-                    wlr_log(WLR_INFO,
-                            "attempting to set custom mode: %dx%d@%.1f",
-                            config->width, config->height, config->refresh);
-                }
-            }
-
-            // position
-            wlr_output_layout_output_coords(output_layout, wlr_output,
-                                            &config->x, &config->y);
-
-            // scale
-            if (config->scale > 0)
-                wlr_output_state_set_scale(&state, config->scale);
-
-            // transform
-            wlr_output_state_set_transform(&state, config->transform);
-
-            // adaptive sync
-            wlr_output_state_set_adaptive_sync_enabled(&state,
-                                                       config->adaptive_sync);
         }
 
-        // test or apply
-        if (test_only)
-            success &= wlr_output_test_state(wlr_output, &state);
-        else
-            success &= wlr_output_commit_state(wlr_output, &state);
+        // set to preferred mode if not set
+        if (!mode_set) {
+            wlr_output_state_set_mode(&state,
+                                      wlr_output_preferred_mode(wlr_output));
+            wlr_log(WLR_INFO, "using fallback mode for output %s",
+                    config->name.c_str());
+        }
 
-        wlr_output_state_finish(&state);
+        // scale
+        if (config->scale > 0)
+            wlr_output_state_set_scale(&state, config->scale);
+
+        // transform
+        wlr_output_state_set_transform(&state, config->transform);
+
+        // adaptive sync
+        wlr_output_state_set_adaptive_sync_enabled(&state,
+                                                   config->adaptive_sync);
     }
 
-    // dealloc
-    for (MatchOutputConfig *moc : matches)
-        delete moc;
+    bool success;
+    if (test_only)
+        success = wlr_output_test_state(wlr_output, &state);
+    else {
+        success = wlr_output_commit_state(wlr_output, &state);
+        if (success) {
+            // update position
+            wlr_output_layout_add(output_layout, wlr_output, config->x,
+                                  config->y);
+            // rearrange
+            output->arrange_layers();
+        }
+    }
+
+    wlr_output_state_finish(&state);
+    return success;
+}
+
+void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
+                                 bool test_only) {
+    // create a map of output names to configs
+    std::map<std::string, OutputConfig *> config_map;
+
+    // add existing configs
+    for (OutputConfig *c : config->outputs)
+        config_map[c->name] = c;
+
+    // oveerride with new configs from cfg
+    struct wlr_output_configuration_head_v1 *config_head;
+    wl_list_for_each(config_head, &cfg->heads, link) {
+        std::string name = config_head->state.output->name;
+        config_map[name] = new OutputConfig(config_head);
+    }
+
+    // get configs
+    std::vector<OutputConfig *> configs;
+
+    // apply each config
+    bool success = true;
+    Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &outputs, link) {
+        OutputConfig *oc = config_map[output->wlr_output->name];
+        success &= apply_output_config_to_output(output, oc, test_only);
+    }
 
     // send cfg status
     if (success)
@@ -277,8 +262,7 @@ Server::Server(struct Config *config) {
     output_layout = wlr_output_layout_create(wl_display);
     wl_list_init(&outputs);
 
-    // new_output FIXME holy code duplication (apply_output_configuration)
-    // potentially move this and apply_output_configuration to Output.cpp
+    // new_output
     new_output.notify = [](struct wl_listener *listener, void *data) {
         // new display / monitor available
         struct Server *server = wl_container_of(listener, server, new_output);
@@ -287,103 +271,48 @@ Server::Server(struct Config *config) {
         // set allocator and renderer for output
         wlr_output_init_render(wlr_output, server->allocator, server->renderer);
 
-        // find matching config
-        OutputConfig *matching_config = nullptr;
-        for (OutputConfig *config : server->config->outputs) {
-            if (config->name == wlr_output->name) {
-                matching_config = config;
-                break;
-            }
-        }
-
-        // create new state
-        struct wlr_output_state state;
-        wlr_output_state_init(&state);
-
-        // try with saved configuration
-        bool config_success = false;
-        if (matching_config) {
-            wlr_log(WLR_INFO, "attempting to apply saved configuration for %s",
-                    wlr_output->name);
-
-            // enable
-            wlr_output_state_set_enabled(&state, matching_config->enabled);
-
-            if (matching_config->enabled) {
-                if (matching_config->width > 0 && matching_config->height > 0 &&
-                    matching_config->refresh > 0) {
-                    // try to find a matching mode
-                    struct wlr_output_mode *mode, *best_mode = nullptr;
-                    wl_list_for_each(mode, &wlr_output->modes, link) if (
-                        mode->width == matching_config->width &&
-                        mode->height ==
-                            matching_config
-                                ->height) if (!best_mode ||
-                                              abs((int)(mode->refresh / 1000.0 -
-                                                        matching_config
-                                                            ->refresh)) <
-                                                  abs((int)(best_mode->refresh /
-                                                                1000.0 -
-                                                            matching_config
-                                                                ->refresh)))
-                        best_mode = mode;
-
-                    // set mode if found
-                    if (best_mode) {
-                        wlr_output_state_set_mode(&state, best_mode);
-                        wlr_log(WLR_INFO,
-                                "found matching output mode: %dx%d@%.1f",
-                                best_mode->width, best_mode->height,
-                                best_mode->refresh / 1000.0);
-                    }
-                }
-
-                // scale
-                if (matching_config->scale > 0)
-                    wlr_output_state_set_scale(&state, matching_config->scale);
-
-                // transform
-                wlr_output_state_set_transform(&state,
-                                               matching_config->transform);
-            }
-
-            // try to commit the configuration
-            config_success = wlr_output_test_state(wlr_output, &state);
-        }
-
-        // try default config
-        if (!config_success) {
-            wlr_log(WLR_INFO, "falling back to default configuration for %s",
-                    wlr_output->name);
-
-            wlr_output_state_finish(&state);
-            wlr_output_state_init(&state);
-
-            wlr_output_state_set_enabled(&state, true);
-
-            // set preferred mode
-            struct wlr_output_mode *mode =
-                wlr_output_preferred_mode(wlr_output);
-            if (mode != NULL)
-                wlr_output_state_set_mode(&state, mode);
-        }
-
-        // commit final config
-        if (!wlr_output_commit_state(wlr_output, &state))
-            wlr_log(WLR_ERROR, "failed to commit output state for %s",
-                    wlr_output->name);
-
-        wlr_output_state_finish(&state);
-
         // add to outputs list
         struct Output *output = new Output(server, wlr_output);
         wl_list_insert(&server->outputs, &output->link);
 
+        // find matching config
+        OutputConfig *matching = nullptr;
+        for (OutputConfig *config : server->config->outputs) {
+            if (config->name == wlr_output->name) {
+                matching = config;
+                break;
+            }
+        }
+
+        // apply the config
+        bool config_success =
+            matching
+                ? server->apply_output_config_to_output(output, matching, false)
+                : false;
+
+        if (!config_success) {
+            wlr_log(WLR_INFO, "using fallback mode for output %s",
+                    output->wlr_output->name);
+
+            // create new state
+            struct wlr_output_state state;
+            wlr_output_state_init(&state);
+
+            // use preferred mode
+            wlr_output_state_set_enabled(&state, true);
+            wlr_output_state_set_mode(&state,
+                                      wlr_output_preferred_mode(wlr_output));
+
+            // commit state
+            config_success = wlr_output_commit_state(wlr_output, &state);
+            wlr_output_state_finish(&state);
+        }
+
         // position
         wlr_output_layout_output *output_layout_output =
-            matching_config && config_success
+            matching && config_success
                 ? wlr_output_layout_add(server->output_layout, wlr_output,
-                                        matching_config->x, matching_config->y)
+                                        matching->x, matching->y)
                 : wlr_output_layout_add_auto(server->output_layout, wlr_output);
 
         // add to scene output
@@ -400,28 +329,60 @@ Server::Server(struct Config *config) {
     scene = wlr_scene_create();
     scene_layout = wlr_scene_attach_output_layout(scene, output_layout);
 
-    // layer shell
-    layer_shell = new LayerShell(this);
-
-    // create scene tree for toplevels between layer shell bottom and top layers
-    toplevel_tree = wlr_scene_tree_create(&scene->tree);
-    wlr_scene_node_place_below(
-        &toplevel_tree->node,
-        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_TOP)->node);
-    wlr_scene_node_place_above(
-        &toplevel_tree->node,
-        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM)->node);
-
-    // create scene tree for fullscreened toplevels between layer shell top and
-    // overlay layers
-    fullscreen_tree = wlr_scene_tree_create(&scene->tree);
-    wlr_scene_node_place_below(&fullscreen_tree->node, &toplevel_tree->node);
-    wlr_scene_node_place_above(
-        &fullscreen_tree->node,
-        &layer_shell->get_layer_scene(ZWLR_LAYER_SHELL_V1_LAYER_TOP)->node);
-
     // create xdg shell
     xdg_shell = wlr_xdg_shell_create(wl_display, 6);
+
+    // new_xdg_toplevel
+    new_xdg_toplevel.notify = [](struct wl_listener *listener, void *data) {
+        struct Server *server =
+            wl_container_of(listener, server, new_xdg_toplevel);
+
+        // toplevels are managed by workspaces
+        [[maybe_unused]] struct Toplevel *toplevel =
+            new Toplevel(server, (wlr_xdg_toplevel *)data);
+    };
+    wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
+
+    // new_xdg_popup
+    new_xdg_popup.notify = [](struct wl_listener *listener, void *data) {
+        struct wlr_xdg_popup *xdg_popup = (wlr_xdg_popup *)data;
+
+        // popups do not need to be tracked
+        [[maybe_unused]] struct Popup *popup = new Popup(xdg_popup);
+    };
+    wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
+
+    // layers
+    layers.floating = wlr_scene_tree_create(&scene->tree);
+    layers.fullscreen = wlr_scene_tree_create(&scene->tree);
+
+    // layer shell
+    wl_list_init(&layer_surfaces);
+    wlr_layer_shell = wlr_layer_shell_v1_create(wl_display, 5);
+
+    // new_shell_surface
+    new_shell_surface.notify = [](struct wl_listener *listener, void *data) {
+        // layer surface created
+        Server *server = wl_container_of(listener, server, new_shell_surface);
+        wlr_layer_surface_v1 *shell_surface =
+            static_cast<wlr_layer_surface_v1 *>(data);
+
+        // assume focused output if not set
+        Output *output = shell_surface->output
+                             ? server->get_output(shell_surface->output)
+                             : server->focused_output();
+
+        if (!output) {
+            wlr_log(WLR_ERROR, "no available output for layer surface");
+            return;
+        }
+
+        // add to layer surfaces
+        LayerSurface *layer_surface = new LayerSurface(output, shell_surface);
+        if (layer_surface)
+            wl_list_insert(&server->layer_surfaces, &layer_surface->link);
+    };
+    wl_signal_add(&wlr_layer_shell->events.new_surface, &new_shell_surface);
 
     // renderer_lost
     renderer_lost.notify = [](struct wl_listener *listener, void *data) {
@@ -472,26 +433,6 @@ Server::Server(struct Config *config) {
         wlr_renderer_destroy(old_renderer);
     };
     wl_signal_add(&renderer->events.lost, &renderer_lost);
-
-    // new_xdg_toplevel
-    new_xdg_toplevel.notify = [](struct wl_listener *listener, void *data) {
-        struct Server *server =
-            wl_container_of(listener, server, new_xdg_toplevel);
-
-        // toplevels are managed by workspaces
-        [[maybe_unused]] struct Toplevel *toplevel =
-            new Toplevel(server, (wlr_xdg_toplevel *)data);
-    };
-    wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
-
-    // new_xdg_popup
-    new_xdg_popup.notify = [](struct wl_listener *listener, void *data) {
-        struct wlr_xdg_popup *xdg_popup = (wlr_xdg_popup *)data;
-
-        // popups do not need to be tracked
-        [[maybe_unused]] struct Popup *popup = new Popup(xdg_popup);
-    };
-    wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 
     // cursor
     cursor = new Cursor(this);
@@ -684,7 +625,9 @@ Server::~Server() {
     wl_list_remove(&output_apply.link);
     wl_list_remove(&output_test.link);
 
-    delete layer_shell;
+    wl_list_remove(&new_shell_surface.link);
+    struct LayerSurface *surface, *tmp;
+    wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;
     // delete xwayland_shell;
 
     wlr_scene_node_destroy(&scene->tree.node);

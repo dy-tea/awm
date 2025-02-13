@@ -16,6 +16,12 @@ LayerSurface::LayerSurface(struct Output *output,
         return;
     }
 
+    // set fractional scale
+    wlr_fractional_scale_v1_notify_scale(wlr_layer_surface->surface,
+                                         wlr_layer_surface->output->scale);
+    wlr_surface_set_preferred_buffer_scale(
+        wlr_layer_surface->surface, ceil(wlr_layer_surface->output->scale));
+
     // point this surface to data for later
     scene_layer_surface->tree->node.data = this;
     wlr_layer_surface->data = this;
@@ -25,8 +31,6 @@ LayerSurface::LayerSurface(struct Output *output,
         // get seat and pointer focus on map
         LayerSurface *surface = wl_container_of(listener, surface, map);
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
-        wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node,
-                                   true);
 
         // rearrange
         surface->output->arrange_layers();
@@ -42,10 +46,6 @@ LayerSurface::LayerSurface(struct Output *output,
     // unmap surface
     unmap.notify = [](struct wl_listener *listener, void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, unmap);
-
-        // disable surface
-        wlr_scene_node_set_enabled(&surface->scene_layer_surface->tree->node,
-                                   false);
 
         // arrange layers
         surface->output->arrange_layers();
@@ -74,30 +74,13 @@ LayerSurface::LayerSurface(struct Output *output,
             needs_arrange = true;
         }
 
-        // get output box
-        struct wlr_box output_box;
-        wlr_output_layout_get_box(output->server->output_layout,
-                                  output->wlr_output, &output_box);
-
-        // set default location to center of screen
-        if (layer_surface->initial_commit) {
-            // get the actual dimensions of the surface
-            uint32_t width = layer_surface->current.desired_width;
-            uint32_t height = layer_surface->current.desired_height;
-
-            if (!width)
-                width = output_box.width;
-            if (!height)
-                height = output_box.height;
-
-            // send configure with size
-            wlr_layer_surface_v1_configure(layer_surface, width, height);
-        }
-
         // rearrange if needed
         if (needs_arrange || layer_surface->initial_commit ||
-            layer_surface->current.committed)
+            layer_surface->current.committed ||
+            layer_surface->surface->mapped != surface->mapped) {
+            surface->mapped = layer_surface->surface->mapped;
             output->arrange_layers();
+        }
     };
     wl_signal_add(&wlr_layer_surface->surface->events.commit, &commit);
 

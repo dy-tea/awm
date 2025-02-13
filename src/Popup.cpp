@@ -3,13 +3,12 @@
 Popup::Popup(struct wlr_xdg_popup *xdg_popup) {
     this->xdg_popup = xdg_popup;
 
+    // we need a parent to ascertain the type
+    if (!xdg_popup->parent)
+        return;
+
     // get parent scene tree
     struct wlr_scene_tree *parent_tree = NULL;
-
-    if (!xdg_popup->parent) {
-        wlr_log(WLR_ERROR, "popup parent surface is null");
-        return;
-    }
 
     // check if parent is layer surface
     struct wlr_layer_surface_v1 *layer =

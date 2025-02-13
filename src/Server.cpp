@@ -285,11 +285,10 @@ Server::Server(struct Config *config) {
         }
 
         // apply the config
-        bool config_success =
-            matching
-                ? server->apply_output_config_to_output(output, matching, false)
-                : false;
+        bool config_success = matching && server->apply_output_config_to_output(
+                                              output, matching, false);
 
+        // fallback
         if (!config_success) {
             wlr_log(WLR_INFO, "using fallback mode for output %s",
                     output->wlr_output->name);
@@ -316,8 +315,6 @@ Server::Server(struct Config *config) {
                 : wlr_output_layout_add_auto(server->output_layout, wlr_output);
 
         // add to scene output
-        // NOTE: not being done in apply_output_configuration, unsure if
-        // necessary
         wlr_scene_output *scene_output =
             wlr_scene_output_create(server->scene, wlr_output);
         wlr_scene_output_layout_add_output(server->scene_layout,
@@ -364,23 +361,22 @@ Server::Server(struct Config *config) {
     new_shell_surface.notify = [](struct wl_listener *listener, void *data) {
         // layer surface created
         Server *server = wl_container_of(listener, server, new_shell_surface);
-        wlr_layer_surface_v1 *shell_surface =
-            static_cast<wlr_layer_surface_v1 *>(data);
+        wlr_layer_surface_v1 *surface = (wlr_layer_surface_v1 *)data;
 
         // assume focused output if not set
-        Output *output = shell_surface->output
-                             ? server->get_output(shell_surface->output)
-                             : server->focused_output();
-
-        if (!output) {
-            wlr_log(WLR_ERROR, "no available output for layer surface");
-            return;
+        if (!surface->output) {
+            if (Output *output = server->focused_output())
+                surface->output = output->wlr_output;
+            else {
+                wlr_log(WLR_ERROR, "no available output for layer surface");
+                return;
+            }
         }
 
-        shell_surface->output = output->wlr_output;
+        Output *output = (Output *)surface->output->data;
 
         // add to layer surfaces
-        LayerSurface *layer_surface = new LayerSurface(output, shell_surface);
+        LayerSurface *layer_surface = new LayerSurface(output, surface);
         if (layer_surface)
             wl_list_insert(&server->layer_surfaces, &layer_surface->link);
     };

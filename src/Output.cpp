@@ -3,7 +3,6 @@
 Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     this->wlr_output = wlr_output;
     this->server = server;
-    this->wlr_output->data = this;
     wl_list_init(&workspaces);
 
     // create layers
@@ -16,6 +15,9 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     for (int i = 0; i != 9; ++i)
         new_workspace();
     set_workspace(0);
+
+    // point output data to this
+    this->wlr_output->data = this;
 
     // frame
     frame.notify = [](struct wl_listener *listener, void *data) {

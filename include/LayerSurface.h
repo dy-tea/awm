@@ -11,6 +11,8 @@ struct LayerSurface {
     struct wl_listener new_popup;
     struct wl_listener destroy;
 
+    bool mapped{false};
+
     LayerSurface(struct Output *output,
                  struct wlr_layer_surface_v1 *wlr_layer_surface);
     ~LayerSurface();

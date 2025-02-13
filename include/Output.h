@@ -25,8 +25,7 @@ struct Output {
 
     void arrange();
     void arrange_layers();
-    static void arrange_layer_surface(Output *output,
-                                      const struct wlr_box *full_area,
+    static void arrange_layer_surface(const struct wlr_box *full_area,
                                       struct wlr_box *usable_area,
                                       struct wlr_scene_tree *tree,
                                       bool exclusive);

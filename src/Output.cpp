@@ -82,16 +82,16 @@ void Output::arrange_layers() {
     wlr_scene_node_raise_to_top(&layers.overlay->node);
 
     // exclusive surfaces
-    arrange_layer_surface(this, &full_area, &usable, layers.overlay, true);
-    arrange_layer_surface(this, &full_area, &usable, layers.top, true);
-    arrange_layer_surface(this, &full_area, &usable, layers.bottom, true);
-    arrange_layer_surface(this, &full_area, &usable, layers.background, true);
+    arrange_layer_surface(&full_area, &usable, layers.overlay, true);
+    arrange_layer_surface(&full_area, &usable, layers.top, true);
+    arrange_layer_surface(&full_area, &usable, layers.bottom, true);
+    arrange_layer_surface(&full_area, &usable, layers.background, true);
 
     // non-exclusive surfaces
-    arrange_layer_surface(this, &full_area, &usable, layers.overlay, false);
-    arrange_layer_surface(this, &full_area, &usable, layers.top, false);
-    arrange_layer_surface(this, &full_area, &usable, layers.bottom, false);
-    arrange_layer_surface(this, &full_area, &usable, layers.background, false);
+    arrange_layer_surface(&full_area, &usable, layers.overlay, false);
+    arrange_layer_surface(&full_area, &usable, layers.top, false);
+    arrange_layer_surface(&full_area, &usable, layers.bottom, false);
+    arrange_layer_surface(&full_area, &usable, layers.background, false);
 
     // check if usable area changed TODO rearrange
     if (memcmp(&usable, &usable_area, sizeof(struct wlr_box)) != 0)
@@ -121,8 +121,7 @@ void Output::arrange_layers() {
 }
 
 // arrange a surface layer
-void Output::arrange_layer_surface(Output *output,
-                                   const struct wlr_box *full_area,
+void Output::arrange_layer_surface(const struct wlr_box *full_area,
                                    struct wlr_box *usable_area,
                                    struct wlr_scene_tree *tree,
                                    bool exclusive) {

@@ -367,7 +367,7 @@ Server::Server(struct Config *config) {
 
         // assume focused output if not set
         if (surface->output)
-            output = (Output *)surface->output->data;
+            output = server->get_output(surface->output);
         else {
             output = server->focused_output();
             if (output)

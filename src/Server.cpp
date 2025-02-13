@@ -363,17 +363,20 @@ Server::Server(struct Config *config) {
         Server *server = wl_container_of(listener, server, new_shell_surface);
         wlr_layer_surface_v1 *surface = (wlr_layer_surface_v1 *)data;
 
+        Output *output = nullptr;
+
         // assume focused output if not set
-        if (!surface->output) {
-            if (Output *output = server->focused_output())
+        if (surface->output)
+            output = (Output *)surface->output->data;
+        else {
+            output = server->focused_output();
+            if (output)
                 surface->output = output->wlr_output;
             else {
                 wlr_log(WLR_ERROR, "no available output for layer surface");
                 return;
             }
         }
-
-        Output *output = (Output *)surface->output->data;
 
         // add to layer surfaces
         LayerSurface *layer_surface = new LayerSurface(output, surface);

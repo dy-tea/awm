@@ -544,6 +544,9 @@ Server::Server(struct Config *config) {
     // xwayland shell
     // xwayland_shell = new XWaylandShell(wl_display, scene);
 
+    // export dmabuf manager
+    wlr_export_dmabuf_manager = wlr_export_dmabuf_manager_v1_create(wl_display);
+
     // screencopy manager
     wlr_screencopy_manager = wlr_screencopy_manager_v1_create(wl_display);
 

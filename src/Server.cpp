@@ -87,7 +87,8 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
 // get output by wlr_output
 struct Output *Server::get_output(struct wlr_output *wlr_output) {
     Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &outputs, link) if (output->wlr_output == wlr_output) {
+    wl_list_for_each_safe(output, tmp, &outputs,
+                          link) if (output->wlr_output == wlr_output) {
         wlr_log(WLR_INFO, "Found output %s", wlr_output->name);
         return output;
     }
@@ -369,10 +370,8 @@ Server::Server(struct Config *config) {
 
         // assume focused output if not set
         if (surface->output) {
-            wlr_log(WLR_INFO, "ITS USING OPRION 1");
             output = server->get_output(surface->output);
         } else {
-            wlr_log(WLR_INFO, "ITS USING OPRION 2");
             output = server->focused_output();
 
             if (output)
@@ -621,16 +620,21 @@ void Server::arrange(Server *server) {
     wl_list_for_each_safe(output, tmp, &server->outputs, link) {
         output->update_position();
         /*
-        wlr_scene_output_set_position(output->scene_output, output->lx, output->ly)
-        wlr_scene_node_reparent(&output->layers.background->node, shell_background);
-        wlr_scene_node_reparent(&output->layers.bottom->node, shell_bottom);
-        wlr_scene_node_reparent(&output->layers.top->node, shell_top);
-        wlr_scene_node_reparent(&output->layers.overlay->node, shell_overlay);
+        wlr_scene_output_set_position(output->scene_output, output->lx,
+        output->ly) wlr_scene_node_reparent(&output->layers.background->node,
+        shell_background); wlr_scene_node_reparent(&output->layers.bottom->node,
+        shell_bottom); wlr_scene_node_reparent(&output->layers.top->node,
+        shell_top); wlr_scene_node_reparent(&output->layers.overlay->node,
+        shell_overlay);
         */
-        wlr_scene_node_set_position(&output->layers.background->node, output->lx, output->ly);
-        wlr_scene_node_set_position(&output->layers.bottom->node, output->lx, output->ly);
-        wlr_scene_node_set_position(&output->layers.top->node, output->lx, output->ly);
-        wlr_scene_node_set_position(&output->layers.overlay->node, output->lx, output->ly);
+        wlr_scene_node_set_position(&output->layers.background->node,
+                                    output->lx, output->ly);
+        wlr_scene_node_set_position(&output->layers.bottom->node, output->lx,
+                                    output->ly);
+        wlr_scene_node_set_position(&output->layers.top->node, output->lx,
+                                    output->ly);
+        wlr_scene_node_set_position(&output->layers.overlay->node, output->lx,
+                                    output->ly);
     }
 }
 

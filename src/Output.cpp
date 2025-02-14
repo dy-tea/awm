@@ -37,7 +37,7 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
         clock_gettime(CLOCK_MONOTONIC, &now);
         wlr_scene_output_send_frame_done(scene_output, &now);
 
-        //output->arrange_layers();
+        // output->arrange_layers();
     };
     wl_signal_add(&wlr_output->events.frame, &frame);
 

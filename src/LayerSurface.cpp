@@ -48,9 +48,10 @@ LayerSurface::LayerSurface(struct Output *output,
     unmap.notify = [](struct wl_listener *listener, void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, unmap);
 
-        wlr_layer_surface_v1_configure(surface->wlr_layer_surface,
-                               surface->wlr_layer_surface->pending.desired_width,
-                               surface->wlr_layer_surface->pending.desired_height);
+        wlr_layer_surface_v1_configure(
+            surface->wlr_layer_surface,
+            surface->wlr_layer_surface->pending.desired_width,
+            surface->wlr_layer_surface->pending.desired_height);
 
         // arrange layers
         surface->output->arrange_layers();

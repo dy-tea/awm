@@ -124,17 +124,21 @@ LayerSurface::~LayerSurface() {
 
 // handle keyboard focus for layer shells
 void LayerSurface::handle_focus() {
+    // ensure layer surface is ready to receive focus
     if (!wlr_layer_surface || !wlr_layer_surface->surface ||
         !wlr_layer_surface->surface->mapped || !scene_layer_surface)
         return;
 
+    // must be keyboard interactive
     if (wlr_layer_surface->current.keyboard_interactive ==
         ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE)
         return;
 
+    // receive keyboard
     struct wlr_surface *surface = wlr_layer_surface->surface;
     struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(output->server->seat);
 
+    // notify keyboard enter
     if (keyboard)
         wlr_seat_keyboard_notify_enter(
             output->server->seat, surface, keyboard->keycodes,

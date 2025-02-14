@@ -99,7 +99,7 @@ void Output::arrange_layers() {
     arrange_layer_surface(&full_area, &usable, layers.bottom, false);
     arrange_layer_surface(&full_area, &usable, layers.background, false);
 
-    // check if usable area changed TODO rearrange
+    // check if usable area changed
     if (memcmp(&usable, &usable_area, sizeof(struct wlr_box)) != 0)
         usable_area = usable;
 

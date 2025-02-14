@@ -276,23 +276,32 @@ Server::Server(struct Config *config) {
     wl_list_init(&outputs);
 
     update_monitors.notify = [](struct wl_listener *listener, void *data) {
-        struct wlr_output_configuration_v1 *config = wlr_output_configuration_v1_create();
+        struct wlr_output_configuration_v1 *config =
+            wlr_output_configuration_v1_create();
         struct Output *output;
-        struct Server *server = wl_container_of(listener, server, update_monitors);
+        struct Server *server =
+            wl_container_of(listener, server, update_monitors);
 
         wl_list_for_each(output, &server->outputs, link) {
+            // get the config head for each output
             struct wlr_output_configuration_head_v1 *config_head =
-                        wlr_output_configuration_head_v1_create(config, output->wlr_output);
+                wlr_output_configuration_head_v1_create(config,
+                                                        output->wlr_output);
+
+            // get the output box
             struct wlr_box output_box;
-            wlr_output_layout_get_box(server->output_layout,
-                    output->wlr_output, &output_box);
-            // We mark the output enabled when it's switched off but not disabled
+            wlr_output_layout_get_box(server->output_layout, output->wlr_output,
+                                      &output_box);
+
+            // mark the output enabled if it's swithed off but not disabled
             config_head->state.enabled = !wlr_box_empty(&output_box);
             config_head->state.x = output_box.x;
             config_head->state.y = output_box.y;
         }
 
-        wlr_output_manager_v1_set_configuration(server->wlr_output_manager, config);
+        // update the configuration
+        wlr_output_manager_v1_set_configuration(server->wlr_output_manager,
+                                                config);
     };
     wl_signal_add(&output_layout->events.change, &update_monitors);
 
@@ -482,6 +491,7 @@ Server::Server(struct Config *config) {
         struct Server *server = wl_container_of(listener, server, new_input);
         struct wlr_input_device *device = static_cast<wlr_input_device *>(data);
 
+        // handle device type
         switch (device->type) {
         case WLR_INPUT_DEVICE_KEYBOARD:
             server->new_keyboard(device);

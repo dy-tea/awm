@@ -88,7 +88,6 @@ executable(
     protocol_sources,
     protocol_code,
   ],
-  cpp_args: ['-fpermissive'],
   include_directories: include,
   dependencies: libs,
   install: true,

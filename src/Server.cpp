@@ -275,6 +275,27 @@ Server::Server(struct Config *config) {
     output_layout = wlr_output_layout_create(wl_display);
     wl_list_init(&outputs);
 
+    update_monitors.notify = [](struct wl_listener *listener, void *data) {
+        struct wlr_output_configuration_v1 *config = wlr_output_configuration_v1_create();
+        struct Output *output;
+        struct Server *server = wl_container_of(listener, server, update_monitors);
+
+        wl_list_for_each(output, &server->outputs, link) {
+            struct wlr_output_configuration_head_v1 *config_head =
+                        wlr_output_configuration_head_v1_create(config, output->wlr_output);
+            struct wlr_box output_box;
+            wlr_output_layout_get_box(server->output_layout,
+                    output->wlr_output, &output_box);
+            // We mark the output enabled when it's switched off but not disabled
+            config_head->state.enabled = !wlr_box_empty(&output_box);
+            config_head->state.x = output_box.x;
+            config_head->state.y = output_box.y;
+        }
+
+        wlr_output_manager_v1_set_configuration(server->wlr_output_manager, config);
+    };
+    wl_signal_add(&output_layout->events.change, &update_monitors);
+
     // new_output
     new_output.notify = [](struct wl_listener *listener, void *data) {
         // new display / monitor available
@@ -663,6 +684,7 @@ Server::~Server() {
     wl_list_remove(&request_cursor.link);
     wl_list_remove(&request_set_selection.link);
 
+    wl_list_remove(&update_monitors.link);
     wl_list_remove(&new_output.link);
     wl_list_remove(&renderer_lost.link);
 

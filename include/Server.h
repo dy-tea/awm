@@ -50,6 +50,8 @@ struct Server {
     struct Toplevel *grabbed_toplevel;
 
     struct wlr_output_layout *output_layout;
+    struct wl_listener update_monitors;
+
     struct wl_list outputs;
     struct wl_listener new_output;
 

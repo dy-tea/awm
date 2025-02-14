@@ -17,6 +17,11 @@ struct Output {
         struct wlr_scene_tree *overlay;
     } layers;
 
+    wlr_scene_output* scene_output;
+
+    int lx, ly;
+    int width, height;
+
     struct wl_list workspaces;
     uint32_t max_workspace{0};
 
@@ -25,6 +30,9 @@ struct Output {
 
     void arrange();
     void arrange_layers();
+
+    void update_position();
+
     static void arrange_layer_surface(const struct wlr_box *full_area,
                                       struct wlr_box *usable_area,
                                       struct wlr_scene_tree *tree,

@@ -87,9 +87,11 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
 // get output by wlr_output
 struct Output *Server::get_output(struct wlr_output *wlr_output) {
     Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &outputs,
-                          link) if (output->wlr_output ==
-                                    wlr_output) return output;
+    wl_list_for_each_safe(output, tmp, &outputs, link) if (output->wlr_output == wlr_output) {
+        wlr_log(WLR_INFO, "Found output %s", wlr_output->name);
+        return output;
+    }
+    wlr_log(WLR_ERROR, "WARNING: Could not find output");
     return nullptr;
 }
 
@@ -366,10 +368,13 @@ Server::Server(struct Config *config) {
         Output *output = nullptr;
 
         // assume focused output if not set
-        if (surface->output)
+        if (surface->output) {
+            wlr_log(WLR_INFO, "ITS USING OPRION 1");
             output = server->get_output(surface->output);
-        else {
+        } else {
+            wlr_log(WLR_INFO, "ITS USING OPRION 2");
             output = server->focused_output();
+
             if (output)
                 surface->output = output->wlr_output;
             else {
@@ -445,7 +450,7 @@ Server::Server(struct Config *config) {
     new_input.notify = [](struct wl_listener *listener, void *data) {
         // create input device based on type
         struct Server *server = wl_container_of(listener, server, new_input);
-        struct wlr_input_device *device = (wlr_input_device *)data;
+        struct wlr_input_device *device = static_cast<wlr_input_device *>(data);
 
         switch (device->type) {
         case WLR_INPUT_DEVICE_KEYBOARD:
@@ -513,7 +518,8 @@ Server::Server(struct Config *config) {
     output_apply.notify = [](struct wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, output_apply);
 
-        server->apply_output_config((wlr_output_configuration_v1 *)data, false);
+        server->apply_output_config(
+            static_cast<wlr_output_configuration_v1 *>(data), false);
     };
     wl_signal_add(&wlr_output_manager->events.apply, &output_apply);
 
@@ -521,7 +527,8 @@ Server::Server(struct Config *config) {
     output_test.notify = [](struct wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, output_apply);
 
-        server->apply_output_config((wlr_output_configuration_v1 *)data, true);
+        server->apply_output_config(
+            static_cast<wlr_output_configuration_v1 *>(data), true);
     };
     wl_signal_add(&wlr_output_manager->events.test, &output_test);
 
@@ -606,6 +613,25 @@ Server::Server(struct Config *config) {
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
             socket);
     wl_display_run(wl_display);
+    this->arrange(this);
+}
+
+void Server::arrange(Server *server) {
+    struct Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &server->outputs, link) {
+        output->update_position();
+        /*
+        wlr_scene_output_set_position(output->scene_output, output->lx, output->ly)
+        wlr_scene_node_reparent(&output->layers.background->node, shell_background);
+        wlr_scene_node_reparent(&output->layers.bottom->node, shell_bottom);
+        wlr_scene_node_reparent(&output->layers.top->node, shell_top);
+        wlr_scene_node_reparent(&output->layers.overlay->node, shell_overlay);
+        */
+        wlr_scene_node_set_position(&output->layers.background->node, output->lx, output->ly);
+        wlr_scene_node_set_position(&output->layers.bottom->node, output->lx, output->ly);
+        wlr_scene_node_set_position(&output->layers.top->node, output->lx, output->ly);
+        wlr_scene_node_set_position(&output->layers.overlay->node, output->lx, output->ly);
+    }
 }
 
 Server::~Server() {

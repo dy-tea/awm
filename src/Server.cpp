@@ -74,8 +74,9 @@ T *Server::surface_at(double lx, double ly, struct wlr_surface **surface,
 struct Toplevel *Server::toplevel_at(double lx, double ly,
                                      struct wlr_surface **surface, double *sx,
                                      double *sy) {
-    Toplevel* toplevel = surface_at<Toplevel>(lx, ly, surface, sx, sy);
-    if(toplevel && surface && surface->mapped && strcmp(surface->role->name, "zwlr_layer_surface_v1") != 0)
+    Toplevel *toplevel = surface_at<Toplevel>(lx, ly, surface, sx, sy);
+    if (toplevel && surface && (*surface)->mapped &&
+        strcmp((*surface)->role->name, "zwlr_layer_surface_v1") != 0)
         return toplevel;
     else
         return nullptr;
@@ -85,8 +86,10 @@ struct Toplevel *Server::toplevel_at(double lx, double ly,
 struct LayerSurface *Server::layer_surface_at(double lx, double ly,
                                               struct wlr_surface **surface,
                                               double *sx, double *sy) {
-    LayerSurface* layer_surface = surface_at<Toplevel>(lx, ly, surface, sx, sy);
-    if(layer_surface && surface && surface->mapped && strcmp(surface->role->name, "zwlr_layer_surface_v1") == 0)
+    LayerSurface *layer_surface =
+        surface_at<LayerSurface>(lx, ly, surface, sx, sy);
+    if (layer_surface && surface && (*surface)->mapped &&
+        strcmp((*surface)->role->name, "zwlr_layer_surface_v1") == 0)
         return layer_surface;
     else
         return nullptr;

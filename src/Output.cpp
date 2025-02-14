@@ -19,7 +19,9 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     // point output data to this
     this->wlr_output->data = this;
 
-    server->arrange(server);
+    // send arrange
+    server->arrange();
+
     // frame
     frame.notify = [](struct wl_listener *listener, void *data) {
         // called once per frame

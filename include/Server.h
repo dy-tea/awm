@@ -12,13 +12,13 @@
 
 struct Server {
 
-    wlr_scene_tree* shell_background;
-    wlr_scene_tree* shell_bottom;
-    wlr_scene_tree* floating;
-    wlr_scene_tree* toplevel_popups;
-    wlr_scene_tree* shell_top;
-    wlr_scene_tree* shell_overlay;
-    wlr_scene_tree* layer_popups;
+    wlr_scene_tree *shell_background;
+    wlr_scene_tree *shell_bottom;
+    wlr_scene_tree *floating;
+    wlr_scene_tree *toplevel_popups;
+    wlr_scene_tree *shell_top;
+    wlr_scene_tree *shell_overlay;
+    wlr_scene_tree *layer_popups;
 
     struct Config *config;
 
@@ -104,6 +104,5 @@ struct Server {
     void apply_output_config(struct wlr_output_configuration_v1 *config,
                              bool test_only);
 
-    void arrange(Server *server);
-
+    void arrange();
 };

@@ -89,10 +89,9 @@ struct Output *Server::get_output(struct wlr_output *wlr_output) {
     Output *output, *tmp;
     wl_list_for_each_safe(output, tmp, &outputs,
                           link) if (output->wlr_output == wlr_output) {
-        wlr_log(WLR_INFO, "Found output %s", wlr_output->name);
         return output;
     }
-    wlr_log(WLR_ERROR, "WARNING: Could not find output");
+    wlr_log(WLR_ERROR, "could not find output");
     return nullptr;
 }
 
@@ -612,12 +611,12 @@ Server::Server(struct Config *config) {
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
             socket);
     wl_display_run(wl_display);
-    this->arrange(this);
+    arrange();
 }
 
-void Server::arrange(Server *server) {
+void Server::arrange() {
     struct Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &server->outputs, link) {
+    wl_list_for_each_safe(output, tmp, &outputs, link) {
         output->update_position();
         /*
         wlr_scene_output_set_position(output->scene_output, output->lx,

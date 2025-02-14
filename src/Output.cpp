@@ -19,6 +19,7 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     // point output data to this
     this->wlr_output->data = this;
 
+    server->arrange(server);
     // frame
     frame.notify = [](struct wl_listener *listener, void *data) {
         // called once per frame
@@ -35,6 +36,8 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
         wlr_scene_output_send_frame_done(scene_output, &now);
+
+        //output->arrange_layers();
     };
     wl_signal_add(&wlr_output->events.frame, &frame);
 
@@ -47,6 +50,7 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
             (wlr_output_event_request_state *)data;
 
         wlr_output_commit_state(output->wlr_output, event->state);
+        output->arrange_layers();
     };
     wl_signal_add(&wlr_output->events.request_state, &request_state);
 
@@ -205,4 +209,13 @@ bool Output::set_workspace(uint32_t n) {
     requested->focus();
 
     return true;
+}
+
+void Output::update_position() {
+    struct wlr_box output_box;
+    wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
+    lx = output_box.x;
+    ly = output_box.y;
+    width = output_box.width;
+    height = output_box.height;
 }

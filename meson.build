@@ -26,6 +26,7 @@ protocols = [
   wl_protocols_dir / 'unstable' / 'linux-dmabuf' / 'linux-dmabuf-unstable-v1.xml',
   'protocols' / 'wlr-layer-shell-unstable-v1.xml',
   'protocols' / 'wlr-data-control-unstable-v1.xml',
+  'protocols' / 'wlr-screencopy-unstable-v1.xml',
 ]
 
 foreach protocol : protocols

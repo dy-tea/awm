@@ -25,6 +25,7 @@ LayerSurface::LayerSurface(struct Output *output,
     // point this surface to data for later
     scene_layer_surface->tree->node.data = this;
     wlr_layer_surface->data = this;
+    output->arrange_layers();
 
     // map surface
     map.notify = [](struct wl_listener *listener, void *data) {
@@ -46,6 +47,10 @@ LayerSurface::LayerSurface(struct Output *output,
     // unmap surface
     unmap.notify = [](struct wl_listener *listener, void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, unmap);
+
+        wlr_layer_surface_v1_configure(surface->wlr_layer_surface,
+                               surface->wlr_layer_surface->pending.desired_width,
+                               surface->wlr_layer_surface->pending.desired_height);
 
         // arrange layers
         surface->output->arrange_layers();
@@ -78,6 +83,7 @@ LayerSurface::LayerSurface(struct Output *output,
         if (needs_arrange || layer_surface->initial_commit ||
             layer_surface->current.committed ||
             layer_surface->surface->mapped != surface->mapped) {
+            wlr_layer_surface_v1_configure(layer_surface, 0, 0);
             surface->mapped = layer_surface->surface->mapped;
             output->arrange_layers();
         }

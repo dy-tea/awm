@@ -1,4 +1,4 @@
-# awm
+# deniWM
 
 ### Supported protocols
 - `xdg-shell`

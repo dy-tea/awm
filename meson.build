@@ -95,4 +95,8 @@ executable(
   install_dir: get_option('bindir'),
 )
 
+datadir = get_option('datadir')
+
 install_data('awm.desktop', install_dir: '//usr/share/wayland-sessions')
+
+install_data('config.toml', install_dir: join_paths(datadir, 'awm'))

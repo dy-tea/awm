@@ -50,10 +50,10 @@ Cursor::Cursor(struct Server *server) {
         else {
             Server *server = cursor->server;
 
-            // layer surface
             double sx, sy;
             struct wlr_surface *surface = NULL;
 
+            // layer surface
             struct LayerSurface *layer_surface = server->layer_surface_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
             if (layer_surface && surface && surface->mapped)
@@ -61,7 +61,6 @@ Cursor::Cursor(struct Server *server) {
                     layer_surface->handle_focus();
 
             // toplevel
-
             struct Toplevel *toplevel = server->toplevel_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
             if (toplevel && surface && surface->mapped)

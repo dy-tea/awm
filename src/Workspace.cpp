@@ -219,10 +219,8 @@ void Workspace::tile() {
     if (wl_list_empty(&toplevels))
         return;
 
-    // get the output geometry
-    struct wlr_box box;
-    wlr_output_layout_get_box(output->server->output_layout, output->wlr_output,
-                              &box);
+    // get the output's usable area
+    struct wlr_box box = output->usable_area;
 
     int toplevel_count = wl_list_length(&toplevels);
 

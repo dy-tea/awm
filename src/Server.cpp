@@ -211,9 +211,6 @@ void Server::apply_output_config(struct wlr_output_configuration_v1 *cfg,
         config_map[name] = new OutputConfig(config_head);
     }
 
-    // get configs
-    std::vector<OutputConfig *> configs;
-
     // apply each config
     bool success = true;
     Output *output, *tmp;
@@ -612,7 +609,7 @@ Server::Server(struct Config *config) {
             wl_display, 1, wlr_renderer_get_drm_fd(renderer));
     }
 
-    // Avoid using "wayland-0" as display socket
+    // avoid using "wayland-0" as display socket
     std::string socket;
     for (unsigned int i = 1; i <= 32; i++) {
         socket = "wayland-" + std::to_string(i);
@@ -620,7 +617,9 @@ Server::Server(struct Config *config) {
         if (!ret) {
             break;
         } else {
-            wlr_log(WLR_ERROR, "wl_display_add_socket for %s returned %d: skipping", socket.c_str(), ret);
+            wlr_log(WLR_ERROR,
+                    "wl_display_add_socket for %s returned %d: skipping",
+                    socket.c_str(), ret);
         }
     }
 

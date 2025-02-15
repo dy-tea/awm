@@ -395,8 +395,12 @@ Server::Server(struct Config *config) {
     wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 
     // layers
+    layers.background = wlr_scene_tree_create(&scene->tree);
+    layers.bottom = wlr_scene_tree_create(&scene->tree);
     layers.floating = wlr_scene_tree_create(&scene->tree);
     layers.fullscreen = wlr_scene_tree_create(&scene->tree);
+    layers.top = wlr_scene_tree_create(&scene->tree);
+    layers.overlay = wlr_scene_tree_create(&scene->tree);
 
     // layer shell
     wl_list_init(&layer_surfaces);
@@ -677,6 +681,7 @@ Server::Server(struct Config *config) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     });
+    config_thread.detach();
 
     // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",

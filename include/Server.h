@@ -11,15 +11,6 @@
 #include "XWaylandShell.h"
 
 struct Server {
-
-    wlr_scene_tree *shell_background;
-    wlr_scene_tree *shell_bottom;
-    wlr_scene_tree *floating;
-    wlr_scene_tree *toplevel_popups;
-    wlr_scene_tree *shell_top;
-    wlr_scene_tree *shell_overlay;
-    wlr_scene_tree *layer_popups;
-
     struct Config *config;
 
     struct wl_display *wl_display;
@@ -56,8 +47,12 @@ struct Server {
     struct wl_listener new_output;
 
     struct {
+        struct wlr_scene_tree *background;
+        struct wlr_scene_tree *bottom;
         struct wlr_scene_tree *floating;
         struct wlr_scene_tree *fullscreen;
+        struct wlr_scene_tree *top;
+        struct wlr_scene_tree *overlay;
     } layers;
 
     // struct XWaylandShell *xwayland_shell;

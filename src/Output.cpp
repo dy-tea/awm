@@ -6,10 +6,10 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     wl_list_init(&workspaces);
 
     // create layers
-    layers.background = wlr_scene_tree_create(&server->scene->tree);
-    layers.bottom = wlr_scene_tree_create(&server->scene->tree);
-    layers.top = wlr_scene_tree_create(&server->scene->tree);
-    layers.overlay = wlr_scene_tree_create(&server->scene->tree);
+    layers.background = wlr_scene_tree_create(server->layers.background);
+    layers.bottom = wlr_scene_tree_create(server->layers.bottom);
+    layers.top = wlr_scene_tree_create(server->layers.top);
+    layers.overlay = wlr_scene_tree_create(server->layers.overlay);
 
     // create workspaces
     for (int i = 0; i != 9; ++i)
@@ -79,14 +79,6 @@ void Output::arrange_layers() {
     struct wlr_box usable = {0};
     wlr_output_effective_resolution(wlr_output, &usable.width, &usable.height);
     const struct wlr_box full_area = usable;
-
-    // set z order
-    wlr_scene_node_raise_to_top(&layers.background->node);
-    wlr_scene_node_raise_to_top(&layers.bottom->node);
-    wlr_scene_node_raise_to_top(&server->layers.floating->node);
-    wlr_scene_node_raise_to_top(&server->layers.fullscreen->node);
-    wlr_scene_node_raise_to_top(&layers.top->node);
-    wlr_scene_node_raise_to_top(&layers.overlay->node);
 
     // exclusive surfaces
     arrange_layer_surface(&full_area, &usable, layers.overlay, true);

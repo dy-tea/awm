@@ -114,9 +114,6 @@ LayerSurface::LayerSurface(struct Output *output,
 }
 
 LayerSurface::~LayerSurface() {
-    // rearrange on destroy
-    output->arrange_layers();
-
     // remove links
     wl_list_remove(&link);
     wl_list_remove(&map.link);
@@ -124,6 +121,9 @@ LayerSurface::~LayerSurface() {
     wl_list_remove(&commit.link);
     wl_list_remove(&new_popup.link);
     wl_list_remove(&destroy.link);
+
+    // rearrange on destroy
+    output->arrange_layers();
 }
 
 // handle keyboard focus for layer shells

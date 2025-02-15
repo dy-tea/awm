@@ -24,8 +24,6 @@ void Config::load() {
 
     // false if no config file
     if (!config_file.table) {
-        wlr_log(WLR_ERROR, "Could not parse config file, %s",
-                config_file.errmsg.c_str());
         notify_send("Could not parse config file, %s",
                     config_file.errmsg.c_str());
         return;
@@ -210,9 +208,6 @@ void Config::load() {
                 // add to output configs if enough values are set
                 if (oc->name.empty() || !oc->width || !oc->height ||
                     oc->refresh <= 0.0) {
-                    wlr_log(WLR_INFO,
-                            "monitor config is missing one of the "
-                            "required fields: name, width, height, refresh");
                     notify_send("monitor config is missing one of the required "
                                 "fields: name, width, height, refresh");
                     delete oc;
@@ -259,8 +254,6 @@ struct Bind *Config::parse_bind(std::string definition) {
             uint32_t modifier = parse_modifier(token);
 
             if (modifier == 69) {
-                wlr_log(WLR_ERROR, "No such keycode or modifier '%s'",
-                        token.c_str());
                 notify_send("No such keycode or modifier '%s'", token.c_str());
                 return nullptr;
             }

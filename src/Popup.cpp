@@ -16,14 +16,14 @@ Popup::Popup(struct wlr_xdg_popup *xdg_popup) {
 
     if (layer) {
         // parent tree is layer surface
-        LayerSurface *layer_surface = (LayerSurface *)layer->data;
+        LayerSurface *layer_surface = static_cast<LayerSurface *>(layer->data);
         parent_tree = layer_surface->scene_layer_surface->tree;
     } else {
         // parent tree is xdg surface
         struct wlr_xdg_surface *parent =
             wlr_xdg_surface_try_from_wlr_surface(xdg_popup->parent);
         if (parent)
-            parent_tree = (wlr_scene_tree *)parent->data;
+            parent_tree = static_cast<wlr_scene_tree *>(parent->data);
         else {
             wlr_log(WLR_ERROR, "failed to get parent tree");
             return;

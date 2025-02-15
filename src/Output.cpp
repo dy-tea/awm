@@ -50,7 +50,7 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
             wl_container_of(listener, output, request_state);
 
         const struct wlr_output_event_request_state *event =
-            (wlr_output_event_request_state *)data;
+            static_cast<wlr_output_event_request_state *>(data);
 
         wlr_output_commit_state(output->wlr_output, event->state);
         output->arrange_layers();
@@ -103,7 +103,7 @@ void Output::arrange_layers() {
     for (auto layer : layers_above_shell) {
         struct wlr_scene_node *node;
         wl_list_for_each_reverse(node, &layer->children, link) {
-            LayerSurface *surface = (LayerSurface *)node->data;
+            LayerSurface *surface = static_cast<LayerSurface *>(node->data);
             if (surface &&
                 surface->wlr_layer_surface->current.keyboard_interactive ==
                     ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&

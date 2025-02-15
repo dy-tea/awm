@@ -138,7 +138,7 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_resize);
         struct wlr_xdg_toplevel_resize_event *event =
-            (wlr_xdg_toplevel_resize_event *)data;
+            static_cast<wlr_xdg_toplevel_resize_event *>(data);
 
         toplevel->update_foreign_toplevel();
         toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);

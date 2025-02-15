@@ -139,18 +139,17 @@ bool Server::apply_output_config_to_output(Output *output, OutputConfig *config,
         if (config->width > 0 && config->height > 0 && config->refresh > 0) {
             // find matching mode
             struct wlr_output_mode *mode, *best_mode = nullptr;
-            wl_list_for_each(mode, &wlr_output->modes, link) if (
-                mode->width == config->width &&
-                mode->height ==
-                    config->height) if (!best_mode ||
-                                        (abs((int)(mode->refresh / 1000.0 -
-                                                   config->refresh)) < 1.5 &&
-                                         abs((int)(mode->refresh / 1000.0 -
-                                                   config->refresh)) <
-                                             abs((int)(best_mode->refresh /
-                                                           1000.0 -
-                                                       config->refresh))))
-                best_mode = mode;
+            wl_list_for_each(
+                mode, &wlr_output->modes,
+                link) if ((mode->width == config->width &&
+                           mode->height == config->height) &&
+                          (!best_mode ||
+                           (abs((int)(mode->refresh / 1000.0 -
+                                      config->refresh)) < 1.5 &&
+                            abs((int)(mode->refresh / 1000.0 -
+                                      config->refresh)) <
+                                abs((int)(best_mode->refresh / 1000.0 -
+                                          config->refresh))))) best_mode = mode;
 
             if (best_mode) {
                 wlr_output_state_set_mode(&state, best_mode);
@@ -571,7 +570,7 @@ Server::Server(struct Config *config) {
 
     // output manager test
     output_test.notify = [](struct wl_listener *listener, void *data) {
-        Server *server = wl_container_of(listener, server, output_apply);
+        Server *server = wl_container_of(listener, server, output_test);
 
         server->apply_output_config(
             static_cast<wlr_output_configuration_v1 *>(data), true);
@@ -687,7 +686,9 @@ Server::Server(struct Config *config) {
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
             socket.c_str());
     wl_display_run(wl_display);
-    arrange();
+
+    // close thread
+    config_thread.join();
 }
 
 void Server::arrange() {

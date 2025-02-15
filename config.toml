@@ -1,14 +1,14 @@
 # Example awm config
 
 [startup]
-exec = ["xwayland-satellite", "hyprpaper"]
-env = [
-    { XDG_CURRENT_DESKTOP = "awm" },
-    { DISPLAY = ":0" },
-    { MOZ_ENABLE_WAYLAND = 1 },
-    { EXAMPLE = "true" },
-    { ELECTRON_OZONE_PLATFORM_HINT = "wayland" }
-]
+exec = ["xwayland-satellite", "hyprpaper"] # list of commands to run on startup
+
+# env variables to set on startup
+[startup.env]
+XDG_CURRENT_DESKTOP = "awm"
+DISPLAY = ":0"
+MOZ_ENABLE_WAYLAND = 1
+ELECTRON_OZONE_PLATFORM_HINT = "wayland"
 
 [binds]
 exit = "Alt Escape"
@@ -34,34 +34,21 @@ workspace.window_to = "Alt Shift Number"
 # monitors do not need to be in the config to function
 [[monitors]]
 name = "HDMI-A-1"
-enabled = true     # set to true by default
+enabled = true     # true by default
 width = 1920
 height = 1080
 refresh = 60.0
-x = 2560
-y = 720
+x = 2560           # 0 by default
+y = 720            # 0 by default
 transform = "none" # "none", "90", "180", "270", "f", "f90", "f180", f270"
-scale = 1.0
-adaptive = false   # adaptive sync
+scale = 1.0        # 1.0 by default
+adaptive = false   # adaptive sync, false by default
 
 [[monitors]]
 name = "DP-1"
 width = 2560
 height = 1440
 refresh = 180.0
-
-[[monitors]]
-name = "WL-1"
-enabled = true
-width = 1024
-height = 768
-refresh = 60.0
-
-[[monitors]]
-name = "eDP-1"
-width = 2880
-height = 1800
-refresh = 90.0
 
 [[commands]] # Launcher
 bind = "Alt space"

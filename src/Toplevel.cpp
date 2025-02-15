@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -367,17 +366,16 @@ void Toplevel::set_fullscreen(bool fullscreen) {
     if (!xdg_toplevel->base->initialized)
         return;
 
-    // get output layout
-    wlr_cursor *cursor = server->cursor->cursor;
-    struct wlr_output *wlr_output = wlr_output_layout_output_at(
-        server->output_layout, cursor->x, cursor->y);
+    // get output
+    Output *output = server->focused_output();
 
     // get output scale
-    float scale = wlr_output->scale;
+    float scale = output->wlr_output->scale;
 
     // get output geometry
     struct wlr_box output_box;
-    wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
+    wlr_output_layout_get_box(server->output_layout, output->wlr_output,
+                              &output_box);
 
     if (fullscreen) {
         // save current geometry
@@ -423,16 +421,13 @@ void Toplevel::set_maximized(bool maximized) {
     if (xdg_toplevel->current.fullscreen)
         wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, false);
 
-    // get output layout
-    wlr_cursor *cursor = server->cursor->cursor;
-    struct wlr_output *wlr_output = wlr_output_layout_output_at(
-        server->output_layout, cursor->x, cursor->y);
-    Output *output = server->get_output(wlr_output);
+    // get output
+    Output *output = server->focused_output();
 
     // get output scale
-    float scale = wlr_output->scale;
+    float scale = output->wlr_output->scale;
 
-    // get output geometry
+    // get usable output area
     struct wlr_box output_box = output->usable_area;
 
     if (maximized) {

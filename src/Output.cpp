@@ -22,7 +22,7 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     // send arrange
     server->arrange();
     update_position();
-    
+
     // frame
     frame.notify = [](struct wl_listener *listener, void *data) {
         // called once per frame
@@ -221,4 +221,7 @@ void Output::update_position() {
     ly = output_box.y;
     width = output_box.width;
     height = output_box.height;
+
+    // update usable area
+    usable_area = output_box;
 }

@@ -21,7 +21,8 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
 
     // send arrange
     server->arrange();
-
+    update_position();
+    
     // frame
     frame.notify = [](struct wl_listener *listener, void *data) {
         // called once per frame

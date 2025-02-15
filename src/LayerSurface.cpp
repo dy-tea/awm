@@ -71,6 +71,10 @@ LayerSurface::LayerSurface(struct Output *output,
         Output *output = surface->output;
 
         bool needs_arrange = false;
+        // hack:
+        // TODO: figure out when to call this - tempfix
+        output->server->arrange();
+
         if (surface->wlr_layer_surface->current.committed &
             WLR_LAYER_SURFACE_V1_STATE_LAYER) {
             struct wlr_scene_tree *new_tree =

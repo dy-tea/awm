@@ -2,6 +2,9 @@
 
 ### Supported protocols
 - `xdg-shell`
+- `ext-foreign-toplevel-list-v1`
+- `ext-image-capture-source-v1`
+- `ext-image-copy-capture-v1`
 - `xdg-output-unstable-v1`
 - `wlr-output-management-unstable-v1`
 - `wlr-layer-shell-unstable-v1`
@@ -29,7 +32,7 @@ ninja -C build
 # run
 ./build/awm
 ```
-Addtionally, you can install awm to your wayland-sessions using:
+Additionally, you can install awm to your wayland-sessions using:
 ```sh
 sudo meson install -C build
 ````

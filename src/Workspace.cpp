@@ -16,17 +16,26 @@ void Workspace::add_toplevel(struct Toplevel *toplevel) {
     toplevel->focus();
 }
 
-// close the active toplevel
-void Workspace::close_active() {
-    if (Toplevel *active = active_toplevel) {
+// close a toplevel
+void Workspace::close(struct Toplevel *toplevel) {
+    // active toplevels need extra handling
+    if (toplevel == active_toplevel) {
         if (wl_list_length(&toplevels) > 1)
+            // focus the next toplevel
             focus_next();
         else
+            // no more active toplevel
             active_toplevel = nullptr;
-
-        // tell the toplevel to close
-        active->close();
     }
+
+    // send close
+    toplevel->close();
+}
+
+// close the active toplevel
+void Workspace::close_active() {
+    if (Toplevel *active = active_toplevel)
+        close(active);
 }
 
 // returns true if the workspace contains the passed toplevel

@@ -87,6 +87,11 @@ Toplevel::Toplevel(struct Server *server,
         if (toplevel == toplevel->server->grabbed_toplevel)
             toplevel->server->cursor->reset_mode();
 
+        // remove from workspace
+        if (Workspace *workspace = toplevel->server->get_workspace(toplevel))
+            workspace->close(toplevel);
+
+        // remove link
         wl_list_remove(&toplevel->link);
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &unmap);

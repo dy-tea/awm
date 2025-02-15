@@ -11,6 +11,7 @@ struct Workspace {
     ~Workspace();
 
     void add_toplevel(struct Toplevel *toplevel);
+    void close(struct Toplevel *toplevel);
     void close_active();
     bool contains(struct Toplevel *toplevel);
     bool move_to(struct Toplevel *toplevel, struct Workspace *workspace);

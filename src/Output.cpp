@@ -221,7 +221,4 @@ void Output::update_position() {
     ly = output_box.y;
     width = output_box.width;
     height = output_box.height;
-
-    // update usable area
-    usable_area = output_box;
 }

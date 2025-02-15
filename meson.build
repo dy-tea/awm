@@ -51,8 +51,8 @@ endforeach
 
 include_dir = run_command(pkg_config, '--variable=includedir', 'wlroots-0.19').stdout().replace('\n', '')
 
-tomlcppp_proj = subproject('tomlcpp')
-tomlcpp_dep = tomlcppp_proj.get_variable('tomlcpp_dep')
+tomlcpp_proj = subproject('tomlcpp')
+tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
 
 include = include_directories(
   include_dir,

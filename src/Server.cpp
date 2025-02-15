@@ -612,11 +612,22 @@ Server::Server(struct Config *config) {
             wl_display, 1, wlr_renderer_get_drm_fd(renderer));
     }
 
-    // unix socket for display
-    const char *socket = wl_display_add_socket_auto(wl_display);
-    if (!socket) {
+    // Avoid using "wayland-0" as display socket
+    std::string socket;
+    for (unsigned int i = 1; i <= 32; i++) {
+        socket = "wayland-" + std::to_string(i);
+        int ret = wl_display_add_socket(wl_display, socket.c_str());
+        if (!ret) {
+            break;
+        } else {
+            wlr_log(WLR_ERROR, "wl_display_add_socket for %s returned %d: skipping", socket.c_str(), ret);
+        }
+    }
+
+    if (!socket.c_str()) {
+        wlr_log(WLR_DEBUG, "Unable to open wayland socket");
         wlr_backend_destroy(backend);
-        exit(1);
+        return;
     }
 
     // backend start
@@ -637,7 +648,7 @@ Server::Server(struct Config *config) {
     sigaction(SIGCHLD, &sa, NULL);
 
     // set wayland diplay to our socket
-    setenv("WAYLAND_DISPLAY", socket, true);
+    setenv("WAYLAND_DISPLAY", socket.c_str(), true);
 
     // set envvars from config
     for (std::pair<std::string, std::string> kv : config->startup_env)
@@ -654,7 +665,7 @@ Server::Server(struct Config *config) {
 
     // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
-            socket);
+            socket.c_str());
     wl_display_run(wl_display);
     arrange();
 }

@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xdg_toplevel *xdg_toplevel) {
@@ -100,12 +101,6 @@ Toplevel::Toplevel(struct Server *server,
         if (xdg_toplevel->base->initial_commit)
             // let client pick dimensions
             wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
-        else {
-            // no idea if this does anything
-            wlr_xdg_toplevel_set_size(xdg_toplevel, xdg_toplevel->current.width,
-                                      xdg_toplevel->current.height);
-            wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
-        }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 
@@ -432,13 +427,13 @@ void Toplevel::set_maximized(bool maximized) {
     wlr_cursor *cursor = server->cursor->cursor;
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
         server->output_layout, cursor->x, cursor->y);
+    Output *output = server->get_output(wlr_output);
 
     // get output scale
     float scale = wlr_output->scale;
 
     // get output geometry
-    struct wlr_box output_box;
-    wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
+    struct wlr_box output_box = output->usable_area;
 
     if (maximized) {
         // save current geometry

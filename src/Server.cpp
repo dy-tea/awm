@@ -359,6 +359,10 @@ Server::Server(struct Config *config) {
             wlr_scene_output_create(server->scene, wlr_output);
         wlr_scene_output_layout_add_output(server->scene_layout,
                                            output_layout_output, scene_output);
+
+        // set usable area
+        wlr_output_layout_get_box(server->output_layout, wlr_output,
+                                  &output->usable_area);
     };
     wl_signal_add(&backend->events.new_output, &new_output);
 

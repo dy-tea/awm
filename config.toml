@@ -7,6 +7,7 @@ env = [
     { DISPLAY = ":0" },
     { MOZ_ENABLE_WAYLAND = 1 },
     { EXAMPLE = "true" },
+    { ELECTRON_OZONE_PLATFORM_HINT = "wayland" }
 ]
 
 [binds]

@@ -692,6 +692,15 @@ void Server::arrange() {
     }
 }
 
+// send a notification
+void Server::notify_send(std::string message) {
+    if (fork() == 0) {
+        execl("/bin/sh", "/bin/sh", "-c",
+              ("notify-send -a awm WARNING \"" + message + "\"").c_str(),
+              nullptr);
+    }
+}
+
 Server::~Server() {
     wl_display_destroy_clients(wl_display);
 

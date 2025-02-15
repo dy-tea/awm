@@ -108,4 +108,5 @@ struct Server {
                              bool test_only);
 
     void arrange();
+    void notify_send(std::string message);
 };

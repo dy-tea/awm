@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 // send a notification
-static void notify_send(const std::string format, ...) {
+inline void notify_send(const std::string format, ...) {
     va_list args;
     va_start(args, format);
     char buffer[1024];

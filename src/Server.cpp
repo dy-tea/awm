@@ -1,5 +1,6 @@
 #include "Server.h"
 #include <map>
+#include <thread>
 
 // create a new keyboard
 void Server::new_keyboard(struct wlr_input_device *device) {
@@ -665,6 +666,17 @@ Server::Server(struct Config *config) {
     // set the linux dmabuf if supported
     if (wlr_linux_dmabuf)
         wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
+
+    // run thread for config updater
+    std::thread config_thread([&]() {
+        while (true) {
+            // update config
+            config->update();
+
+            // sleep
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    });
 
     // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",

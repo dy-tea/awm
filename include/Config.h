@@ -1,6 +1,7 @@
 #include "tomlcpp.hpp"
 #include "util.h"
 #include "wlr.h"
+#include <filesystem>
 #include <vector>
 
 struct Bind {
@@ -46,6 +47,8 @@ struct OutputConfig {
 };
 
 struct Config {
+    std::string path;
+    std::filesystem::file_time_type last_write_time;
     std::vector<std::string> startup_commands;
     std::vector<std::pair<std::string, std::string>> startup_env;
     std::vector<std::pair<Bind, std::string>> commands;
@@ -112,8 +115,12 @@ struct Config {
     Config(std::string path);
     ~Config();
 
+    void load();
+
     void set_bind(std::string name, toml::Table *source, Bind *target);
     struct Bind *parse_bind(std::string definition);
 
     template <typename T> void connect(std::pair<bool, T> pair, T *target);
+
+    void update();
 };

@@ -5,12 +5,29 @@
 Config::Config() {}
 
 Config::Config(std::string path) {
+    // set path
+    this->path = path;
+
+    // get last write time
+    last_write_time = std::filesystem::last_write_time(path);
+
+    // load config at path
+    load();
+}
+
+Config::~Config() {}
+
+// load config from path
+void Config::load() {
     // Read in config file
     toml::Result config_file = toml::parseFile(path);
 
+    // false if no config file
     if (!config_file.table) {
         wlr_log(WLR_ERROR, "Could not parse config file, %s",
                 config_file.errmsg.c_str());
+        notify_send("Could not parse config file, %s",
+                    config_file.errmsg.c_str());
         return;
     }
 
@@ -196,6 +213,8 @@ Config::Config(std::string path) {
                     wlr_log(WLR_INFO,
                             "monitor config is missing one of the "
                             "required fields: name, width, height, refresh");
+                    notify_send("monitor config is missing one of the required "
+                                "fields: name, width, height, refresh");
                     delete oc;
                 } else {
                     wlr_log(WLR_INFO, "added monitor config for %s: %dx%d@%.1f",
@@ -206,8 +225,6 @@ Config::Config(std::string path) {
             }
     }
 }
-
-Config::~Config() {}
 
 // get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(std::string modifier) {
@@ -244,6 +261,7 @@ struct Bind *Config::parse_bind(std::string definition) {
             if (modifier == 69) {
                 wlr_log(WLR_ERROR, "No such keycode or modifier '%s'",
                         token.c_str());
+                notify_send("No such keycode or modifier '%s'", token.c_str());
                 return nullptr;
             }
 
@@ -269,4 +287,21 @@ void Config::set_bind(std::string name, toml::Table *source, Bind *target) {
 template <typename T> void Config::connect(std::pair<bool, T> pair, T *target) {
     if (pair.first)
         *target = pair.second;
+}
+
+// update the config
+void Config::update() {
+    // get current write time
+    std::filesystem::file_time_type current_write_time =
+        std::filesystem::last_write_time(path);
+
+    // check if the file has been modified
+    if (current_write_time == last_write_time)
+        return;
+
+    // update write time
+    last_write_time = current_write_time;
+
+    // load new config
+    load();
 }

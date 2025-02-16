@@ -250,12 +250,6 @@ Server::Server(struct Config *config) {
 
     wlr_renderer_init_wl_display(renderer, wl_display);
 
-    // linux dmabuf
-    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF) !=
-        NULL)
-        wlr_linux_dmabuf =
-            wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, renderer);
-
     // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);
     if (allocator == NULL) {
@@ -684,9 +678,12 @@ Server::Server(struct Config *config) {
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 
-    // set the linux dmabuf if supported
-    if (wlr_linux_dmabuf)
+    // linux dmabuf
+    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF)) {
+        wlr_linux_dmabuf =
+            wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, renderer);
         wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
+    }
 
     // run thread for config updater
     std::thread config_thread([&]() {

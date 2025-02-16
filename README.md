@@ -36,3 +36,7 @@ Additionally, you can install awm to your wayland-sessions using:
 ```sh
 sudo meson install -C build
 ````
+
+### Configuration
+An example configuration can be found in [config.toml](config.toml).
+You can copy this file to `~/.config/awm/config.toml` and modify it to your liking.

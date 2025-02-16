@@ -1,5 +1,8 @@
 # Example awm config
 
+# place your config at ~/.config/awm/config.toml
+# or specify a config path with the -c flag
+
 [startup]
 exec = ["xwayland-satellite", "hyprpaper"] # list of commands to run on startup
 
@@ -10,7 +13,7 @@ DISPLAY = ":0"
 MOZ_ENABLE_WAYLAND = 1
 ELECTRON_OZONE_PLATFORM_HINT = "wayland"
 
-[binds]
+[binds] # default binds which can be overwitten in your config
 exit = "Alt Escape"
 window.fullscreen = "Alt f"
 window.previous = "Alt o"
@@ -29,6 +32,7 @@ workspace.tile = "Alt t"
 workspace.open = "Alt Number"
 workspace.window_to = "Alt Shift Number"
 # modifiers: "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
+# Number is a special token that will be replaced with the number key pressed
 
 # name, width, height and refresh are required fields
 # monitors do not need to be in the config to function

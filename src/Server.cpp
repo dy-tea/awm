@@ -380,16 +380,15 @@ Server::Server(struct Config *config) {
 
         // toplevels are managed by workspaces
         [[maybe_unused]] struct Toplevel *toplevel =
-            new Toplevel(server, (wlr_xdg_toplevel *)data);
+            new Toplevel(server, static_cast<wlr_xdg_toplevel *>(data));
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 
     // new_xdg_popup
     new_xdg_popup.notify = [](struct wl_listener *listener, void *data) {
-        struct wlr_xdg_popup *xdg_popup = (wlr_xdg_popup *)data;
-
         // popups do not need to be tracked
-        [[maybe_unused]] struct Popup *popup = new Popup(xdg_popup);
+        [[maybe_unused]] struct Popup *popup =
+            new Popup(static_cast<wlr_xdg_popup *>(data));
     };
     wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 
@@ -546,7 +545,7 @@ Server::Server(struct Config *config) {
             wl_container_of(listener, server, request_set_selection);
 
         struct wlr_seat_request_set_selection_event *event =
-            (wlr_seat_request_set_selection_event *)data;
+            static_cast<wlr_seat_request_set_selection_event *>(data);
 
         wlr_seat_set_selection(server->seat, event->source, event->serial);
     };
@@ -580,18 +579,21 @@ Server::Server(struct Config *config) {
     // virtual pointer manager
     virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(wl_display);
 
-    new_virtual_pointer.notify = [](struct wl_listener *listener, void *data){
+    new_virtual_pointer.notify = [](struct wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_virtual_pointer);
 
-        struct wlr_virtual_pointer_v1_new_pointer_event *event = (wlr_virtual_pointer_v1_new_pointer_event *) data;
+        struct wlr_virtual_pointer_v1_new_pointer_event *event =
+            static_cast<wlr_virtual_pointer_v1_new_pointer_event *>(data);
         struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
         struct wlr_input_device *device = &pointer->pointer.base;
 
         wlr_cursor_attach_input_device(server->cursor->cursor, device);
         if (event->suggested_output)
-            wlr_cursor_map_input_to_output(server->cursor->cursor, device, event->suggested_output);
+            wlr_cursor_map_input_to_output(server->cursor->cursor, device,
+                                           event->suggested_output);
     };
-    wl_signal_add(&virtual_pointer_mgr->events.new_virtual_pointer, &new_virtual_pointer);
+    wl_signal_add(&virtual_pointer_mgr->events.new_virtual_pointer,
+                  &new_virtual_pointer);
 
     // xwayland shell
     // xwayland_shell = new XWaylandShell(wl_display, scene);

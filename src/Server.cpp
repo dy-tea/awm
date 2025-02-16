@@ -6,8 +6,10 @@
 void Server::new_keyboard(struct wlr_input_device *device) {
     struct Keyboard *keyboard = new Keyboard(this, device);
 
+    // connect to seat
     wlr_seat_set_keyboard(seat, keyboard->wlr_keyboard);
 
+    // add to keyboards list
     wl_list_insert(&keyboards, &keyboard->link);
 }
 
@@ -23,13 +25,15 @@ void Server::new_pointer(struct wlr_input_device *device) {
 // get workspace by toplevel
 struct Workspace *Server::get_workspace(struct Toplevel *toplevel) {
     Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &outputs, link) {
-        Workspace *workspace, *tmp1;
-        wl_list_for_each_safe(
-            workspace, tmp1, &output->workspaces,
-            link) if (workspace->contains(toplevel)) return workspace;
-    }
+    Workspace *workspace, *tmp1;
 
+    // check each output
+    // for each output check each workspace
+    wl_list_for_each_safe(output, tmp, &outputs, link) wl_list_for_each_safe(
+        workspace, tmp1, &output->workspaces,
+        link) if (workspace->contains(toplevel)) return workspace;
+
+    // no workspace found
     return nullptr;
 }
 
@@ -76,6 +80,8 @@ struct Toplevel *Server::toplevel_at(double lx, double ly,
                                      struct wlr_surface **surface, double *sx,
                                      double *sy) {
     Toplevel *toplevel = surface_at<Toplevel>(lx, ly, surface, sx, sy);
+
+    // ensure role is not layer surface
     if (toplevel && surface && (*surface)->mapped &&
         strcmp((*surface)->role->name, "zwlr_layer_surface_v1") != 0)
         return toplevel;
@@ -89,6 +95,8 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
                                               double *sx, double *sy) {
     LayerSurface *layer_surface =
         surface_at<LayerSurface>(lx, ly, surface, sx, sy);
+
+    // ensure role is layer surface
     if (layer_surface && surface && (*surface)->mapped &&
         strcmp((*surface)->role->name, "zwlr_layer_surface_v1") == 0)
         return layer_surface;
@@ -98,11 +106,13 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
 
 // get output by wlr_output
 struct Output *Server::get_output(struct wlr_output *wlr_output) {
+    // check each output
     Output *output, *tmp;
     wl_list_for_each_safe(output, tmp, &outputs,
-                          link) if (output->wlr_output == wlr_output) {
-        return output;
-    }
+                          link) if (output->wlr_output ==
+                                    wlr_output) return output;
+
+    // no output found
     wlr_log(WLR_ERROR, "could not find output");
     return nullptr;
 }
@@ -112,9 +122,11 @@ struct Output *Server::output_at(double x, double y) {
     struct wlr_output *wlr_output =
         wlr_output_layout_output_at(output_layout, x, y);
 
+    // no output found
     if (wlr_output == NULL)
         return NULL;
 
+    // get associated output
     return get_output(wlr_output);
 }
 
@@ -127,6 +139,7 @@ bool Server::apply_output_config_to_output(Output *output, OutputConfig *config,
                                            bool test_only) {
     struct wlr_output *wlr_output = output->wlr_output;
 
+    // create output state
     struct wlr_output_state state;
     wlr_output_state_init(&state);
 
@@ -402,7 +415,8 @@ Server::Server(struct Config *config) {
     new_shell_surface.notify = [](struct wl_listener *listener, void *data) {
         // layer surface created
         Server *server = wl_container_of(listener, server, new_shell_surface);
-        wlr_layer_surface_v1 *surface = (wlr_layer_surface_v1 *)data;
+        wlr_layer_surface_v1 *surface =
+            static_cast<wlr_layer_surface_v1 *>(data);
 
         Output *output = nullptr;
 
@@ -520,7 +534,7 @@ Server::Server(struct Config *config) {
             wl_container_of(listener, server, request_cursor);
 
         struct wlr_seat_pointer_request_set_cursor_event *event =
-            (wlr_seat_pointer_request_set_cursor_event *)data;
+            static_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
         struct wlr_seat_client *focused_client =
             server->seat->pointer_state.focused_client;
 
@@ -634,13 +648,12 @@ Server::Server(struct Config *config) {
     for (unsigned int i = 1; i <= 32; i++) {
         socket = "wayland-" + std::to_string(i);
         int ret = wl_display_add_socket(wl_display, socket.c_str());
-        if (!ret) {
+        if (!ret)
             break;
-        } else {
+        else
             wlr_log(WLR_ERROR,
                     "wl_display_add_socket for %s returned %d: skipping",
                     socket.c_str(), ret);
-        }
     }
 
     if (!socket.c_str()) {

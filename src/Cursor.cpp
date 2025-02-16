@@ -13,8 +13,9 @@ Cursor::Cursor(struct Server *server) {
         // relative motion event
         struct Cursor *cursor = wl_container_of(listener, cursor, motion);
         struct wlr_pointer_motion_event *event =
-            (wlr_pointer_motion_event *)data;
+            static_cast<wlr_pointer_motion_event *>(data);
 
+        // move cursor
         wlr_cursor_move(cursor->cursor, &event->pointer->base, event->delta_x,
                         event->delta_y);
         cursor->process_motion(event->time_msec);
@@ -27,8 +28,9 @@ Cursor::Cursor(struct Server *server) {
         struct Cursor *cursor =
             wl_container_of(listener, cursor, motion_absolute);
         struct wlr_pointer_motion_absolute_event *event =
-            (wlr_pointer_motion_absolute_event *)data;
+            static_cast<wlr_pointer_motion_absolute_event *>(data);
 
+        // warp cursor
         wlr_cursor_warp_absolute(cursor->cursor, &event->pointer->base,
                                  event->x, event->y);
         cursor->process_motion(event->time_msec);
@@ -39,28 +41,30 @@ Cursor::Cursor(struct Server *server) {
     button.notify = [](struct wl_listener *listener, void *data) {
         struct Cursor *cursor = wl_container_of(listener, cursor, button);
         struct wlr_pointer_button_event *event =
-            (wlr_pointer_button_event *)data;
+            static_cast<wlr_pointer_button_event *>(data);
 
         // forward to seat
         wlr_seat_pointer_notify_button(cursor->server->seat, event->time_msec,
                                        event->button, event->state);
 
         if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
+            // show standard pointer cursor
             cursor->reset_mode();
         else {
+            // handle cursor focus
             Server *server = cursor->server;
 
             double sx, sy;
             struct wlr_surface *surface = NULL;
 
-            // layer surface
+            // layer surface focus
             struct LayerSurface *layer_surface = server->layer_surface_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
             if (layer_surface && surface && surface->mapped)
                 if (layer_surface->should_focus())
                     layer_surface->handle_focus();
 
-            // toplevel
+            // toplevel focus
             struct Toplevel *toplevel = server->toplevel_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
             if (toplevel && surface && surface->mapped)

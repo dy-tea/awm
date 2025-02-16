@@ -33,15 +33,18 @@ void Config::load() {
     std::unique_ptr<toml::Table> startup =
         config_file.table->getTable("startup");
     if (startup) {
+        // startup commands
         std::unique_ptr<toml::Array> exec = startup->getArray("exec");
 
         if (exec) {
             auto commands = exec->getStringVector();
             if (commands)
                 for (std::string &command : *commands)
+                    // add each one to startup commands
                     startup_commands.emplace_back(command);
         }
 
+        // env vars
         std::unique_ptr<toml::Array> env = startup->getArray("env");
 
         if (env) {
@@ -55,6 +58,8 @@ void Config::load() {
                         // try both string and int values
                         auto intval = table.getInt(key);
                         auto stringval = table.getString(key);
+
+                        // add each to startup env
                         if (intval.first)
                             startup_env.emplace_back(
                                 key, std::to_string(intval.second));

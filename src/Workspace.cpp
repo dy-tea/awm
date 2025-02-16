@@ -11,8 +11,13 @@ Workspace::~Workspace() {}
 
 // add a toplevel to the workspace
 void Workspace::add_toplevel(struct Toplevel *toplevel) {
+    // add to toplevels list
     wl_list_insert(&toplevels, &toplevel->link);
+
+    // set active
     active_toplevel = toplevel;
+
+    // focus
     toplevel->focus();
 }
 
@@ -34,19 +39,24 @@ void Workspace::close(struct Toplevel *toplevel) {
 
 // close the active toplevel
 void Workspace::close_active() {
+    // get active toplevel
     if (Toplevel *active = active_toplevel)
+        // send close
         close(active);
 }
 
 // returns true if the workspace contains the passed toplevel
 bool Workspace::contains(struct Toplevel *toplevel) {
+    // no toplevels
     if (wl_list_empty(&toplevels))
         return false;
 
+    // check if toplevel is in workspace
     Toplevel *current, *tmp;
     wl_list_for_each_safe(current, tmp, &toplevels,
                           link) if (current == toplevel) return true;
 
+    // toplevel not found
     return false;
 }
 
@@ -90,14 +100,17 @@ bool Workspace::move_to(struct Toplevel *toplevel,
 void Workspace::set_hidden(bool hidden) {
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link)
+        // set every toplevel to the value of hidden
         toplevel->set_hidden(hidden);
 }
 
 // swap the active toplevel geometry with other toplevel geometry
 void Workspace::swap(struct Toplevel *other) {
+    // get the geomety of both toplevels
     struct wlr_fbox active = active_toplevel->get_geometry();
     struct wlr_fbox swapped = other->get_geometry();
 
+    // swap the geometry
     active_toplevel->set_position_size(swapped);
     other->set_position_size(active);
 }

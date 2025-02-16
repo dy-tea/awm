@@ -702,7 +702,7 @@ Server::Server(struct Config *config) {
     std::thread config_thread([&]() {
         while (true) {
             // update config
-            config->update();
+            config->update(this);
 
             // sleep
             std::this_thread::sleep_for(std::chrono::seconds(1));

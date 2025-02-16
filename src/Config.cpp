@@ -1,11 +1,16 @@
 #include "Server.h"
 #include "tomlcpp.hpp"
+#include "wlr.h"
 #include <sstream>
 
-Config::Config() {}
+Config::Config() {
+    path = "";
+    last_write_time = std::filesystem::file_time_type::min();
+    load();
+}
 
 Config::Config(std::string path) {
-    // set path
+    // path
     this->path = path;
 
     // get last write time
@@ -18,7 +23,7 @@ Config::Config(std::string path) {
 Config::~Config() {}
 
 // load config from path
-void Config::load() {
+bool Config::load() {
     // Read in config file
     toml::Result config_file = toml::parseFile(path);
 
@@ -26,7 +31,7 @@ void Config::load() {
     if (!config_file.table) {
         notify_send("Could not parse config file, %s",
                     config_file.errmsg.c_str());
-        return;
+        return false;
     }
 
     // Get startup table
@@ -72,7 +77,44 @@ void Config::load() {
         wlr_log(WLR_INFO, "No startup configuration found, ingoring");
     }
 
-    // Get awm binds
+    // get keyboard config
+    std::unique_ptr<toml::Table> keyboard =
+        config_file.table->getTable("keyboard");
+    if (keyboard) {
+        struct xkb_rule_names names;
+
+        // get layout
+        auto layout = keyboard->getString("layout");
+        if (layout.first)
+            names.layout = layout.second.c_str();
+
+        // get model
+        auto model = keyboard->getString("model");
+        if (model.first)
+            names.model = model.second.c_str();
+
+        // get variant
+        auto variant = keyboard->getString("variant");
+        if (variant.first)
+            names.variant = variant.second.c_str();
+
+        // overwrite
+        keyboard_names = names;
+
+        // repeat rate
+        auto rate = keyboard->getInt("repeat_rate");
+        if (rate.first)
+            repeat_rate = rate.second;
+
+        // repeat delay
+        auto delay = keyboard->getInt("repeat_delay");
+        if (delay.first)
+            repeat_delay = delay.second;
+    } else
+        // no keyboard config
+        wlr_log(WLR_INFO, "no keyboard configuration found, using us layout");
+
+    // get awm binds
     std::unique_ptr<toml::Table> binds = config_file.table->getTable("binds");
     if (binds) {
         // exit bind
@@ -224,6 +266,8 @@ void Config::load() {
                 }
             }
     }
+
+    return true;
 }
 
 // get the wlr modifier enum value from the string representation
@@ -288,7 +332,7 @@ template <typename T> void Config::connect(std::pair<bool, T> pair, T *target) {
 }
 
 // update the config
-void Config::update() {
+void Config::update(struct Server *server) {
     // get current write time
     std::filesystem::file_time_type current_write_time =
         std::filesystem::last_write_time(path);
@@ -301,5 +345,11 @@ void Config::update() {
     last_write_time = current_write_time;
 
     // load new config
-    load();
+    if (!load())
+        return;
+
+    // update keyboard config
+    struct wlr_keyboard *wlr_keyboard = wlr_seat_get_keyboard(server->seat);
+    Keyboard *keyboard = static_cast<Keyboard *>(wlr_keyboard->data);
+    keyboard->update_config();
 }

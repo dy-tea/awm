@@ -13,6 +13,13 @@ DISPLAY = ":0"
 MOZ_ENABLE_WAYLAND = 1
 ELECTRON_OZONE_PLATFORM_HINT = "wayland"
 
+[keyboard] # default keyboard layout, optional
+layout = "us"
+model = ""
+variant = ""
+repeat_rate = 25
+repeat_delay = 600
+
 [binds] # default binds which can be overwitten in your config
 exit = "Alt Escape"
 window.fullscreen = "Alt f"
@@ -65,5 +72,3 @@ exec = "grim -g \"$(slurp)\" - | swappy -f -"
 [[commands]] # Terminal
 bind = "Alt Return"
 exec = "alacritty"
-
-# TODO: keyboard, locale

@@ -53,6 +53,10 @@ struct Config {
     std::vector<std::pair<std::string, std::string>> startup_env;
     std::vector<std::pair<Bind, std::string>> commands;
 
+    // keyboard
+    struct xkb_rule_names keyboard_names{NULL};
+    int repeat_rate{25}, repeat_delay{600};
+
     // exit compositor
     struct Bind exit{WLR_MODIFIER_ALT, XKB_KEY_Escape};
 
@@ -115,12 +119,12 @@ struct Config {
     Config(std::string path);
     ~Config();
 
-    void load();
+    bool load();
 
     void set_bind(std::string name, toml::Table *source, Bind *target);
     struct Bind *parse_bind(std::string definition);
 
     template <typename T> void connect(std::pair<bool, T> pair, T *target);
 
-    void update();
+    void update(struct Server *server);
 };

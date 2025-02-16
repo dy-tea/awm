@@ -12,5 +12,6 @@ struct Keyboard {
     Keyboard(struct Server *server, struct wlr_input_device *device);
     ~Keyboard();
 
+    void update_config();
     bool handle_bind(struct Bind bind, uint32_t keycode);
 };

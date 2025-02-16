@@ -118,19 +118,34 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     return true;
 }
 
+// update the keyboard config
+void Keyboard::update_config() {
+    // create xkb context
+    struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+
+    // keymap
+    struct xkb_keymap *keymap = xkb_keymap_new_from_names(
+        context, &server->config->keyboard_names, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+    // set keymap
+    wlr_keyboard_set_keymap(wlr_keyboard, keymap);
+    xkb_keymap_unref(keymap);
+    xkb_context_unref(context);
+
+    // repeat info
+    wlr_keyboard_set_repeat_info(wlr_keyboard, server->config->repeat_rate,
+                                 server->config->repeat_delay);
+}
+
 Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
     this->server = server;
     this->wlr_keyboard = wlr_keyboard_from_input_device(device);
 
-    // assume us layout TODO: add to config
-    struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-    struct xkb_keymap *keymap =
-        xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    // set data
+    wlr_keyboard->data = this;
 
-    wlr_keyboard_set_keymap(wlr_keyboard, keymap);
-    xkb_keymap_unref(keymap);
-    xkb_context_unref(context);
-    wlr_keyboard_set_repeat_info(wlr_keyboard, 25, 600);
+    // set config
+    update_config();
 
     // handle_modifiers
     modifiers.notify = [](struct wl_listener *listener, void *data) {
@@ -151,7 +166,8 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
         // key is pressed or released
         struct Keyboard *keyboard = wl_container_of(listener, keyboard, key);
         struct Server *server = keyboard->server;
-        struct wlr_keyboard_key_event *event = (wlr_keyboard_key_event *)data;
+        struct wlr_keyboard_key_event *event =
+            static_cast<wlr_keyboard_key_event *>(data);
         struct wlr_seat *seat = server->seat;
 
         // libinput keycode -> xkbcommon

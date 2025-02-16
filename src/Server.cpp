@@ -577,6 +577,22 @@ Server::Server(struct Config *config) {
     };
     wl_signal_add(&wlr_output_manager->events.test, &output_test);
 
+    // virtual pointer manager
+    virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(wl_display);
+
+    new_virtual_pointer.notify = [](struct wl_listener *listener, void *data){
+        Server *server = wl_container_of(listener, server, new_virtual_pointer);
+
+        struct wlr_virtual_pointer_v1_new_pointer_event *event = (wlr_virtual_pointer_v1_new_pointer_event *) data;
+        struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
+        struct wlr_input_device *device = &pointer->pointer.base;
+
+        wlr_cursor_attach_input_device(server->cursor->cursor, device);
+        if (event->suggested_output)
+            wlr_cursor_map_input_to_output(server->cursor->cursor, device, event->suggested_output);
+    };
+    wl_signal_add(&virtual_pointer_mgr->events.new_virtual_pointer, &new_virtual_pointer);
+
     // xwayland shell
     // xwayland_shell = new XWaylandShell(wl_display, scene);
 
@@ -734,6 +750,8 @@ Server::~Server() {
     wl_list_remove(&output_test.link);
 
     wl_list_remove(&new_shell_surface.link);
+    wl_list_remove(&new_virtual_pointer.link);
+
     struct LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;
     // delete xwayland_shell;

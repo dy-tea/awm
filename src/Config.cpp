@@ -85,31 +85,38 @@ bool Config::load() {
 
         // get layout
         auto layout = keyboard->getString("layout");
-        if (layout.first)
-            names.layout = layout.second.c_str();
+        if (layout.first) {
+            keyboard_layout = layout.second;
+            wlr_log(WLR_INFO, "Keyboard layout set to: %s", names.layout);
+        }
 
         // get model
         auto model = keyboard->getString("model");
-        if (model.first)
-            names.model = model.second.c_str();
+        if (model.first) {
+            keyboard_model = model.second;
+            wlr_log(WLR_INFO, "Keyboard model set to: %s", names.model);
+        }
 
         // get variant
         auto variant = keyboard->getString("variant");
-        if (variant.first)
-            names.variant = variant.second.c_str();
-
-        // overwrite
-        keyboard_names = names;
+        if (variant.first) {
+            keyboard_variant = variant.second;
+            wlr_log(WLR_INFO, "Keyboard variant set to: %s", names.variant);
+        }
 
         // repeat rate
         auto rate = keyboard->getInt("repeat_rate");
-        if (rate.first)
+        if (rate.first) {
             repeat_rate = rate.second;
+            wlr_log(WLR_INFO, "Keyboard repeat rate set to: %d", repeat_rate);
+        }
 
         // repeat delay
         auto delay = keyboard->getInt("repeat_delay");
-        if (delay.first)
+        if (delay.first) {
             repeat_delay = delay.second;
+            wlr_log(WLR_INFO, "Keyboard repeat delay set to: %d", repeat_delay);
+        }
     } else
         // no keyboard config
         wlr_log(WLR_INFO, "no keyboard configuration found, using us layout");

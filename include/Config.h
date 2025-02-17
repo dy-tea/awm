@@ -54,7 +54,9 @@ struct Config {
     std::vector<std::pair<Bind, std::string>> commands;
 
     // keyboard
-    struct xkb_rule_names keyboard_names{NULL};
+    std::string keyboard_layout{"us"};
+    std::string keyboard_model{""};
+    std::string keyboard_variant{""};
     int repeat_rate{25}, repeat_delay{600};
 
     // exit compositor

@@ -123,9 +123,25 @@ void Keyboard::update_config() {
     // create xkb context
     struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 
+    // get config
+    Config *config = server->config;
+
+    // create rule names from config
+    struct xkb_rule_names names{NULL};
+    names.layout = config->keyboard_layout.data();
+    names.model = config->keyboard_model.data();
+    names.variant = config->keyboard_variant.data();
+
     // keymap
-    struct xkb_keymap *keymap = xkb_keymap_new_from_names(
-        context, &server->config->keyboard_names, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    struct xkb_keymap *keymap;
+    if (!(keymap = xkb_keymap_new_from_names(context, &names,
+                                             XKB_KEYMAP_COMPILE_NO_FLAGS))) {
+        notify_send("failed to create keymap");
+        notify_send("layout: %s, model: %s, variant: %s", names.layout,
+                    names.model, names.variant);
+        xkb_context_unref(context);
+        return;
+    }
 
     // set keymap
     wlr_keyboard_set_keymap(wlr_keyboard, keymap);

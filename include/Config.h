@@ -57,6 +57,7 @@ struct Config {
     std::string keyboard_layout{"us"};
     std::string keyboard_model{""};
     std::string keyboard_variant{""};
+    std::string keyboard_options{""};
     int repeat_rate{25}, repeat_delay{600};
 
     // exit compositor

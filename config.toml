@@ -15,6 +15,9 @@ ELECTRON_OZONE_PLATFORM_HINT = "wayland"
 
 [keyboard] # default keyboard layout, optional
 layout = "us"
+model = "pc105"
+variant = ""
+options = ""
 repeat_rate = 25
 repeat_delay = 600
 

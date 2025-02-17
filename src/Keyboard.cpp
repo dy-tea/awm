@@ -127,13 +127,16 @@ void Keyboard::update_config() {
     Config *config = server->config;
 
     // create rule names from config
-    struct xkb_rule_names names{NULL};
-    names.layout = config->keyboard_layout.data();
-    names.model = config->keyboard_model.data();
-    names.variant = config->keyboard_variant.data();
+    struct xkb_rule_names names{
+        .rules = NULL,
+        .model = config->keyboard_model.data(),
+        .layout = config->keyboard_layout.data(),
+        .variant = config->keyboard_variant.data(),
+        .options = config->keyboard_options.data(),
+    };
 
     // keymap
-    struct xkb_keymap *keymap;
+    struct xkb_keymap *keymap{NULL};
     if (!(keymap = xkb_keymap_new_from_names(context, &names,
                                              XKB_KEYMAP_COMPILE_NO_FLAGS))) {
         notify_send("failed to create keymap");

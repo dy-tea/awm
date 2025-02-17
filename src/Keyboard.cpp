@@ -139,11 +139,13 @@ void Keyboard::update_config() {
     struct xkb_keymap *keymap{NULL};
     if (!(keymap = xkb_keymap_new_from_names(context, &names,
                                              XKB_KEYMAP_COMPILE_NO_FLAGS))) {
-        notify_send("failed to create keymap");
-        notify_send("layout: %s, model: %s, variant: %s", names.layout,
-                    names.model, names.variant);
-        xkb_context_unref(context);
-        return;
+        notify_send(
+            "failed to load keymap - layout: %s, model: %s, variant: %s",
+            names.layout, names.model, names.variant);
+
+        // load default keymap
+        keymap = xkb_keymap_new_from_names(context, NULL,
+                                           XKB_KEYMAP_COMPILE_NO_FLAGS);
     }
 
     // set keymap

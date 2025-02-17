@@ -93,17 +93,20 @@ bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
     } else if (bind == config->workspace_tile) {
         // set workspace to tile
         output->get_active()->tile();
-    } else if (keycode >= 2 && keycode <= 11) {
+    } else if (bind.sym >= XKB_KEY_0 && bind.sym <= XKB_KEY_9) {
         // digit pressed
         Bind digbind = Bind{bind.modifiers, XKB_KEY_NoSymbol};
 
+        // 0 is on the right of 9 so it makes more sense this way
+        int n = XKB_KEY_0 == bind.sym ? 10 : bind.sym - XKB_KEY_0 - 1;
+
         if (digbind == config->workspace_open) {
             // set workspace to n
-            return output->set_workspace(keycode - 2);
+            return output->set_workspace(n);
         } else if (digbind == config->workspace_window_to) {
             // move active toplevel to workspace n
             Workspace *current = output->get_active();
-            Workspace *target = output->get_workspace(keycode - 2);
+            Workspace *target = output->get_workspace(n);
 
             if (target == nullptr)
                 return false;
@@ -158,6 +161,31 @@ void Keyboard::update_config() {
                                  server->config->repeat_delay);
 }
 
+// get keysyms without modifiers applied
+uint32_t Keyboard::keysyms_raw(xkb_keycode_t keycode,
+                               const xkb_keysym_t **keysyms,
+                               uint32_t *modifiers) {
+    *modifiers = wlr_keyboard_get_modifiers(wlr_keyboard);
+
+    xkb_layout_index_t layout_index =
+        xkb_state_key_get_layout(wlr_keyboard->xkb_state, keycode);
+    return xkb_keymap_key_get_syms_by_level(wlr_keyboard->keymap, keycode,
+                                            layout_index, 0, keysyms);
+}
+
+// get keysyms with modifiers applied
+uint32_t Keyboard::keysyms_translated(xkb_keycode_t keycode,
+                                      const xkb_keysym_t **keysyms,
+                                      uint32_t *modifiers) {
+    *modifiers = wlr_keyboard_get_modifiers(wlr_keyboard);
+
+    xkb_mod_mask_t consumed = xkb_state_key_get_consumed_mods2(
+        wlr_keyboard->xkb_state, keycode, XKB_CONSUMED_MODE_XKB);
+    *modifiers &= ~consumed;
+
+    return xkb_state_key_get_syms(wlr_keyboard->xkb_state, keycode, keysyms);
+}
+
 Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
     this->server = server;
     this->wlr_keyboard = wlr_keyboard_from_input_device(device);
@@ -194,19 +222,31 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
         // libinput keycode -> xkbcommon
         uint32_t keycode = event->keycode + 8;
 
-        // keysym list based on keymap
-        const xkb_keysym_t *syms;
-        int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
-                                           keycode, &syms);
-
-        bool handled = false;
-        uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
-
         // handle binds
-        if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
-            for (int i = 0; i != nsyms; ++i)
-                handled = keyboard->handle_bind(Bind{modifiers, syms[i]},
+        bool handled = false;
+
+        if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+            // modifiers
+            uint32_t modifiers;
+
+            // raw
+            const xkb_keysym_t *syms_raw;
+            uint32_t nsyms_raw =
+                keyboard->keysyms_raw(keycode, &syms_raw, &modifiers);
+
+            for (uint32_t i = 0; i != nsyms_raw; ++i)
+                handled = keyboard->handle_bind(Bind{modifiers, syms_raw[i]},
                                                 event->keycode);
+
+            // translated
+            const xkb_keysym_t *syms_translated;
+            uint32_t nsyms_translated = keyboard->keysyms_translated(
+                keycode, &syms_translated, &modifiers);
+
+            for (uint32_t i = 0; i != nsyms_translated; ++i)
+                handled = keyboard->handle_bind(
+                    Bind{modifiers, syms_translated[i]}, event->keycode);
+        }
 
         if (!handled) {
             // send unhandled keypresses to seat

@@ -206,6 +206,8 @@ bool Output::set_workspace(uint32_t n) {
     return true;
 }
 
+// update layout geometry
 void Output::update_position() {
-    wlr_output_layout_get_box(server->output_layout, wlr_output, &layout_geometry);
+    wlr_output_layout_get_box(server->output_layout, wlr_output,
+                              &layout_geometry);
 }

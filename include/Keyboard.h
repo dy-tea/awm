@@ -14,4 +14,9 @@ struct Keyboard {
 
     void update_config();
     bool handle_bind(struct Bind bind, uint32_t keycode);
+    uint32_t keysyms_raw(xkb_keycode_t keycode, const xkb_keysym_t **keysyms,
+                         uint32_t *modifiers);
+    uint32_t keysyms_translated(xkb_keycode_t keycode,
+                                const xkb_keysym_t **keysyms,
+                                uint32_t *modifiers);
 };

@@ -261,8 +261,8 @@ void Workspace::tile() {
         // calculate toplevel geometry
         int row = i / cols;
         int col = i % cols;
-        int x = output->lx + box.x + (col * width);
-        int y = output->ly + box.y + (row * height);
+        int x = output->layout_geometry.x + box.x + (col * width);
+        int y = output->layout_geometry.y + box.y + (row * height);
 
         // set toplevel geometry
         toplevel->set_position_size(x, y, width, height);

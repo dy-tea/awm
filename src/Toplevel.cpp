@@ -444,8 +444,8 @@ void Toplevel::set_maximized(bool maximized) {
 
         // set to top left of output, width and height the size of output
         wlr_scene_node_set_position(&scene_tree->node,
-                                    output_box.x + output->lx,
-                                    output_box.y + output->ly);
+                                    output_box.x + output->layout_geometry.x,
+                                    output_box.y + output->layout_geometry.y);
         wlr_xdg_toplevel_set_size(xdg_toplevel, output_box.width / scale,
                                   output_box.height / scale);
     } else {

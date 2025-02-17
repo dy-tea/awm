@@ -19,8 +19,7 @@ struct Output {
 
     wlr_scene_output* scene_output;
 
-    int lx, ly;
-    int width, height;
+    wlr_box layout_geometry;
 
     struct wl_list workspaces;
     uint32_t max_workspace{0};

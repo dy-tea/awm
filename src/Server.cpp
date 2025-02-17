@@ -732,13 +732,13 @@ void Server::arrange() {
         shell_overlay);
         */
         wlr_scene_node_set_position(&output->layers.background->node,
-                                    output->lx, output->ly);
-        wlr_scene_node_set_position(&output->layers.bottom->node, output->lx,
-                                    output->ly);
-        wlr_scene_node_set_position(&output->layers.top->node, output->lx,
-                                    output->ly);
-        wlr_scene_node_set_position(&output->layers.overlay->node, output->lx,
-                                    output->ly);
+                                    output->layout_geometry.x, output->layout_geometry.y);
+        wlr_scene_node_set_position(&output->layers.bottom->node, output->layout_geometry.x,
+                                    output->layout_geometry.y);
+        wlr_scene_node_set_position(&output->layers.top->node, output->layout_geometry.x,
+                                    output->layout_geometry.y);
+        wlr_scene_node_set_position(&output->layers.overlay->node, output->layout_geometry.x,
+                                    output->layout_geometry.y);
     }
 }
 

@@ -207,10 +207,5 @@ bool Output::set_workspace(uint32_t n) {
 }
 
 void Output::update_position() {
-    struct wlr_box output_box;
-    wlr_output_layout_get_box(server->output_layout, wlr_output, &output_box);
-    lx = output_box.x;
-    ly = output_box.y;
-    width = output_box.width;
-    height = output_box.height;
+    wlr_output_layout_get_box(server->output_layout, wlr_output, &layout_geometry);
 }

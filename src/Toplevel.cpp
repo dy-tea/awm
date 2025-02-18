@@ -174,8 +174,11 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_maximize);
 
+        wlr_foreign_toplevel_handle_v1_maximized_event *event =
+            static_cast<wlr_foreign_toplevel_handle_v1_maximized_event *>(data);
+
         toplevel->update_foreign_toplevel();
-        toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
+        toplevel->set_maximized(event->maximized);
     };
     wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
 
@@ -185,11 +188,48 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_fullscreen);
 
+        wlr_foreign_toplevel_handle_v1_fullscreen_event *event =
+            static_cast<wlr_foreign_toplevel_handle_v1_fullscreen_event *>(
+                data);
+
         toplevel->update_foreign_toplevel();
-        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
+
+        // output specified
+        if (event->output) {
+            // get the source and target workspaces
+            Workspace *target =
+                toplevel->server->get_output(event->output)->get_active();
+            Workspace *source = toplevel->server->get_workspace(toplevel);
+
+            // move the toplevel to the target workspace
+            source->move_to(toplevel, target);
+        }
+
+        // set fullscreen
+        toplevel->set_fullscreen(event->fullscreen);
     };
     wl_signal_add(&handle->events.request_fullscreen,
                   &handle_request_fullscreen);
+
+    // handle_request_activate
+    handle_request_activate.notify = [](struct wl_listener *listener,
+                                        void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, handle_request_activate);
+
+        toplevel->update_foreign_toplevel();
+        toplevel->focus();
+    };
+    wl_signal_add(&handle->events.request_activate, &handle_request_activate);
+
+    handle_request_close.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, handle_request_close);
+
+        toplevel->update_foreign_toplevel();
+        toplevel->close();
+    };
+    wl_signal_add(&handle->events.request_close, &handle_request_close);
 }
 
 Toplevel::~Toplevel() {
@@ -204,6 +244,8 @@ Toplevel::~Toplevel() {
 
     wl_list_remove(&handle_request_maximize.link);
     wl_list_remove(&handle_request_fullscreen.link);
+    wl_list_remove(&handle_request_activate.link);
+    wl_list_remove(&handle_request_close.link);
 }
 
 // focus keyboard to surface

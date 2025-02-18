@@ -24,6 +24,8 @@ struct Toplevel {
 
     struct wl_listener handle_request_maximize;
     struct wl_listener handle_request_fullscreen;
+    struct wl_listener handle_request_activate;
+    struct wl_listener handle_request_close;
 
     bool hidden{false};
 

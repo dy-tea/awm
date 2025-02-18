@@ -2,7 +2,7 @@
 
 // execute either a wm bind or command bind, returns true if
 // bind is valid, false otherwise
-bool Keyboard::handle_bind(struct Bind bind, uint32_t keycode) {
+bool Keyboard::handle_bind(struct Bind bind) {
     // retrieve config
     Config *config = server->config;
 
@@ -235,8 +235,7 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
                 keyboard->keysyms_raw(keycode, &syms_raw, &modifiers);
 
             for (uint32_t i = 0; i != nsyms_raw; ++i)
-                handled = keyboard->handle_bind(Bind{modifiers, syms_raw[i]},
-                                                event->keycode);
+                handled = keyboard->handle_bind(Bind{modifiers, syms_raw[i]});
 
             // translated
             const xkb_keysym_t *syms_translated;
@@ -246,7 +245,7 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
             if (modifiers & WLR_MODIFIER_SHIFT || modifiers & WLR_MODIFIER_CAPS)
                 for (uint32_t i = 0; i != nsyms_translated; ++i)
                     handled = keyboard->handle_bind(
-                        Bind{modifiers, syms_translated[i]}, event->keycode);
+                        Bind{modifiers, syms_translated[i]});
         }
 
         if (!handled) {

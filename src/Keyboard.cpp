@@ -227,7 +227,7 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
 
         if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
             // modifiers
-            uint32_t modifiers;
+            uint32_t modifiers = 0;
 
             // raw
             const xkb_keysym_t *syms_raw;
@@ -243,9 +243,10 @@ Keyboard::Keyboard(struct Server *server, struct wlr_input_device *device) {
             uint32_t nsyms_translated = keyboard->keysyms_translated(
                 keycode, &syms_translated, &modifiers);
 
-            for (uint32_t i = 0; i != nsyms_translated; ++i)
-                handled = keyboard->handle_bind(
-                    Bind{modifiers, syms_translated[i]}, event->keycode);
+            if (modifiers & WLR_MODIFIER_SHIFT || modifiers & WLR_MODIFIER_CAPS)
+                for (uint32_t i = 0; i != nsyms_translated; ++i)
+                    handled = keyboard->handle_bind(
+                        Bind{modifiers, syms_translated[i]}, event->keycode);
         }
 
         if (!handled) {

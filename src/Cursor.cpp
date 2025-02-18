@@ -4,7 +4,7 @@ Cursor::Cursor(struct Server *server) {
     // create wlr cursor and xcursor
     this->server = server;
     cursor = wlr_cursor_create();
-    wlr_cursor_attach_output_layout(cursor, server->output_layout);
+    wlr_cursor_attach_output_layout(cursor, server->output_manager->layout);
     cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
     cursor_mode = CURSORMODE_PASSTHROUGH;
 

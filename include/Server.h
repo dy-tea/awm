@@ -5,6 +5,7 @@
 #include "Keyboard.h"
 #include "LayerSurface.h"
 #include "Output.h"
+#include "OutputManager.h"
 #include "Popup.h"
 #include "Toplevel.h"
 #include "Workspace.h"
@@ -23,11 +24,11 @@ struct Server {
 
     struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf;
 
+    struct wl_listener renderer_lost;
+
     struct wlr_xdg_shell *xdg_shell;
     struct wl_listener new_xdg_toplevel;
     struct wl_listener new_xdg_popup;
-
-    struct wl_listener renderer_lost;
 
     struct Cursor *cursor;
 
@@ -40,11 +41,7 @@ struct Server {
 
     struct Toplevel *grabbed_toplevel;
 
-    struct wlr_output_layout *output_layout;
-    struct wl_listener update_monitors;
-
-    struct wl_list outputs;
-    struct wl_listener new_output;
+    OutputManager *output_manager;
 
     struct {
         struct wlr_scene_tree *background;
@@ -60,15 +57,8 @@ struct Server {
     struct wlr_layer_shell_v1 *wlr_layer_shell;
     struct wl_listener new_shell_surface;
 
-    struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
-    struct wlr_output_manager_v1 *wlr_output_manager;
-    struct wl_listener output_apply;
-    struct wl_listener output_test;
-
     struct wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
     struct wl_listener new_virtual_pointer;
-
-
 
     struct wlr_export_dmabuf_manager_v1 *wlr_export_dmabuf_manager;
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;

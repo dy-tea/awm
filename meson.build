@@ -83,6 +83,7 @@ executable(
     'src/Workspace.cpp',
     'src/Config.cpp',
     'src/Cursor.cpp',
+    'src/OutputManager.cpp',
     #'src/XWaylandShell.cpp',
     #'src/XWaylandSurface.cpp',
     protocol_sources,

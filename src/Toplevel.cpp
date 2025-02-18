@@ -59,7 +59,7 @@ Toplevel::Toplevel(struct Server *server,
             height = std::min(height, (uint32_t)usable_area.height);
 
             struct wlr_box output_box;
-            wlr_output_layout_get_box(toplevel->server->output_layout,
+            wlr_output_layout_get_box(toplevel->server->output_manager->layout,
                                       output->wlr_output, &output_box);
 
             int32_t x = output_box.x + (usable_area.width - width) / 2;
@@ -276,7 +276,7 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
             current->move_to(this, target);
 
             struct wlr_box output_box;
-            wlr_output_layout_get_box(server->output_layout,
+            wlr_output_layout_get_box(server->output_manager->layout,
                                       target->output->wlr_output, &output_box);
 
             double new_x = cursor->cursor->x - cursor->grab_x;
@@ -321,7 +321,7 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
     // get output layout at cursor
     wlr_cursor *cursor = server->cursor->cursor;
     struct wlr_output *wlr_output = wlr_output_layout_output_at(
-        server->output_layout, cursor->x, cursor->y);
+        server->output_manager->layout, cursor->x, cursor->y);
 
     // get output scale
     float scale = wlr_output->scale;
@@ -379,8 +379,8 @@ void Toplevel::set_fullscreen(bool fullscreen) {
 
     // get output geometry
     struct wlr_box output_box;
-    wlr_output_layout_get_box(server->output_layout, output->wlr_output,
-                              &output_box);
+    wlr_output_layout_get_box(server->output_manager->layout,
+                              output->wlr_output, &output_box);
 
     if (fullscreen) {
         // save current geometry

@@ -345,6 +345,8 @@ void Config::update(struct Server *server) {
     // update write time
     last_write_time = current_write_time;
 
+    commands.clear();
+
     // load new config
     if (!load())
         return;

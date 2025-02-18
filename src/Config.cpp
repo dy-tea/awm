@@ -304,6 +304,7 @@ struct Bind *Config::parse_bind(std::string definition) {
 
             if (modifier == 69) {
                 notify_send("No such keycode or modifier '%s'", token.c_str());
+                delete bind;
                 return nullptr;
             }
 

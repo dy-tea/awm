@@ -73,7 +73,7 @@ LayerSurface::LayerSurface(struct Output *output,
         bool needs_arrange = false;
         // hack:
         // TODO: figure out when to call this - tempfix
-        output->server->arrange();
+        output->server->output_manager->arrange();
 
         if (surface->wlr_layer_surface->current.committed &
             WLR_LAYER_SURFACE_V1_STATE_LAYER) {

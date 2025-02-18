@@ -246,3 +246,51 @@ void OutputManager::apply_config(struct wlr_output_configuration_v1 *cfg,
     else
         wlr_output_configuration_v1_send_failed(cfg);
 }
+
+// get output by wlr_output
+struct Output *OutputManager::get_output(struct wlr_output *wlr_output) {
+    // check each output
+    Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &outputs,
+                          link) if (output->wlr_output ==
+                                    wlr_output) return output;
+
+    // no output found
+    wlr_log(WLR_ERROR, "could not find output");
+    return nullptr;
+}
+
+// get the output based on screen coordinates
+struct Output *OutputManager::output_at(double x, double y) {
+    struct wlr_output *wlr_output = wlr_output_layout_output_at(layout, x, y);
+
+    // no output found
+    if (wlr_output == NULL)
+        return NULL;
+
+    // get associated output
+    return get_output(wlr_output);
+}
+
+// arrange layer shell layers on each output
+void OutputManager::arrange() {
+    struct Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &outputs, link) {
+        // tell outputs to update their positions
+        output->update_position();
+
+        // arrange layers in z order
+        wlr_scene_node_set_position(&output->layers.background->node,
+                                    output->layout_geometry.x,
+                                    output->layout_geometry.y);
+        wlr_scene_node_set_position(&output->layers.bottom->node,
+                                    output->layout_geometry.x,
+                                    output->layout_geometry.y);
+        wlr_scene_node_set_position(&output->layers.top->node,
+                                    output->layout_geometry.x,
+                                    output->layout_geometry.y);
+        wlr_scene_node_set_position(&output->layers.overlay->node,
+                                    output->layout_geometry.x,
+                                    output->layout_geometry.y);
+    }
+}

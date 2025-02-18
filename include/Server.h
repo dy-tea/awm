@@ -88,14 +88,6 @@ struct Server {
     struct LayerSurface *layer_surface_at(double lx, double ly,
                                           struct wlr_surface **surface,
                                           double *sx, double *sy);
-    struct Output *output_at(double x, double y);
 
     struct Workspace *get_workspace(struct Toplevel *toplevel);
-
-    bool apply_output_config_to_output(Output *output, OutputConfig *config,
-                                       bool test_only);
-    void apply_output_config(struct wlr_output_configuration_v1 *config,
-                             bool test_only);
-
-    void arrange();
 };

@@ -106,33 +106,12 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
 
 // get output by wlr_output
 struct Output *Server::get_output(struct wlr_output *wlr_output) {
-    // check each output
-    Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &output_manager->outputs,
-                          link) if (output->wlr_output ==
-                                    wlr_output) return output;
-
-    // no output found
-    wlr_log(WLR_ERROR, "could not find output");
-    return nullptr;
-}
-
-// get the output based on screen coordinates
-struct Output *Server::output_at(double x, double y) {
-    struct wlr_output *wlr_output =
-        wlr_output_layout_output_at(output_manager->layout, x, y);
-
-    // no output found
-    if (wlr_output == NULL)
-        return NULL;
-
-    // get associated output
-    return get_output(wlr_output);
+    return output_manager->get_output(wlr_output);
 }
 
 // get the focused output
 struct Output *Server::focused_output() {
-    return output_at(cursor->cursor->x, cursor->cursor->y);
+    return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
 }
 
 Server::Server(struct Config *config) {
@@ -495,33 +474,6 @@ Server::Server(struct Config *config) {
 
     // close thread
     config_thread.join();
-}
-
-void Server::arrange() {
-    struct Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &output_manager->outputs, link) {
-        output->update_position();
-        /*
-        wlr_scene_output_set_position(output->scene_output, output->lx,
-        output->ly) wlr_scene_node_reparent(&output->layers.background->node,
-        shell_background); wlr_scene_node_reparent(&output->layers.bottom->node,
-        shell_bottom); wlr_scene_node_reparent(&output->layers.top->node,
-        shell_top); wlr_scene_node_reparent(&output->layers.overlay->node,
-        shell_overlay);
-        */
-        wlr_scene_node_set_position(&output->layers.background->node,
-                                    output->layout_geometry.x,
-                                    output->layout_geometry.y);
-        wlr_scene_node_set_position(&output->layers.bottom->node,
-                                    output->layout_geometry.x,
-                                    output->layout_geometry.y);
-        wlr_scene_node_set_position(&output->layers.top->node,
-                                    output->layout_geometry.x,
-                                    output->layout_geometry.y);
-        wlr_scene_node_set_position(&output->layers.overlay->node,
-                                    output->layout_geometry.x,
-                                    output->layout_geometry.y);
-    }
 }
 
 Server::~Server() {

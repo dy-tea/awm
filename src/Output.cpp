@@ -20,7 +20,7 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     this->wlr_output->data = this;
 
     // send arrange
-    server->arrange();
+    server->output_manager->arrange();
     update_position();
 
     // frame

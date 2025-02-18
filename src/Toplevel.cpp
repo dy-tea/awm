@@ -269,9 +269,7 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
 
         // move toplevel to different workspace if it's moved into other output
         Workspace *current = server->get_workspace(this);
-        Workspace *target =
-            server->output_at(cursor->cursor->x, cursor->cursor->y)
-                ->get_active();
+        Workspace *target = server->focused_output()->get_active();
         if (!target->contains(this) && current) {
             current->move_to(this, target);
 

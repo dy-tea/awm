@@ -126,14 +126,14 @@ Server::Server(struct Config *config) {
         wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
     if (backend == NULL) {
         wlr_log(WLR_ERROR, "failed to create wlr_backend");
-        exit(1);
+        ::exit(1);
     }
 
     // renderer
     renderer = wlr_renderer_autocreate(backend);
     if (renderer == NULL) {
         wlr_log(WLR_ERROR, "failed to create wlr_renderer");
-        exit(1);
+        ::exit(1);
     }
 
     wlr_renderer_init_wl_display(renderer, wl_display);
@@ -142,7 +142,7 @@ Server::Server(struct Config *config) {
     allocator = wlr_allocator_autocreate(backend, renderer);
     if (allocator == NULL) {
         wlr_log(WLR_ERROR, "failed to create wlr_allocator");
-        exit(1);
+        ::exit(1);
     }
 
     // wlr compositor
@@ -413,7 +413,7 @@ Server::Server(struct Config *config) {
                     socket.c_str(), ret);
     }
 
-    if (!socket.c_str()) {
+    if (socket.empty()) {
         wlr_log(WLR_DEBUG, "Unable to open wayland socket");
         wlr_backend_destroy(backend);
         return;
@@ -423,18 +423,23 @@ Server::Server(struct Config *config) {
     if (!wlr_backend_start(backend)) {
         wlr_backend_destroy(backend);
         wl_display_destroy(wl_display);
-        exit(1);
+        ::exit(1);
     }
 
-    // set up SIGCHLD handler to reap zombie processes
+    // set up signal handler
     struct sigaction sa;
     sa.sa_handler = [](int sig) {
-        while (waitpid(-1, NULL, WNOHANG) > 0)
-            ;
+        if (sig == SIGCHLD)
+            while (waitpid(-1, NULL, WNOHANG) > 0)
+                ;
+        else if (sig == SIGINT || sig == SIGTERM)
+            Server::get().exit();
     };
+    sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
     sigaction(SIGCHLD, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
 
     // set wayland diplay to our socket
     setenv("WAYLAND_DISPLAY", socket.c_str(), true);
@@ -471,14 +476,15 @@ Server::Server(struct Config *config) {
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
             socket.c_str());
     wl_display_run(wl_display);
+}
+
+void Server::exit() {
+    wl_display_terminate(wl_display);
 
     // run exit commands
     for (std::string command : config->exit_commands)
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
-
-    // close thread
-    config_thread.join();
 }
 
 Server::~Server() {

@@ -23,7 +23,7 @@ bool Keyboard::handle_bind(struct Bind bind) {
     // handle compositor binds
     if (bind == config->exit) {
         // exit compositor
-        wl_display_terminate(server->wl_display);
+        server->exit();
     } else if (bind == config->window_fullscreen) {
         // fullscreen the active toplevel
         Toplevel *active = output->get_active()->active_toplevel;

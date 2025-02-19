@@ -12,6 +12,12 @@
 #include "XWaylandShell.h"
 
 struct Server {
+    // get singleton instance
+    static Server &get() {
+        static Server server;
+        return server;
+    };
+
     struct Config *config;
 
     struct wl_display *wl_display;
@@ -70,8 +76,11 @@ struct Server {
         *ext_image_copy_capture_manager;
     struct wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager;
 
+    Server() {}
     Server(struct Config *config);
     ~Server();
+
+    void exit();
 
     void new_keyboard(struct wlr_input_device *device);
     void new_pointer(struct wlr_input_device *device);

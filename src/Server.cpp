@@ -426,6 +426,13 @@ Server::Server(struct Config *config) {
         ::exit(1);
     }
 
+    // linux dmabuf
+    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF)) {
+        wlr_linux_dmabuf =
+            wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, renderer);
+        wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
+    }
+
     // set up signal handler
     struct sigaction sa;
     sa.sa_handler = [](int sig) {
@@ -444,6 +451,9 @@ Server::Server(struct Config *config) {
     // set wayland diplay to our socket
     setenv("WAYLAND_DISPLAY", socket.c_str(), true);
 
+    // set xdg current desktop for portals
+    setenv("XDG_CURRENT_DESKTOP", "awm", true);
+
     // set envvars from config
     for (std::pair<std::string, std::string> kv : config->startup_env)
         setenv(kv.first.c_str(), kv.second.c_str(), true);
@@ -452,13 +462,6 @@ Server::Server(struct Config *config) {
     for (std::string command : config->startup_commands)
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
-
-    // linux dmabuf
-    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF)) {
-        wlr_linux_dmabuf =
-            wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, renderer);
-        wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
-    }
 
     // run thread for config updater
     std::thread config_thread([&]() {

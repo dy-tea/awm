@@ -8,7 +8,6 @@ exec = ["xwayland-satellite", "hyprpaper"] # list of commands to run on startup
 
 # env variables to set on startup
 [[startup.env]]
-XDG_CURRENT_DESKTOP = "awm"
 DISPLAY = ":0"
 MOZ_ENABLE_WAYLAND = 1
 ELECTRON_OZONE_PLATFORM_HINT = "wayland"

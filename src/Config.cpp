@@ -213,13 +213,14 @@ bool Config::load() {
         config_file.table->getArray("commands");
     if (command_tables) {
         auto tables = command_tables->getTableVector();
+
+        // clear commands
+        commands.clear();
+
         if (tables)
             for (toml::Table &table : *tables.get()) {
                 auto bind = table.getString("bind");
                 auto exec = table.getString("exec");
-
-                // clear commands
-                commands.clear();
 
                 if (bind.first && exec.first)
                     if (Bind *parsed = parse_bind(bind.second)) {

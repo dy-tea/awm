@@ -182,6 +182,26 @@ Toplevel::Toplevel(struct Server *server,
     };
     wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
 
+    // handle_request_minimize
+    handle_request_minimize.notify = [](struct wl_listener *listener,
+                                        void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, handle_request_minimize);
+
+        // wlr_foreign_toplevel_handle_v1_minimized_event *event =
+        //     static_cast<wlr_foreign_toplevel_handle_v1_minimized_event
+        //     *>(data);
+        //
+        //  FIXME: since awm doesn't support minimization, just update the
+        //  toplevel
+
+        notify_send(
+            "Minimizing foreign toplevels is not supported, expect issues");
+
+        toplevel->update_foreign_toplevel();
+    };
+    wl_signal_add(&handle->events.request_minimize, &handle_request_minimize);
+
     // handle_request_fullscreen
     handle_request_fullscreen.notify = [](struct wl_listener *listener,
                                           void *data) {
@@ -222,6 +242,7 @@ Toplevel::Toplevel(struct Server *server,
     };
     wl_signal_add(&handle->events.request_activate, &handle_request_activate);
 
+    // handle_request_close
     handle_request_close.notify = [](struct wl_listener *listener, void *data) {
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_close);
@@ -230,6 +251,31 @@ Toplevel::Toplevel(struct Server *server,
         toplevel->close();
     };
     wl_signal_add(&handle->events.request_close, &handle_request_close);
+
+    // handle_set_rectangle
+    handle_set_rectangle.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, handle_request_close);
+
+        wlr_foreign_toplevel_handle_v1_set_rectangle_event *event =
+            static_cast<wlr_foreign_toplevel_handle_v1_set_rectangle_event *>(
+                data);
+
+        toplevel->update_foreign_toplevel();
+        // NOTE: this might be entirely incorrect
+        toplevel->set_position_size(event->x, event->y, event->width,
+                                    event->height);
+    };
+    wl_signal_add(&handle->events.set_rectangle, &handle_set_rectangle);
+
+    // handle_destroy
+    handle_destroy.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, handle_destroy);
+
+        delete toplevel;
+    };
+    wl_signal_add(&handle->events.destroy, &handle_destroy);
 }
 
 Toplevel::~Toplevel() {
@@ -243,9 +289,12 @@ Toplevel::~Toplevel() {
     wl_list_remove(&request_fullscreen.link);
 
     wl_list_remove(&handle_request_maximize.link);
+    wl_list_remove(&handle_request_minimize.link);
     wl_list_remove(&handle_request_fullscreen.link);
     wl_list_remove(&handle_request_activate.link);
     wl_list_remove(&handle_request_close.link);
+    wl_list_remove(&handle_set_rectangle.link);
+    wl_list_remove(&handle_destroy.link);
 }
 
 // focus keyboard to surface
@@ -508,9 +557,9 @@ void Toplevel::update_foreign_toplevel() {
     wlr_foreign_toplevel_handle_v1_set_maximized(
         handle, xdg_toplevel->current.maximized);
     wlr_foreign_toplevel_handle_v1_set_fullscreen(
-        handle, xdg_toplevel->current.maximized);
+        handle, xdg_toplevel->current.fullscreen);
     wlr_foreign_toplevel_handle_v1_set_activated(
-        handle, xdg_toplevel->current.maximized);
+        handle, xdg_toplevel->current.activated);
 }
 
 // tell the toplevel to close

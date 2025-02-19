@@ -23,9 +23,12 @@ struct Toplevel {
     struct wlr_foreign_toplevel_handle_v1 *handle;
 
     struct wl_listener handle_request_maximize;
+    struct wl_listener handle_request_minimize;
     struct wl_listener handle_request_fullscreen;
     struct wl_listener handle_request_activate;
     struct wl_listener handle_request_close;
+    struct wl_listener handle_set_rectangle;
+    struct wl_listener handle_destroy;
 
     bool hidden{false};
 

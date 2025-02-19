@@ -43,10 +43,14 @@ bool Config::load() {
 
         if (exec) {
             auto commands = exec->getStringVector();
-            if (commands)
+            if (commands) {
+                // clear commands
+                startup_commands.clear();
+
                 for (std::string &command : *commands)
                     // add each one to startup commands
                     startup_commands.emplace_back(command);
+            }
         }
 
         // env vars
@@ -58,6 +62,9 @@ bool Config::load() {
             if (tables)
                 for (toml::Table table : *tables) {
                     std::vector<std::string> keys = table.keys();
+
+                    // clear env vars
+                    startup_env.clear();
 
                     for (std::string key : keys) {
                         // try both string and int values
@@ -75,6 +82,25 @@ bool Config::load() {
         }
     } else {
         wlr_log(WLR_INFO, "No startup configuration found, ingoring");
+    }
+
+    // exit
+    std::unique_ptr<toml::Table> exit_table =
+        config_file.table->getTable("exit");
+    if (exit_table) {
+        // list of commands to run on exit
+        auto exec = exit_table->getArray("exec");
+        if (exec) {
+            auto commands = exec->getStringVector();
+            if (commands) {
+                // clear exit commands
+                exit_commands.clear();
+
+                // add each command to exit commands
+                for (std::string &command : *commands)
+                    exit_commands.emplace_back(command);
+            }
+        }
     }
 
     // get keyboard config
@@ -191,6 +217,9 @@ bool Config::load() {
             for (toml::Table &table : *tables.get()) {
                 auto bind = table.getString("bind");
                 auto exec = table.getString("exec");
+
+                // clear commands
+                commands.clear();
 
                 if (bind.first && exec.first)
                     if (Bind *parsed = parse_bind(bind.second)) {
@@ -344,8 +373,6 @@ void Config::update(struct Server *server) {
 
     // update write time
     last_write_time = current_write_time;
-
-    commands.clear();
 
     // load new config
     if (!load())

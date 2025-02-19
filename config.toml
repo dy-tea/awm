@@ -13,6 +13,9 @@ DISPLAY = ":0"
 MOZ_ENABLE_WAYLAND = 1
 ELECTRON_OZONE_PLATFORM_HINT = "wayland"
 
+[exit]
+exec = ["echo \"exiting awm\""] # list of commands to run on exit
+
 [keyboard] # default keyboard layout, optional
 layout = "us"
 model = "pc105"

@@ -472,6 +472,11 @@ Server::Server(struct Config *config) {
             socket.c_str());
     wl_display_run(wl_display);
 
+    // run exit commands
+    for (std::string command : config->exit_commands)
+        if (fork() == 0)
+            execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
+
     // close thread
     config_thread.join();
 }

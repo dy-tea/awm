@@ -54,6 +54,11 @@ bool Config::load() {
             }
         }
 
+        // renderer
+        auto r = startup->getString("renderer");
+        if (r.first)
+            renderer = r.second;
+
         // env vars
         std::unique_ptr<toml::Array> env = startup->getArray("env");
 

@@ -5,6 +5,7 @@
 
 [startup]
 exec = ["xwayland-satellite", "hyprpaper"] # list of commands to run on startup
+renderer = "auto"                          # "drm", "wayland", "vulkan"
 
 # env variables to set on startup
 [[startup.env]]

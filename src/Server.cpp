@@ -188,6 +188,9 @@ Server::Server(struct Config *config) {
     // set config from file
     this->config = config;
 
+    // set renderer
+    setenv("WLR_RENDERER", config->renderer.c_str(), true);
+
     // display
     wl_display = wl_display_create();
 

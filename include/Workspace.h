@@ -10,7 +10,7 @@ struct Workspace {
     Workspace(struct Output *output, uint32_t num);
     ~Workspace();
 
-    void add_toplevel(struct Toplevel *toplevel);
+    void add_toplevel(struct Toplevel *toplevel, bool focus);
     void close(struct Toplevel *toplevel);
     void close_active();
     bool contains(struct Toplevel *toplevel);

@@ -10,7 +10,7 @@ Workspace::Workspace(struct Output *output, uint32_t num) {
 Workspace::~Workspace() {}
 
 // add a toplevel to the workspace
-void Workspace::add_toplevel(struct Toplevel *toplevel) {
+void Workspace::add_toplevel(struct Toplevel *toplevel, bool focus) {
     // add to toplevels list
     wl_list_insert(&toplevels, &toplevel->link);
 
@@ -18,7 +18,8 @@ void Workspace::add_toplevel(struct Toplevel *toplevel) {
     active_toplevel = toplevel;
 
     // focus
-    toplevel->focus();
+    if (focus)
+        toplevel->focus();
 }
 
 // close a toplevel
@@ -75,9 +76,13 @@ bool Workspace::move_to(struct Toplevel *toplevel,
             Toplevel *new_active =
                 wl_container_of(toplevels.prev, new_active, link);
             new_active->focus();
-        } else
+        } else {
             // no more active toplevel
             active_toplevel = nullptr;
+
+            // clear keyboard focus
+            wlr_seat_keyboard_notify_clear_focus(output->server->seat);
+        }
     }
 
     // ensure toplevel is part of workspace
@@ -88,7 +93,7 @@ bool Workspace::move_to(struct Toplevel *toplevel,
 
         // move to other workspace
         wl_list_remove(&toplevel->link);
-        workspace->add_toplevel(toplevel);
+        workspace->add_toplevel(toplevel, false);
 
         return true;
     }

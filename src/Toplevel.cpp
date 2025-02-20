@@ -73,8 +73,7 @@ Toplevel::Toplevel(struct Server *server,
             wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
 
             // add toplevel to active workspace and focus it
-            output->get_active()->add_toplevel(toplevel);
-            toplevel->focus();
+            output->get_active()->add_toplevel(toplevel, true);
         }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.map, &map);

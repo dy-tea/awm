@@ -29,6 +29,7 @@ extern "C" {
 
 // Stable
 #include <wlr/backend.h>
+#include <wlr/backend/libinput.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
@@ -48,8 +49,8 @@ extern "C" {
 #include <wlr/util/region.h>
 
 // Unstable
-#include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_data_control_v1.h>
+#include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
 #include <wlr/types/wlr_ext_image_capture_source_v1.h>
@@ -62,8 +63,8 @@ extern "C" {
 #include <wlr/types/wlr_linux_drm_syncobj_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
-#include <wlr/types/wlr_xdg_output_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
+#include <wlr/types/wlr_xdg_output_v1.h>
 
 // XWayland
 #include <wlr/xwayland/shell.h>

@@ -83,7 +83,7 @@ struct Server {
     void exit();
 
     void new_keyboard(struct wlr_input_device *device);
-    void new_pointer(struct wlr_input_device *device);
+    void new_pointer(struct wlr_pointer *device);
 
     struct Output *get_output(struct wlr_output *wlr_output);
     struct Output *focused_output();

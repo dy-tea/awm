@@ -66,6 +66,7 @@ libs = [
   dependency('wlroots-0.19'),
   dependency('pixman-1'),
   dependency('xkbcommon'),
+  dependency('libinput'),
   dependency('xcb'),
   tomlcpp_dep,
 ]

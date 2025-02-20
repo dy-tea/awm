@@ -1,4 +1,6 @@
 #include "Server.h"
+#include "wlr.h"
+#include <libinput.h>
 #include <thread>
 
 // create a new keyboard
@@ -13,12 +15,59 @@ void Server::new_keyboard(struct wlr_input_device *device) {
 }
 
 // create a new pointer
-void Server::new_pointer(struct wlr_input_device *device) {
-    /* We don't do anything special with pointers. All of our pointer handling
-     * is proxied through wlr_cursor. On another compositor, you might take this
-     * opportunity to do libinput configuration on the device to set
-     * acceleration, etc. */
-    wlr_cursor_attach_input_device(cursor->cursor, device);
+void Server::new_pointer(struct wlr_pointer *pointer) {
+    struct libinput_device *device;
+    if (wlr_input_device_is_libinput(&pointer->base) &&
+        (device = wlr_libinput_get_device_handle(&pointer->base))) {
+
+        if (libinput_device_config_tap_get_finger_count(device)) {
+            libinput_device_config_tap_set_enabled(
+                device, LIBINPUT_CONFIG_TAP_ENABLED); // tap to click
+            libinput_device_config_tap_set_drag_enabled(
+                device, LIBINPUT_CONFIG_DRAG_ENABLED); // tap and drag
+            libinput_device_config_tap_set_drag_lock_enabled(
+                device, LIBINPUT_CONFIG_DRAG_LOCK_ENABLED); // drag lock
+            libinput_device_config_tap_set_button_map(
+                device, LIBINPUT_CONFIG_TAP_MAP_LRM); // button map
+        }
+
+        if (libinput_device_config_scroll_has_natural_scroll(device))
+            libinput_device_config_scroll_set_natural_scroll_enabled(device,
+                                                                     true);
+
+        if (libinput_device_config_dwt_is_available(device))
+            libinput_device_config_dwt_set_enabled(device,
+                                                   LIBINPUT_CONFIG_DWT_ENABLED);
+
+        if (libinput_device_config_left_handed_is_available(device))
+            libinput_device_config_left_handed_set(device, 0);
+
+        if (libinput_device_config_middle_emulation_is_available(device))
+            libinput_device_config_middle_emulation_set_enabled(
+                device, LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED);
+
+        if (libinput_device_config_scroll_get_methods(device) !=
+            LIBINPUT_CONFIG_SCROLL_NO_SCROLL)
+            libinput_device_config_scroll_set_method(
+                device, LIBINPUT_CONFIG_SCROLL_2FG); // 2 finger scroll
+
+        if (libinput_device_config_click_get_methods(device) !=
+            LIBINPUT_CONFIG_CLICK_METHOD_NONE)
+            libinput_device_config_click_set_method(
+                device, LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS);
+
+        if (libinput_device_config_send_events_get_modes(device))
+            libinput_device_config_send_events_set_mode(
+                device, LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE);
+
+        if (libinput_device_config_accel_is_available(device)) {
+            libinput_device_config_accel_set_profile(
+                device, LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE);
+            libinput_device_config_accel_set_speed(device, 0);
+        }
+    }
+
+    wlr_cursor_attach_input_device(cursor->cursor, &pointer->base);
 }
 
 // get workspace by toplevel
@@ -291,7 +340,7 @@ Server::Server(struct Config *config) {
             server->new_keyboard(device);
             break;
         case WLR_INPUT_DEVICE_POINTER:
-            server->new_pointer(device);
+            server->new_pointer((wlr_pointer *)device);
             break;
         default:
             break;

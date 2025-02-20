@@ -310,7 +310,7 @@ uint32_t parse_modifier(std::string modifier) {
         if (modifier == modifiers[i])
             return 1 << i;
 
-    return 69;
+    return 69420;
 }
 
 // create a bind from a space-seperated string of modifiers and key
@@ -332,7 +332,7 @@ struct Bind *Config::parse_bind(std::string definition) {
         if (sym == XKB_KEY_NoSymbol) {
             uint32_t modifier = parse_modifier(token);
 
-            if (modifier == 69) {
+            if (modifier == 69420) {
                 notify_send("No such keycode or modifier '%s'", token.c_str());
                 delete bind;
                 return nullptr;

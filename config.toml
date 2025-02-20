@@ -11,6 +11,7 @@ exec = ["xwayland-satellite", "hyprpaper"] # list of commands to run on startup
 DISPLAY = ":0"
 MOZ_ENABLE_WAYLAND = 1
 ELECTRON_OZONE_PLATFORM_HINT = "wayland"
+# WLR_RENDERER = "vulkan" may improve accuracy on nvidia
 
 [exit]
 exec = ["echo \"exiting awm\""] # list of commands to run on exit

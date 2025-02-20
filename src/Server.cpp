@@ -118,10 +118,6 @@ Server::Server(struct Config *config) {
     // set config from file
     this->config = config;
 
-    // set envvars from config
-    for (std::pair<std::string, std::string> kv : config->startup_env)
-        setenv(kv.first.c_str(), kv.second.c_str(), true);
-
     // display
     wl_display = wl_display_create();
 
@@ -458,6 +454,10 @@ Server::Server(struct Config *config) {
 
     // set xdg current desktop for portals
     setenv("XDG_CURRENT_DESKTOP", "awm", true);
+
+    // set envvars from config
+    for (std::pair<std::string, std::string> kv : config->startup_env)
+        setenv(kv.first.c_str(), kv.second.c_str(), true);
 
     // run startup commands from config
     for (std::string command : config->startup_commands)

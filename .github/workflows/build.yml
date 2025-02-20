@@ -17,34 +17,34 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install --fix-missing meson wayland-protocols wayland-utils \
-          libwlroots-dev libffi-dev graphviz doxygen xsltproc xmlto
+          libwlroots-dev
 
       - name: pixman-1
         run: |
           git clone https://gitlab.freedesktop.org/pixman/pixman.git
           cd pixman
-          meson setup build
+          meson setup build/
           sudo ninja -C build/ install
 
       - name: libinput
         run: |
           git clone https://gitlab.freedesktop.org/libinput/libinput.git
           cd libinput
-          meson setup -Ddebug-gui=false build
+          meson setup -Ddebug-gui=false -Dtests=false build/
           sudo ninja -C build/ install
 
       - name: wayland
         run: |
           git clone https://gitlab.freedesktop.org/wayland/wayland.git
           cd wayland
-          meson setup build/
+          meson setup -Dtests=false -Ddocumentation=false -Ddtd_validation=false build/
           sudo ninja -C build/ install
 
       - name: wayland-protocols
         run: |
           git clone https://gitlab.freedesktop.org/wayland/wayland-protocols.git
           cd wayland-protocols
-          meson setup build/
+          meson setup -Dtests=false build/
           sudo ninja -C build/ install
 
       - name: wlroots
@@ -56,5 +56,5 @@ jobs:
 
       - name: Build the project
         run: |
-          meson setup build
-          ninja -C build
+          meson setup build/
+          ninja -C build/

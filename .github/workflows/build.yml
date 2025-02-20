@@ -26,6 +26,13 @@ jobs:
           meson setup build
           sudo ninja -C build/ install
 
+      - name: libinput
+        run: |
+          git clone https://gitlab.freedesktop.org/libinput/libinput.git
+          cd libinput
+          meson setup build
+          sudo ninja -C build/ install
+
       - name: wayland
         run: |
           git clone https://gitlab.freedesktop.org/wayland/wayland.git

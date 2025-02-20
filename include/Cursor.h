@@ -1,4 +1,5 @@
 #include "wlr.h"
+#include <vector>
 
 enum CursorMode {
     CURSORMODE_PASSTHROUGH,
@@ -11,6 +12,8 @@ struct Cursor {
     struct wlr_cursor *cursor;
     struct wlr_xcursor_manager *cursor_mgr;
     enum CursorMode cursor_mode;
+
+    std::vector<wlr_pointer*> pointers;
 
     double grab_x, grab_y;
     struct wlr_box grab_geobox;
@@ -29,4 +32,7 @@ struct Cursor {
     void process_motion(uint32_t time);
     void process_move();
     void process_resize();
+
+    void set_config(struct wlr_pointer *pointer);
+    void reconfigure_all();
 };

@@ -526,4 +526,7 @@ void Config::update(struct Server *server) {
     struct wlr_keyboard *wlr_keyboard = wlr_seat_get_keyboard(server->seat);
     Keyboard *keyboard = static_cast<Keyboard *>(wlr_keyboard->data);
     keyboard->update_config();
+
+    // update cursor config
+    server->cursor->reconfigure_all();
 }

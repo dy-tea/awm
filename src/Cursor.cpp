@@ -201,3 +201,89 @@ void Cursor::process_resize() {
     wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_right - new_left,
                               new_bottom - new_top);
 }
+
+// set the cursor libinput configuration
+void Cursor::set_config(struct wlr_pointer *pointer) {
+    struct libinput_device *device;
+    struct Config *config = server->config;
+
+    if (wlr_input_device_is_libinput(&pointer->base) &&
+        (device = wlr_libinput_get_device_handle(&pointer->base))) {
+
+        if (libinput_device_config_tap_get_finger_count(device)) {
+            // tap to click
+            libinput_device_config_tap_set_enabled(device,
+                                                   config->cursor.tap_to_click);
+
+            // tap and drag
+            libinput_device_config_tap_set_drag_enabled(
+                device, config->cursor.tap_and_drag);
+
+            // drag lock
+            libinput_device_config_tap_set_drag_lock_enabled(
+                device, config->cursor.drag_lock);
+
+            // buttom map
+            libinput_device_config_tap_set_button_map(
+                device, config->cursor.tap_button_map);
+        }
+
+        // natural scroll
+        if (libinput_device_config_scroll_has_natural_scroll(device))
+            if (libinput_device_has_capability(device,
+                                               LIBINPUT_DEVICE_CAP_TOUCH))
+                libinput_device_config_scroll_set_natural_scroll_enabled(
+                    device, config->cursor.natural_scroll);
+
+        // disable while typing
+        if (libinput_device_config_dwt_is_available(device))
+            libinput_device_config_dwt_set_enabled(
+                device, config->cursor.disable_while_typing);
+
+        // left handed
+        if (libinput_device_config_left_handed_is_available(device))
+            libinput_device_config_left_handed_set(device,
+                                                   config->cursor.left_handed);
+
+        // middle emulation
+        if (libinput_device_config_middle_emulation_is_available(device))
+            libinput_device_config_middle_emulation_set_enabled(
+                device, config->cursor.middle_emulation);
+
+        // scroll method
+        if (libinput_device_config_scroll_get_methods(device) !=
+            LIBINPUT_CONFIG_SCROLL_NO_SCROLL)
+            libinput_device_config_scroll_set_method(
+                device, config->cursor.scroll_method);
+
+        // click method
+        if (libinput_device_config_click_get_methods(device) !=
+            LIBINPUT_CONFIG_CLICK_METHOD_NONE)
+            libinput_device_config_click_set_method(
+                device, config->cursor.click_method);
+
+        // event mode
+        if (libinput_device_config_send_events_get_modes(device))
+            libinput_device_config_send_events_set_mode(
+                device, config->cursor.event_mode);
+
+        if (libinput_device_config_accel_is_available(device)) {
+            // profile
+            libinput_device_config_accel_set_profile(device,
+                                                     config->cursor.profile);
+
+            // accel speed
+            libinput_device_config_accel_set_speed(device,
+                                                   config->cursor.accel_speed);
+        }
+    }
+
+    // add pointer to list
+    if (std::find(pointers.begin(), pointers.end(), pointer) == pointers.end())
+        pointers.push_back(pointer);
+}
+
+void Cursor::reconfigure_all() {
+    for (wlr_pointer *pointer : pointers)
+        set_config(pointer);
+}

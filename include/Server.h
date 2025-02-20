@@ -66,6 +66,7 @@ struct Server {
     struct wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
     struct wl_listener new_virtual_pointer;
 
+    struct wlr_viewporter *wlr_viewporter;
     struct wlr_export_dmabuf_manager_v1 *wlr_export_dmabuf_manager;
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager;
     struct wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;

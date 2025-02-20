@@ -436,6 +436,9 @@ Server::Server(struct Config *config) {
     // xwayland shell
     // xwayland_shell = new XWaylandShell(wl_display, scene);
 
+    // viewporter
+    wlr_viewporter = wlr_viewporter_create(wl_display);
+
     // export dmabuf manager
     wlr_export_dmabuf_manager = wlr_export_dmabuf_manager_v1_create(wl_display);
 

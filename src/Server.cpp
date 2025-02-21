@@ -373,6 +373,9 @@ Server::Server(struct Config *config) {
     // viewporter
     wlr_viewporter = wlr_viewporter_create(wl_display);
 
+    // presentation
+    wlr_presentation = wlr_presentation_create(wl_display, backend, 2);
+
     // export dmabuf manager
     wlr_export_dmabuf_manager = wlr_export_dmabuf_manager_v1_create(wl_display);
 

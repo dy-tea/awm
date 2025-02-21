@@ -179,9 +179,11 @@ Server::Server(struct Config *config) {
 
     // new_xdg_popup
     new_xdg_popup.notify = [](struct wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_xdg_popup);
+
         // popups do not need to be tracked
         [[maybe_unused]] struct Popup *popup =
-            new Popup(static_cast<wlr_xdg_popup *>(data));
+            new Popup(static_cast<wlr_xdg_popup *>(data), server);
     };
     wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
 

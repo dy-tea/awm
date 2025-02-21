@@ -101,7 +101,8 @@ LayerSurface::LayerSurface(struct Output *output,
             wl_container_of(listener, layer_surface, new_popup);
 
         if (data) [[maybe_unused]]
-            struct Popup *popup = new Popup((wlr_xdg_popup *)data);
+            struct Popup *popup = new Popup(static_cast<wlr_xdg_popup *>(data),
+                layer_surface->output->server);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 

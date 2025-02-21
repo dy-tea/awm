@@ -1,6 +1,5 @@
 #include "Server.h"
 #include "tomlcpp.hpp"
-#include "wlr.h"
 #include <libinput.h>
 #include <sstream>
 
@@ -529,4 +528,7 @@ void Config::update(struct Server *server) {
 
     // update cursor config
     server->cursor->reconfigure_all();
+
+    // notify user of reload
+    notify_send("config reload complete");
 }

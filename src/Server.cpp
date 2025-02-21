@@ -189,8 +189,8 @@ Server::Server(struct Config *config) {
     layers.background = wlr_scene_tree_create(&scene->tree);
     layers.bottom = wlr_scene_tree_create(&scene->tree);
     layers.floating = wlr_scene_tree_create(&scene->tree);
-    layers.fullscreen = wlr_scene_tree_create(&scene->tree);
     layers.top = wlr_scene_tree_create(&scene->tree);
+    layers.fullscreen = wlr_scene_tree_create(&scene->tree);
     layers.overlay = wlr_scene_tree_create(&scene->tree);
 
     // layer shell

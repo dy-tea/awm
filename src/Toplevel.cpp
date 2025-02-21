@@ -488,8 +488,8 @@ void Toplevel::set_fullscreen(bool fullscreen) {
         wlr_scene_node_reparent(&scene_tree->node, server->layers.fullscreen);
     } else {
         // set back to saved geometry
-        wlr_scene_node_set_position(&scene_tree->node, output_box.x,
-                                    output_box.y);
+        wlr_scene_node_set_position(&scene_tree->node, saved_geometry.x,
+                                    saved_geometry.y);
         wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width / scale,
                                   saved_geometry.height / scale);
 

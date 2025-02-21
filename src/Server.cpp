@@ -1,6 +1,5 @@
 #include "Server.h"
 #include "wlr.h"
-#include <libinput.h>
 #include <thread>
 
 // create a new keyboard
@@ -279,6 +278,10 @@ Server::Server(struct Config *config) {
         wlr_renderer_destroy(old_renderer);
     };
     wl_signal_add(&renderer->events.lost, &renderer_lost);
+
+    // relative pointer
+    wlr_relative_pointer_manager =
+        wlr_relative_pointer_manager_v1_create(wl_display);
 
     // cursor
     cursor = new Cursor(this);

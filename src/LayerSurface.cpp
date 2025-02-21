@@ -55,6 +55,8 @@ LayerSurface::LayerSurface(struct Output *output,
 
         // arrange layers
         surface->output->arrange_layers();
+
+        surface->output->server->cursor->process_motion(0, NULL, 0, 0, 0, 0);
     };
     wl_signal_add(&wlr_layer_surface->surface->events.unmap, &unmap);
 
@@ -102,7 +104,7 @@ LayerSurface::LayerSurface(struct Output *output,
 
         if (data) [[maybe_unused]]
             struct Popup *popup = new Popup(static_cast<wlr_xdg_popup *>(data),
-                layer_surface->output->server);
+                                            layer_surface->output->server);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 

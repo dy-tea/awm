@@ -9,22 +9,28 @@ Cursor::Cursor(struct Server *server) {
     cursor_mode = CURSORMODE_PASSTHROUGH;
 
     // cursor shape manager
-    cursor_shape_mgr = wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
+    cursor_shape_mgr =
+        wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
 
     // set cursor shape
     request_set_shape.notify = [](struct wl_listener *listener, void *data) {
-        struct Cursor *cursor = wl_container_of(listener, cursor, request_set_shape);
+        struct Cursor *cursor =
+            wl_container_of(listener, cursor, request_set_shape);
         struct wlr_cursor_shape_manager_v1_request_set_shape_event *event =
-            static_cast<struct wlr_cursor_shape_manager_v1_request_set_shape_event *>(data);
+            static_cast<
+                struct wlr_cursor_shape_manager_v1_request_set_shape_event *>(
+                data);
 
         if (cursor->cursor_mode != CURSORMODE_PASSTHROUGH)
             return;
 
-        if (event->seat_client == cursor->server->seat->pointer_state.focused_client)
+        if (event->seat_client ==
+            cursor->server->seat->pointer_state.focused_client)
             wlr_cursor_set_xcursor(cursor->cursor, cursor->cursor_mgr,
-                            wlr_cursor_shape_v1_name(event->shape));
+                                   wlr_cursor_shape_v1_name(event->shape));
     };
-    wl_signal_add(&cursor_shape_mgr->events.request_set_shape, &request_set_shape);
+    wl_signal_add(&cursor_shape_mgr->events.request_set_shape,
+                  &request_set_shape);
 
     // cursor_motion
     motion.notify = [](struct wl_listener *listener, void *data) {
@@ -33,10 +39,10 @@ Cursor::Cursor(struct Server *server) {
         struct wlr_pointer_motion_event *event =
             static_cast<wlr_pointer_motion_event *>(data);
 
-        // move cursor
-        wlr_cursor_move(cursor->cursor, &event->pointer->base, event->delta_x,
-                        event->delta_y);
-        cursor->process_motion(event->time_msec);
+        // process motion
+        cursor->process_motion(event->time_msec, &event->pointer->base,
+                               event->delta_x, event->delta_y,
+                               event->unaccel_dx, event->unaccel_dy);
     };
     wl_signal_add(&cursor->events.motion, &motion);
 
@@ -49,9 +55,21 @@ Cursor::Cursor(struct Server *server) {
             static_cast<wlr_pointer_motion_absolute_event *>(data);
 
         // warp cursor
-        wlr_cursor_warp_absolute(cursor->cursor, &event->pointer->base,
-                                 event->x, event->y);
-        cursor->process_motion(event->time_msec);
+        if (event->time_msec)
+            wlr_cursor_warp_absolute(cursor->cursor, &event->pointer->base,
+                                     event->x, event->y);
+
+        // get absolute pos
+        double lx, ly, dx, dy;
+        wlr_cursor_absolute_to_layout_coords(cursor->cursor,
+                                             &event->pointer->base, event->x,
+                                             event->y, &lx, &ly);
+        dx = lx - cursor->cursor->x;
+        dy = ly - cursor->cursor->y;
+
+        // process motion
+        cursor->process_motion(event->time_msec, &event->pointer->base, dx, dy,
+                               dx, dy);
     };
     wl_signal_add(&cursor->events.motion_absolute, &motion_absolute);
 
@@ -135,7 +153,19 @@ void Cursor::reset_mode() {
     server->grabbed_toplevel = NULL;
 }
 
-void Cursor::process_motion(uint32_t time) {
+void Cursor::process_motion(uint32_t time, struct wlr_input_device *device,
+                            double dx, double dy, double unaccel_dx,
+                            double unaccel_dy) {
+    if (time) {
+        // send relative motion event
+        wlr_relative_pointer_manager_v1_send_relative_motion(
+            server->wlr_relative_pointer_manager, server->seat,
+            (uint64_t)time * 1000, dx, dy, unaccel_dx, unaccel_dy);
+
+        // move cursor
+        wlr_cursor_move(cursor, device, dx, dy);
+    }
+
     // move or resize
     if (cursor_mode == CURSORMODE_MOVE) {
         process_move();

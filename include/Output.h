@@ -17,7 +17,7 @@ struct Output {
         struct wlr_scene_tree *overlay;
     } layers;
 
-    wlr_scene_output* scene_output;
+    wlr_scene_output *scene_output;
 
     wlr_box layout_geometry;
 
@@ -32,10 +32,9 @@ struct Output {
 
     void update_position();
 
-    static void arrange_layer_surface(const struct wlr_box *full_area,
-                                      struct wlr_box *usable_area,
-                                      struct wlr_scene_tree *tree,
-                                      bool exclusive);
+    void arrange_layer_surface(const struct wlr_box *full_area,
+                               struct wlr_box *usable_area,
+                               struct wlr_scene_tree *tree, bool exclusive);
     struct wlr_scene_tree *shell_layer(enum zwlr_layer_shell_v1_layer layer);
 
     struct Workspace *new_workspace();

@@ -14,7 +14,7 @@ struct Cursor {
     struct wlr_cursor_shape_manager_v1 *cursor_shape_mgr;
     enum CursorMode cursor_mode;
 
-    std::vector<wlr_pointer*> pointers;
+    std::vector<wlr_pointer *> pointers;
 
     double grab_x, grab_y;
     struct wlr_box grab_geobox;
@@ -32,7 +32,9 @@ struct Cursor {
     ~Cursor();
 
     void reset_mode();
-    void process_motion(uint32_t time);
+    void process_motion(uint32_t time, struct wlr_input_device *device,
+                        double dx, double dy, double unaccel_dx,
+                        double unaccel_dy);
     void process_move();
     void process_resize();
 

@@ -38,6 +38,8 @@ struct Server {
     struct wl_listener new_xdg_toplevel;
     struct wl_listener new_xdg_popup;
 
+    struct wlr_relative_pointer_manager_v1 *wlr_relative_pointer_manager;
+
     struct Cursor *cursor;
 
     struct wlr_seat *seat;

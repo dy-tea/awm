@@ -253,11 +253,19 @@ void Workspace::tile() {
 
     // do not tile if there is a fullscreen toplevel
     Toplevel *toplevel, *tmp;
+    Toplevel *fullscreened = nullptr;
     wl_list_for_each_safe(
         toplevel, tmp, &toplevels,
         link) if (toplevel->xdg_toplevel->current.fullscreen ||
                   toplevel->handle->state &
-                      WLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN) return;
+                      WLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN) {
+        --toplevel_count;
+        fullscreened = toplevel;
+    }
+
+    // ensure there is a toplevel to tile
+    if (!toplevel_count)
+        return;
 
     // calculate rows and cols from toplevel count
     int rows = std::round(std::sqrt(toplevel_count));
@@ -270,6 +278,10 @@ void Workspace::tile() {
     // loop through each toplevel
     int i = 0;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
+        // skip fullscreened toplevel
+        if (toplevel == fullscreened)
+            continue;
+
         // calculate toplevel geometry
         int row = i / cols;
         int col = i % cols;

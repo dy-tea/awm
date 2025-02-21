@@ -456,6 +456,7 @@ Server::Server(struct Config *config) {
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGPIPE, &sa, NULL);
 
     // set wayland diplay to our socket
     setenv("WAYLAND_DISPLAY", socket.c_str(), true);

@@ -363,9 +363,7 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
         if (!target->contains(this) && current) {
             current->move_to(this, target);
 
-            struct wlr_box output_box;
-            wlr_output_layout_get_box(server->output_manager->layout,
-                                      target->output->wlr_output, &output_box);
+            struct wlr_box output_box = target->output->layout_geometry;
 
             double new_x = cursor->cursor->x - cursor->grab_x;
             double new_y = cursor->cursor->y - cursor->grab_y;

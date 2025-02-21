@@ -166,8 +166,13 @@ void Cursor::process_move() {
 
 // resize a toplevel
 void Cursor::process_resize() {
-    // tinywl resize
     struct Toplevel *toplevel = server->grabbed_toplevel;
+
+    // do not resize fullscreen toplevel
+    if (toplevel->xdg_toplevel->current.fullscreen)
+        return;
+
+    // tinywl resize
     double border_x = cursor->x - grab_x;
     double border_y = cursor->y - grab_y;
     int new_left = grab_geobox.x;

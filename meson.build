@@ -19,16 +19,18 @@ wl_protocols_dir = run_command(pkg_config, '--variable=pkgdatadir', 'wayland-pro
 
 protocols = [
   wl_protocols_dir / 'stable' / 'xdg-shell' / 'xdg-shell.xml',
+  wl_protocols_dir / 'stable' / 'tablet' / 'tablet-v2.xml',
   wl_protocols_dir / 'staging' / 'ext-foreign-toplevel-list' / 'ext-foreign-toplevel-list-v1.xml',
   wl_protocols_dir / 'staging' / 'ext-image-capture-source' / 'ext-image-capture-source-v1.xml',
   wl_protocols_dir / 'staging' / 'ext-image-copy-capture' / 'ext-image-copy-capture-v1.xml',
+  wl_protocols_dir / 'staging' / 'cursor-shape' / 'cursor-shape-v1.xml',
   wl_protocols_dir / 'unstable' / 'xdg-output' / 'xdg-output-unstable-v1.xml',
   wl_protocols_dir / 'unstable' / 'linux-dmabuf' / 'linux-dmabuf-unstable-v1.xml',
+
+
   'protocols' / 'wlr-layer-shell-unstable-v1.xml',
   'protocols' / 'wlr-data-control-unstable-v1.xml',
   'protocols' / 'wlr-screencopy-unstable-v1.xml',
-  'protocols' / 'cursor-shape-v1.xml',
-  'protocols' / 'tablet-v2.xml',
 ]
 
 foreach protocol : protocols

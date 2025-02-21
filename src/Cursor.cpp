@@ -5,8 +5,26 @@ Cursor::Cursor(struct Server *server) {
     this->server = server;
     cursor = wlr_cursor_create();
     wlr_cursor_attach_output_layout(cursor, server->output_manager->layout);
-    cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
+    cursor_mgr = wlr_xcursor_manager_create(nullptr, 24);
     cursor_mode = CURSORMODE_PASSTHROUGH;
+
+    // cursor shape manager
+    cursor_shape_mgr = wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
+
+    // set cursor shape
+    request_set_shape.notify = [](struct wl_listener *listener, void *data) {
+        struct Cursor *cursor = wl_container_of(listener, cursor, request_set_shape);
+        struct wlr_cursor_shape_manager_v1_request_set_shape_event *event =
+            static_cast<struct wlr_cursor_shape_manager_v1_request_set_shape_event *>(data);
+
+        if (cursor->cursor_mode != CURSORMODE_PASSTHROUGH)
+            return;
+
+        if (event->seat_client == cursor->server->seat->pointer_state.focused_client)
+            wlr_cursor_set_xcursor(cursor->cursor, cursor->cursor_mgr,
+                            wlr_cursor_shape_v1_name(event->shape));
+    };
+    wl_signal_add(&cursor_shape_mgr->events.request_set_shape, &request_set_shape);
 
     // cursor_motion
     motion.notify = [](struct wl_listener *listener, void *data) {
@@ -105,6 +123,7 @@ Cursor::~Cursor() {
     wl_list_remove(&button.link);
     wl_list_remove(&axis.link);
     wl_list_remove(&frame.link);
+    wl_list_remove(&request_set_shape.link);
 
     wlr_cursor_destroy(cursor);
     wlr_xcursor_manager_destroy(cursor_mgr);

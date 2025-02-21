@@ -27,6 +27,8 @@ protocols = [
   'protocols' / 'wlr-layer-shell-unstable-v1.xml',
   'protocols' / 'wlr-data-control-unstable-v1.xml',
   'protocols' / 'wlr-screencopy-unstable-v1.xml',
+  'protocols' / 'cursor-shape-v1.xml',
+  'protocols' / 'tablet-v2.xml',
 ]
 
 foreach protocol : protocols

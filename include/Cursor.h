@@ -11,6 +11,7 @@ struct Cursor {
     struct Server *server;
     struct wlr_cursor *cursor;
     struct wlr_xcursor_manager *cursor_mgr;
+    struct wlr_cursor_shape_manager_v1 *cursor_shape_mgr;
     enum CursorMode cursor_mode;
 
     std::vector<wlr_pointer*> pointers;
@@ -24,6 +25,8 @@ struct Cursor {
     struct wl_listener button;
     struct wl_listener axis;
     struct wl_listener frame;
+
+    struct wl_listener request_set_shape;
 
     Cursor(struct Server *server);
     ~Cursor();

@@ -229,11 +229,16 @@ void Cursor::set_config(struct wlr_pointer *pointer) {
         }
 
         // natural scroll
-        if (libinput_device_config_scroll_has_natural_scroll(device))
+        if (libinput_device_config_scroll_has_natural_scroll(device)) {
+            // NOTE: workaround for now since I'm ingoring config
             if (libinput_device_has_capability(device,
                                                LIBINPUT_DEVICE_CAP_TOUCH))
-                libinput_device_config_scroll_set_natural_scroll_enabled(
-                    device, config->cursor.natural_scroll);
+                libinput_device_config_scroll_set_natural_scroll_enabled(device,
+                                                                         true);
+            else
+                libinput_device_config_scroll_set_natural_scroll_enabled(device,
+                                                                         false);
+        }
 
         // disable while typing
         if (libinput_device_config_dwt_is_available(device))

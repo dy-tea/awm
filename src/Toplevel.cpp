@@ -139,7 +139,6 @@ Toplevel::Toplevel(struct Server *server,
         struct wlr_xdg_toplevel_resize_event *event =
             static_cast<wlr_xdg_toplevel_resize_event *>(data);
 
-        toplevel->update_foreign_toplevel();
         toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
     };
     wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
@@ -176,8 +175,8 @@ Toplevel::Toplevel(struct Server *server,
         wlr_foreign_toplevel_handle_v1_maximized_event *event =
             static_cast<wlr_foreign_toplevel_handle_v1_maximized_event *>(data);
 
-        toplevel->update_foreign_toplevel();
         toplevel->set_maximized(event->maximized);
+        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
 
@@ -211,8 +210,6 @@ Toplevel::Toplevel(struct Server *server,
             static_cast<wlr_foreign_toplevel_handle_v1_fullscreen_event *>(
                 data);
 
-        toplevel->update_foreign_toplevel();
-
         // output specified
         if (event->output) {
             // get the source and target workspaces
@@ -226,6 +223,7 @@ Toplevel::Toplevel(struct Server *server,
 
         // set fullscreen
         toplevel->set_fullscreen(event->fullscreen);
+        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&handle->events.request_fullscreen,
                   &handle_request_fullscreen);
@@ -236,8 +234,9 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_activate);
 
-        toplevel->update_foreign_toplevel();
+        // send focus
         toplevel->focus();
+        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&handle->events.request_activate, &handle_request_activate);
 
@@ -246,8 +245,9 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_close);
 
-        toplevel->update_foreign_toplevel();
+        // send close
         toplevel->close();
+        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&handle->events.request_close, &handle_request_close);
 
@@ -260,10 +260,11 @@ Toplevel::Toplevel(struct Server *server,
             static_cast<wlr_foreign_toplevel_handle_v1_set_rectangle_event *>(
                 data);
 
-        toplevel->update_foreign_toplevel();
         // NOTE: this might be entirely incorrect
         toplevel->set_position_size(event->x, event->y, event->width,
                                     event->height);
+
+        toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&handle->events.set_rectangle, &handle_set_rectangle);
 

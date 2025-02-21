@@ -3,6 +3,7 @@
 Popup::Popup(struct wlr_xdg_popup *xdg_popup, struct Server *server) {
     this->xdg_popup = xdg_popup;
     this->server = server;
+
     // we need a parent to ascertain the type
     if (!xdg_popup->parent)
         return;
@@ -39,14 +40,17 @@ Popup::Popup(struct wlr_xdg_popup *xdg_popup, struct Server *server) {
         Popup *popup = wl_container_of(listener, popup, commit);
 
         struct wlr_surface *surface = static_cast<wlr_surface *>(data);
-        struct wlr_xdg_popup *xdg_popup = wlr_xdg_popup_try_from_wlr_surface(surface);
-
-
-        struct wlr_box box = popup->server->focused_output()->usable_area;
+        struct wlr_xdg_popup *xdg_popup =
+            wlr_xdg_popup_try_from_wlr_surface(surface);
 
         if (!xdg_popup->base->initial_commit)
             return;
-        wlr_xdg_popup_unconstrain_from_box(xdg_popup, &box);
+
+        Output *output = popup->server->focused_output();
+        if (output) {
+            struct wlr_box box = output->usable_area;
+            wlr_xdg_popup_unconstrain_from_box(xdg_popup, &box);
+        }
     };
     wl_signal_add(&xdg_popup->base->surface->events.commit, &commit);
 

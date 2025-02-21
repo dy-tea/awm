@@ -1,6 +1,5 @@
 #include "wlr.h"
 
-
 struct Popup {
     struct Server *server;
     struct wl_list link;

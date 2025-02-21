@@ -50,6 +50,8 @@ extern "C" {
 #include <wlr/util/region.h>
 
 // Unstable
+#include <wlr/types/wlr_alpha_modifier_v1.h>
+#include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_drm.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
@@ -66,7 +68,6 @@ extern "C" {
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
-#include <wlr/types/wlr_cursor_shape_v1.h>
 
 // XWayland
 #include <wlr/xwayland/shell.h>

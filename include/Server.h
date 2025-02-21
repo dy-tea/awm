@@ -1,7 +1,7 @@
+#include <algorithm>
 #include <cassert>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <algorithm>
 
 #include "Keyboard.h"
 #include "LayerSurface.h"
@@ -11,6 +11,7 @@
 #include "Toplevel.h"
 #include "Workspace.h"
 #include "XWaylandShell.h"
+#include "wlr.h"
 
 struct Server {
     // get singleton instance
@@ -77,6 +78,7 @@ struct Server {
     struct wlr_ext_image_copy_capture_manager_v1
         *ext_image_copy_capture_manager;
     struct wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager;
+    struct wlr_alpha_modifier_v1 *wlr_alpha_modifier;
 
     Server() {}
     Server(struct Config *config);

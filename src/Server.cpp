@@ -403,6 +403,9 @@ Server::Server(struct Config *config) {
     wlr_fractional_scale_manager =
         wlr_fractional_scale_manager_v1_create(wl_display, 1);
 
+    // alpha modifier
+    wlr_alpha_modifier = wlr_alpha_modifier_v1_create(wl_display);
+
     // drm syncobj manager
     if (wlr_renderer_get_drm_fd(renderer) >= 0 && renderer->features.timeline &&
         backend->features.timeline) {

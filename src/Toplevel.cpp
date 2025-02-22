@@ -390,7 +390,7 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, activate);
 
-        if (toplevel->xwayland_surface->override_redirect)
+        if (!toplevel->xwayland_surface->override_redirect)
             wlr_xwayland_surface_activate(toplevel->xwayland_surface, true);
     };
     wl_signal_add(&xwayland_surface->events.request_activate, &activate);
@@ -442,17 +442,15 @@ Toplevel::Toplevel(struct Server *server,
 
         // unmanaged
         if (toplevel->xwayland_surface->override_redirect) {
+            // set scene node position
             wlr_scene_node_set_position(&toplevel->scene_tree->node, event->x,
                                         event->y);
-            wlr_xwayland_surface_configure(toplevel->xwayland_surface, event->x,
-                                           event->y, event->width,
-                                           event->height);
+
+            // set position and size
+            toplevel->set_position_size(event->x, event->y, event->width,
+                                        event->height);
             return;
         }
-
-        // set position and size
-        toplevel->set_position_size(event->x, event->y, event->width,
-                                    event->height);
 
         // send arrange
         toplevel->server->output_manager->arrange();

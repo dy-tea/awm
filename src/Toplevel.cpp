@@ -64,12 +64,18 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
         // create scene tree
         toplevel->scene_tree =
             wlr_scene_tree_create(toplevel->server->layers.floating);
-        wlr_scene_node_set_enabled(&toplevel->scene_tree->node, true);
+        wlr_scene_node_set_enabled(
+            &toplevel->scene_tree->node,
+            toplevel->xwayland_surface->override_redirect);
         toplevel->scene_tree->node.data = toplevel;
 
         wlr_scene_node_set_position(&toplevel->scene_tree->node,
                                     toplevel->xwayland_surface->x,
                                     toplevel->xwayland_surface->y);
+        wlr_xwayland_surface_configure(
+            toplevel->xwayland_surface, toplevel->xwayland_surface->x,
+            toplevel->xwayland_surface->y, toplevel->xwayland_surface->width,
+            toplevel->xwayland_surface->height);
 
         // get the focused output
         Output *output = toplevel->server->focused_output();

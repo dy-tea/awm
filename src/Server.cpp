@@ -1,6 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
-#include "wlr/xcursor.h"
 #include <thread>
 
 // create a new keyboard

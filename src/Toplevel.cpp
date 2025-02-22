@@ -70,6 +70,12 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
         wlr_scene_node_set_position(&toplevel->scene_tree->node,
                                     toplevel->xwayland_surface->x,
                                     toplevel->xwayland_surface->y);
+
+        // get the focused output
+        Output *output = toplevel->server->focused_output();
+
+        if (output)
+            output->get_active()->add_toplevel(toplevel, true);
     }
 }
 
@@ -133,6 +139,23 @@ Toplevel::Toplevel(struct Server *server,
     destroy.notify = [](struct wl_listener *listener, void *data) {
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, destroy);
+
+        wl_list_remove(&toplevel->map.link);
+        wl_list_remove(&toplevel->unmap.link);
+        wl_list_remove(&toplevel->commit.link);
+        wl_list_remove(&toplevel->destroy.link);
+        wl_list_remove(&toplevel->request_move.link);
+        wl_list_remove(&toplevel->request_resize.link);
+        wl_list_remove(&toplevel->request_maximize.link);
+        wl_list_remove(&toplevel->request_fullscreen.link);
+
+        wl_list_remove(&toplevel->handle_request_maximize.link);
+        wl_list_remove(&toplevel->handle_request_minimize.link);
+        wl_list_remove(&toplevel->handle_request_fullscreen.link);
+        wl_list_remove(&toplevel->handle_request_activate.link);
+        wl_list_remove(&toplevel->handle_request_close.link);
+        wl_list_remove(&toplevel->handle_set_rectangle.link);
+        wl_list_remove(&toplevel->handle_destroy.link);
 
         delete toplevel;
     };
@@ -311,6 +334,12 @@ Toplevel::Toplevel(struct Server *server,
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, destroy);
 
+        wl_list_remove(&toplevel->destroy.link);
+        wl_list_remove(&toplevel->activate.link);
+        wl_list_remove(&toplevel->associate.link);
+        wl_list_remove(&toplevel->dissociate.link);
+        wl_list_remove(&toplevel->configure.link);
+
         delete toplevel;
     };
     wl_signal_add(&xwayland_surface->events.destroy, &destroy);
@@ -390,38 +419,7 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xwayland_surface->events.request_configure, &configure);
 }
 
-Toplevel::~Toplevel() {
-    if (xdg_toplevel) {
-        wl_list_remove(&map.link);
-        wl_list_remove(&unmap.link);
-        wl_list_remove(&commit.link);
-        wl_list_remove(&destroy.link);
-        wl_list_remove(&request_move.link);
-        wl_list_remove(&request_resize.link);
-        wl_list_remove(&request_maximize.link);
-        wl_list_remove(&request_fullscreen.link);
-    }
-
-    if (handle) {
-        wl_list_remove(&handle_request_maximize.link);
-        wl_list_remove(&handle_request_minimize.link);
-        wl_list_remove(&handle_request_fullscreen.link);
-        wl_list_remove(&handle_request_activate.link);
-        wl_list_remove(&handle_request_close.link);
-        wl_list_remove(&handle_set_rectangle.link);
-        wl_list_remove(&handle_destroy.link);
-    }
-
-    if (xwayland_surface) {
-        wl_list_remove(&map.link);
-        wl_list_remove(&unmap.link);
-        wl_list_remove(&destroy.link);
-        wl_list_remove(&activate.link);
-        wl_list_remove(&associate.link);
-        wl_list_remove(&dissociate.link);
-        wl_list_remove(&configure.link);
-    }
-}
+Toplevel::~Toplevel() {}
 
 // focus keyboard to surface
 void Toplevel::focus() {

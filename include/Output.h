@@ -31,6 +31,7 @@ struct Output {
     void arrange_layers();
 
     void update_position();
+    bool apply_config(struct OutputConfig *config, bool test_only);
 
     void arrange_layer_surface(const struct wlr_box *full_area,
                                struct wlr_box *usable_area,

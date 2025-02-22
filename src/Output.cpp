@@ -75,6 +75,7 @@ Output::~Output() {
     wl_list_remove(&link);
 }
 
+// arrange all layers
 void Output::arrange_layers() {
     struct wlr_box usable = {0};
     wlr_output_effective_resolution(wlr_output, &usable.width, &usable.height);
@@ -210,4 +211,79 @@ bool Output::set_workspace(uint32_t n) {
 void Output::update_position() {
     wlr_output_layout_get_box(server->output_manager->layout, wlr_output,
                               &layout_geometry);
+}
+
+// apply a config to the output
+bool Output::apply_config(struct OutputConfig *config, bool test_only) {
+    // create output state
+    struct wlr_output_state state;
+    wlr_output_state_init(&state);
+
+    // enabled
+    wlr_output_state_set_enabled(&state, config->enabled);
+
+    if (config->enabled) {
+        // set mode
+        bool mode_set = false;
+        if (config->width > 0 && config->height > 0 && config->refresh > 0) {
+            // find matching mode
+            struct wlr_output_mode *mode, *best_mode = nullptr;
+            wl_list_for_each(
+                mode, &wlr_output->modes,
+                link) if ((mode->width == config->width &&
+                           mode->height == config->height) &&
+                          (!best_mode ||
+                           (abs((int)(mode->refresh / 1000.0 -
+                                      config->refresh)) < 1.5 &&
+                            abs((int)(mode->refresh / 1000.0 -
+                                      config->refresh)) <
+                                abs((int)(best_mode->refresh / 1000.0 -
+                                          config->refresh))))) best_mode = mode;
+
+            if (best_mode) {
+                wlr_output_state_set_mode(&state, best_mode);
+                mode_set = true;
+            }
+        }
+
+        // set to preferred mode if not set
+        if (!mode_set) {
+            wlr_output_state_set_mode(&state,
+                                      wlr_output_preferred_mode(wlr_output));
+            wlr_log(WLR_INFO, "using fallback mode for output %s",
+                    config->name.c_str());
+        }
+
+        // scale
+        if (config->scale > 0)
+            wlr_output_state_set_scale(&state, config->scale);
+
+        // transform
+        wlr_output_state_set_transform(&state, config->transform);
+
+        // adaptive sync
+        wlr_output_state_set_adaptive_sync_enabled(&state,
+                                                   config->adaptive_sync);
+    }
+
+    bool success;
+    if (test_only)
+        // test and get status
+        success = wlr_output_test_state(wlr_output, &state);
+    else {
+        // commit and get status
+        success = wlr_output_commit_state(wlr_output, &state);
+
+        if (success) {
+            // update position
+            wlr_output_layout_add(server->output_manager->layout, wlr_output,
+                                  config->x, config->y);
+
+            // rearrange
+            arrange_layers();
+        }
+    }
+
+    wlr_output_state_finish(&state);
+    return success;
 }

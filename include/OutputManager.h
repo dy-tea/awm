@@ -17,8 +17,6 @@ struct OutputManager {
     OutputManager(struct Server *server);
     ~OutputManager();
 
-    bool apply_to_output(struct Output *output, struct OutputConfig *config,
-                         bool test_only);
     void apply_config(struct wlr_output_configuration_v1 *cfg, bool test_only);
 
     struct Output *get_output(struct wlr_output *wlr_output);

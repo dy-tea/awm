@@ -61,8 +61,7 @@ OutputManager::OutputManager(struct Server *server) {
         }
 
         // apply the config
-        bool config_success =
-            matching && manager->apply_to_output(output, matching, false);
+        bool config_success = matching && output->apply_config(matching, false);
 
         // fallback
         if (!config_success) {
@@ -142,80 +141,6 @@ OutputManager::~OutputManager() {
     wl_list_remove(&change.link);
 }
 
-bool OutputManager::apply_to_output(struct Output *output,
-                                    struct OutputConfig *config,
-                                    bool test_only) {
-    // create new state
-    struct wlr_output *wlr_output = output->wlr_output;
-
-    // create output state
-    struct wlr_output_state state;
-    wlr_output_state_init(&state);
-
-    // enabled
-    wlr_output_state_set_enabled(&state, config->enabled);
-
-    if (config->enabled) {
-        // set mode
-        bool mode_set = false;
-        if (config->width > 0 && config->height > 0 && config->refresh > 0) {
-            // find matching mode
-            struct wlr_output_mode *mode, *best_mode = nullptr;
-            wl_list_for_each(
-                mode, &wlr_output->modes,
-                link) if ((mode->width == config->width &&
-                           mode->height == config->height) &&
-                          (!best_mode ||
-                           (abs((int)(mode->refresh / 1000.0 -
-                                      config->refresh)) < 1.5 &&
-                            abs((int)(mode->refresh / 1000.0 -
-                                      config->refresh)) <
-                                abs((int)(best_mode->refresh / 1000.0 -
-                                          config->refresh))))) best_mode = mode;
-
-            if (best_mode) {
-                wlr_output_state_set_mode(&state, best_mode);
-                mode_set = true;
-            }
-        }
-
-        // set to preferred mode if not set
-        if (!mode_set) {
-            wlr_output_state_set_mode(&state,
-                                      wlr_output_preferred_mode(wlr_output));
-            wlr_log(WLR_INFO, "using fallback mode for output %s",
-                    config->name.c_str());
-        }
-
-        // scale
-        if (config->scale > 0)
-            wlr_output_state_set_scale(&state, config->scale);
-
-        // transform
-        wlr_output_state_set_transform(&state, config->transform);
-
-        // adaptive sync
-        wlr_output_state_set_adaptive_sync_enabled(&state,
-                                                   config->adaptive_sync);
-    }
-
-    bool success;
-    if (test_only)
-        success = wlr_output_test_state(wlr_output, &state);
-    else {
-        success = wlr_output_commit_state(wlr_output, &state);
-        if (success) {
-            // update position
-            wlr_output_layout_add(layout, wlr_output, config->x, config->y);
-            // rearrange
-            output->arrange_layers();
-        }
-    }
-
-    wlr_output_state_finish(&state);
-    return success;
-}
-
 void OutputManager::apply_config(struct wlr_output_configuration_v1 *cfg,
                                  bool test_only) {
     // create a map of output names to configs
@@ -237,7 +162,7 @@ void OutputManager::apply_config(struct wlr_output_configuration_v1 *cfg,
     Output *output, *tmp;
     wl_list_for_each_safe(output, tmp, &outputs, link) {
         OutputConfig *oc = config_map[output->wlr_output->name];
-        success &= apply_to_output(output, oc, test_only);
+        success &= output->apply_config(oc, test_only);
     }
 
     // send cfg status

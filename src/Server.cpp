@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "wlr.h"
+#include "wlr/xcursor.h"
 #include <thread>
 
 // create a new keyboard
@@ -453,6 +454,47 @@ Server::Server(struct Config *config) {
         wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
     }
 
+    // don't connect to parent X11 server
+    unsetenv("DISPLAY");
+
+    // init xwayland
+    if ((xwayland = wlr_xwayland_create(wl_display, compositor, 1))) {
+        // xwayland_ready
+        xwayland_ready.notify = [](struct wl_listener *listener, void *data) {
+            Server *server = wl_container_of(listener, server, xwayland_ready);
+
+            wlr_xwayland_set_seat(server->xwayland, server->seat);
+
+            struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
+                server->cursor->cursor_mgr, "default", 1);
+            if (xcursor) {
+                wlr_xwayland_set_cursor(
+                    server->xwayland, xcursor->images[0]->buffer,
+                    xcursor->images[0]->width * 4, xcursor->images[0]->width,
+                    xcursor->images[0]->height, xcursor->images[0]->hotspot_x,
+                    xcursor->images[0]->hotspot_y);
+            }
+        };
+        wl_signal_add(&xwayland->events.ready, &xwayland_ready);
+
+        // new_xwayland_surface
+        new_xwayland_surface.notify = [](struct wl_listener *listener,
+                                         void *data) {
+            struct Server *server =
+                wl_container_of(listener, server, new_xwayland_surface);
+
+            struct wlr_xwayland_surface *surface =
+                static_cast<wlr_xwayland_surface *>(data);
+            [[maybe_unused]] Toplevel *toplevel = new Toplevel(server, surface);
+        };
+        wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
+
+        setenv("DISPLAY", xwayland->display_name, 1);
+        wlr_log(WLR_INFO, "started xwayland on $DISPLAY=%s",
+                xwayland->display_name);
+    } else
+        wlr_log(WLR_ERROR, "failed to start Xwayland");
+
     // set up signal handler
     struct sigaction sa;
     sa.sa_handler = [](int sig) {
@@ -532,7 +574,9 @@ Server::~Server() {
 
     struct LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;
-    // delete xwayland_shell;
+
+    wl_list_remove(&xwayland_ready.link);
+    wl_list_remove(&new_xwayland_surface.link);
 
     wlr_scene_node_destroy(&scene->tree.node);
     wlr_allocator_destroy(allocator);

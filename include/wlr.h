@@ -72,8 +72,7 @@ extern "C" {
 #include <wlr/types/wlr_xdg_output_v1.h>
 
 // XWayland
-#include <wlr/xwayland/shell.h>
-#include <wlr/xwayland/xwayland.h>
+#include <wlr/xwayland.h>
 }
 
 // make sure to undefine these again

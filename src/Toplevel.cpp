@@ -1,30 +1,13 @@
 #include "Server.h"
 
-Toplevel::Toplevel(struct Server *server,
-                   struct wlr_xdg_toplevel *xdg_toplevel) {
-    // add the toplevel to the scene tree
-    this->server = server;
-    this->xdg_toplevel = xdg_toplevel;
-    scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
-                                              xdg_toplevel->base);
-    scene_tree->node.data = this;
-    xdg_toplevel->base->data = scene_tree;
+void Toplevel::map_notify(struct wl_listener *listener, void *data) {
+    // on map or display
+    struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
-    // set foreign toplevel initial state if received
-    handle = wlr_foreign_toplevel_handle_v1_create(
-        server->wlr_foreign_toplevel_manager);
+    struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
 
-    if (xdg_toplevel->title)
-        wlr_foreign_toplevel_handle_v1_set_title(handle, xdg_toplevel->title);
-
-    if (xdg_toplevel->app_id)
-        wlr_foreign_toplevel_handle_v1_set_app_id(handle, xdg_toplevel->app_id);
-
-    // xdg_toplevel_map
-    map.notify = [](struct wl_listener *listener, void *data) {
-        // on map or display
-        struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
-        struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
+    // xdg toplevel
+    if (xdg_toplevel) {
 
         // get the focused output
         Output *output = toplevel->server->focused_output();
@@ -75,24 +58,63 @@ Toplevel::Toplevel(struct Server *server,
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel, true);
         }
-    };
+    } else {
+        // xwayland surface
+
+        // create scene tree
+        toplevel->scene_tree =
+            wlr_scene_tree_create(toplevel->server->layers.floating);
+        wlr_scene_node_set_enabled(&toplevel->scene_tree->node, true);
+        toplevel->scene_tree->node.data = toplevel;
+
+        wlr_scene_node_set_position(&toplevel->scene_tree->node,
+                                    toplevel->xwayland_surface->x,
+                                    toplevel->xwayland_surface->y);
+    }
+}
+
+void Toplevel::unmap_notify(struct wl_listener *listener, void *data) {
+    struct Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
+
+    // deactivate
+    if (toplevel == toplevel->server->grabbed_toplevel)
+        toplevel->server->cursor->reset_mode();
+
+    // remove from workspace
+    if (Workspace *workspace = toplevel->server->get_workspace(toplevel))
+        workspace->close(toplevel);
+
+    // remove link
+    wl_list_remove(&toplevel->link);
+}
+
+// Toplevel from xdg toplevel
+Toplevel::Toplevel(struct Server *server,
+                   struct wlr_xdg_toplevel *xdg_toplevel) {
+    // add the toplevel to the scene tree
+    this->server = server;
+    this->xdg_toplevel = xdg_toplevel;
+    scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
+                                              xdg_toplevel->base);
+    scene_tree->node.data = this;
+    xdg_toplevel->base->data = scene_tree;
+
+    // set foreign toplevel initial state if received
+    handle = wlr_foreign_toplevel_handle_v1_create(
+        server->wlr_foreign_toplevel_manager);
+
+    if (xdg_toplevel->title)
+        wlr_foreign_toplevel_handle_v1_set_title(handle, xdg_toplevel->title);
+
+    if (xdg_toplevel->app_id)
+        wlr_foreign_toplevel_handle_v1_set_app_id(handle, xdg_toplevel->app_id);
+
+    // xdg_toplevel_map
+    map.notify = map_notify;
     wl_signal_add(&xdg_toplevel->base->surface->events.map, &map);
 
     // xdg_toplevel_unmap
-    unmap.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
-
-        // deactivate
-        if (toplevel == toplevel->server->grabbed_toplevel)
-            toplevel->server->cursor->reset_mode();
-
-        // remove from workspace
-        if (Workspace *workspace = toplevel->server->get_workspace(toplevel))
-            workspace->close(toplevel);
-
-        // remove link
-        wl_list_remove(&toplevel->link);
-    };
+    unmap.notify = unmap_notify;
     wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &unmap);
 
     // xdg_toplevel_commit
@@ -278,23 +300,127 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&handle->events.destroy, &handle_destroy);
 }
 
-Toplevel::~Toplevel() {
-    wl_list_remove(&map.link);
-    wl_list_remove(&unmap.link);
-    wl_list_remove(&commit.link);
-    wl_list_remove(&destroy.link);
-    wl_list_remove(&request_move.link);
-    wl_list_remove(&request_resize.link);
-    wl_list_remove(&request_maximize.link);
-    wl_list_remove(&request_fullscreen.link);
+// Toplevel from xwayland surface
+Toplevel::Toplevel(struct Server *server,
+                   struct wlr_xwayland_surface *xwayland_surface) {
+    this->server = server;
+    this->xwayland_surface = xwayland_surface;
 
-    wl_list_remove(&handle_request_maximize.link);
-    wl_list_remove(&handle_request_minimize.link);
-    wl_list_remove(&handle_request_fullscreen.link);
-    wl_list_remove(&handle_request_activate.link);
-    wl_list_remove(&handle_request_close.link);
-    wl_list_remove(&handle_set_rectangle.link);
-    wl_list_remove(&handle_destroy.link);
+    // destroy
+    destroy.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, destroy);
+
+        delete toplevel;
+    };
+    wl_signal_add(&xwayland_surface->events.destroy, &destroy);
+
+    // activate
+    activate.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, activate);
+
+        if (toplevel->xwayland_surface->override_redirect)
+            wlr_xwayland_surface_activate(toplevel->xwayland_surface, true);
+    };
+    wl_signal_add(&xwayland_surface->events.request_activate, &activate);
+
+    // associate
+    associate.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, associate);
+
+        // map
+        toplevel->map.notify = map_notify;
+        wl_signal_add(&toplevel->xwayland_surface->surface->events.map,
+                      &toplevel->map);
+
+        // unmap
+        toplevel->unmap.notify = unmap_notify;
+        wl_signal_add(&toplevel->xwayland_surface->surface->events.unmap,
+                      &toplevel->unmap);
+    };
+    wl_signal_add(&xwayland_surface->events.associate, &associate);
+
+    // dissociate
+    dissociate.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, dissociate);
+
+        // unmap
+        wl_list_remove(&toplevel->map.link);
+        wl_list_remove(&toplevel->unmap.link);
+    };
+    wl_signal_add(&xwayland_surface->events.dissociate, &dissociate);
+
+    // configure
+    configure.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, configure);
+
+        struct wlr_xwayland_surface_configure_event *event =
+            static_cast<wlr_xwayland_surface_configure_event *>(data);
+
+        // unconfigured
+        if (!toplevel->xwayland_surface->surface ||
+            !toplevel->xwayland_surface->surface->mapped) {
+            wlr_xwayland_surface_configure(toplevel->xwayland_surface, event->x,
+                                           event->y, event->width,
+                                           event->height);
+            return;
+        }
+
+        // unmanaged
+        if (toplevel->xwayland_surface->override_redirect) {
+            wlr_scene_node_set_position(&toplevel->scene_tree->node, event->x,
+                                        event->y);
+            wlr_xwayland_surface_configure(toplevel->xwayland_surface, event->x,
+                                           event->y, event->width,
+                                           event->height);
+            return;
+        }
+
+        // set position and size
+        toplevel->set_position_size(event->x, event->y, event->width,
+                                    event->height);
+
+        // send arrange
+        toplevel->server->output_manager->arrange();
+    };
+    wl_signal_add(&xwayland_surface->events.request_configure, &configure);
+}
+
+Toplevel::~Toplevel() {
+    if (xdg_toplevel) {
+        wl_list_remove(&map.link);
+        wl_list_remove(&unmap.link);
+        wl_list_remove(&commit.link);
+        wl_list_remove(&destroy.link);
+        wl_list_remove(&request_move.link);
+        wl_list_remove(&request_resize.link);
+        wl_list_remove(&request_maximize.link);
+        wl_list_remove(&request_fullscreen.link);
+    }
+
+    if (handle) {
+        wl_list_remove(&handle_request_maximize.link);
+        wl_list_remove(&handle_request_minimize.link);
+        wl_list_remove(&handle_request_fullscreen.link);
+        wl_list_remove(&handle_request_activate.link);
+        wl_list_remove(&handle_request_close.link);
+        wl_list_remove(&handle_set_rectangle.link);
+        wl_list_remove(&handle_destroy.link);
+    }
+
+    if (xwayland_surface) {
+        wl_list_remove(&map.link);
+        wl_list_remove(&unmap.link);
+        wl_list_remove(&destroy.link);
+        wl_list_remove(&activate.link);
+        wl_list_remove(&associate.link);
+        wl_list_remove(&dissociate.link);
+        wl_list_remove(&configure.link);
+    }
 }
 
 // focus keyboard to surface

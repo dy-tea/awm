@@ -27,7 +27,6 @@ protocols = [
   wl_protocols_dir / 'unstable' / 'xdg-output' / 'xdg-output-unstable-v1.xml',
   wl_protocols_dir / 'unstable' / 'linux-dmabuf' / 'linux-dmabuf-unstable-v1.xml',
 
-
   'protocols' / 'wlr-layer-shell-unstable-v1.xml',
   'protocols' / 'wlr-data-control-unstable-v1.xml',
   'protocols' / 'wlr-screencopy-unstable-v1.xml',
@@ -89,8 +88,6 @@ executable(
     'src/Config.cpp',
     'src/Cursor.cpp',
     'src/OutputManager.cpp',
-    #'src/XWaylandShell.cpp',
-    #'src/XWaylandSurface.cpp',
     protocol_sources,
     protocol_code,
   ],

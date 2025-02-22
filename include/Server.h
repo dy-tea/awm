@@ -83,6 +83,10 @@ struct Server {
     struct wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager;
     struct wlr_alpha_modifier_v1 *wlr_alpha_modifier;
 
+    struct wlr_xwayland *xwayland;
+    struct wl_listener xwayland_ready;
+    struct wl_listener new_xwayland_surface;
+
     Server() {}
     Server(struct Config *config);
     ~Server();

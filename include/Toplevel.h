@@ -3,8 +3,9 @@
 struct Toplevel {
     struct wl_list link;
     struct Server *server;
-    struct wlr_xdg_toplevel *xdg_toplevel;
     struct wlr_scene_tree *scene_tree;
+
+    struct wlr_xdg_toplevel *xdg_toplevel{nullptr};
 
     struct wl_listener map;
     struct wl_listener unmap;
@@ -20,7 +21,14 @@ struct Toplevel {
     // struct wl_listener set_title;
     // struct wl_listener set_app_id;
 
-    struct wlr_foreign_toplevel_handle_v1 *handle;
+    struct wlr_xwayland_surface *xwayland_surface{nullptr};
+
+    struct wl_listener activate;
+    struct wl_listener associate;
+    struct wl_listener dissociate;
+    struct wl_listener configure;
+
+    struct wlr_foreign_toplevel_handle_v1 *handle{nullptr};
 
     struct wl_listener handle_request_maximize;
     struct wl_listener handle_request_minimize;
@@ -35,7 +43,12 @@ struct Toplevel {
     struct wlr_fbox saved_geometry;
 
     Toplevel(struct Server *server, struct wlr_xdg_toplevel *wlr_xdg_toplevel);
+    Toplevel(struct Server *server,
+             struct wlr_xwayland_surface *xwayland_surface);
     ~Toplevel();
+
+    static void map_notify(struct wl_listener *listener, void *data);
+    static void unmap_notify(struct wl_listener *listener, void *data);
 
     void focus();
     void begin_interactive(enum CursorMode mode, uint32_t edges);

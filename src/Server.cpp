@@ -452,6 +452,7 @@ Server::Server(struct Config *config) {
         wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
     }
 
+#ifdef XWAYLAND
     // don't connect to parent X11 server
     unsetenv("DISPLAY");
 
@@ -492,6 +493,7 @@ Server::Server(struct Config *config) {
                 xwayland->display_name);
     } else
         wlr_log(WLR_ERROR, "failed to start Xwayland");
+#endif
 
     // set up signal handler
     struct sigaction sa;

@@ -6,8 +6,7 @@ project(
     'cpp_std=c++17',
   ],
 )
-add_project_arguments('-Ofast', '-g3', language: 'cpp')
-add_global_arguments('-DWLR_USE_UNSTABLE=1', language: 'c')
+add_project_arguments('-Ofast', '-g3', '-DXWAYLAND', language: 'cpp')
 
 wayland_scanner = find_program('wayland-scanner')
 pkg_config = find_program('pkg-config')

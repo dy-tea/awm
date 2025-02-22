@@ -21,12 +21,14 @@ struct Toplevel {
     // struct wl_listener set_title;
     // struct wl_listener set_app_id;
 
+#ifdef XWAYLAND
     struct wlr_xwayland_surface *xwayland_surface{nullptr};
 
     struct wl_listener activate;
     struct wl_listener associate;
     struct wl_listener dissociate;
     struct wl_listener configure;
+#endif
 
     struct wlr_foreign_toplevel_handle_v1 *handle{nullptr};
 
@@ -43,9 +45,12 @@ struct Toplevel {
     struct wlr_fbox saved_geometry;
 
     Toplevel(struct Server *server, struct wlr_xdg_toplevel *wlr_xdg_toplevel);
+    ~Toplevel();
+
+#ifdef XWAYLAND
     Toplevel(struct Server *server,
              struct wlr_xwayland_surface *xwayland_surface);
-    ~Toplevel();
+#endif
 
     static void map_notify(struct wl_listener *listener, void *data);
     static void unmap_notify(struct wl_listener *listener, void *data);

@@ -58,7 +58,9 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel, true);
         }
-    } else {
+    }
+#ifdef XWAYLAND
+    else {
         // xwayland surface
 
         // create scene tree
@@ -84,6 +86,7 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
         if (output)
             output->get_active()->add_toplevel(toplevel, true);
     }
+#endif
 }
 
 void Toplevel::unmap_notify(struct wl_listener *listener, void *data) {
@@ -115,7 +118,9 @@ void Toplevel::create_handle() {
         if (xdg_toplevel->app_id)
             wlr_foreign_toplevel_handle_v1_set_app_id(handle,
                                                       xdg_toplevel->app_id);
-    } else if (xwayland_surface) {
+    }
+#ifdef XWAYLAND
+    else if (xwayland_surface) {
         if (xwayland_surface->title)
             wlr_foreign_toplevel_handle_v1_set_title(handle,
                                                      xwayland_surface->title);
@@ -124,6 +129,7 @@ void Toplevel::create_handle() {
             wlr_foreign_toplevel_handle_v1_set_app_id(handle,
                                                       xwayland_surface->class_);
     }
+#endif
 
     // handle_request_maximize
     handle_request_maximize.notify = [](struct wl_listener *listener,
@@ -344,7 +350,10 @@ Toplevel::Toplevel(struct Server *server,
                   &request_fullscreen);
 }
 
+Toplevel::~Toplevel() {}
+
 // Toplevel from xwayland surface
+#ifdef XWAYLAND
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xwayland_surface *xwayland_surface) {
     this->server = server;
@@ -450,8 +459,7 @@ Toplevel::Toplevel(struct Server *server,
     };
     wl_signal_add(&xwayland_surface->events.request_configure, &configure);
 }
-
-Toplevel::~Toplevel() {}
+#endif
 
 // focus keyboard to surface
 void Toplevel::focus() {
@@ -585,9 +593,11 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
 
         // schedule configure
         wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
-    } else {
-        wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
     }
+#ifdef XWAYLAND
+    else
+        wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
+#endif
 }
 
 void Toplevel::set_position_size(struct wlr_fbox geometry) {

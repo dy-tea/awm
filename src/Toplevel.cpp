@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 void Toplevel::map_notify(struct wl_listener *listener, void *data) {
     // on map or display
@@ -470,43 +469,72 @@ Toplevel::Toplevel(struct Server *server,
 
 // focus keyboard to surface
 void Toplevel::focus() {
-    if (!xdg_toplevel || !xdg_toplevel->base || !xdg_toplevel->base->surface)
-        return;
-
     struct wlr_seat *seat = server->seat;
     struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
-    struct wlr_surface *surface = xdg_toplevel->base->surface;
 
-    // cannot focus unmapped surface
-    if (!surface->mapped)
-        return;
+    if ((xdg_toplevel && xdg_toplevel->base && xdg_toplevel->base->surface)
+#ifdef XWAYLAND
+        || (xwayland_surface && xwayland_surface->surface &&
+            xwayland_surface->surface->mapped)
+#endif
+    ) {
+#ifdef XWAYLAND
+        // handle xdg toplevel or xwayland surface
+        struct wlr_surface *surface = xdg_toplevel ? xdg_toplevel->base->surface
+                                                   : xwayland_surface->surface;
+#else
+        struct wlr_surface *surface = xdg_toplevel->base->surface;
+#endif
 
-    // already focused
-    if (prev_surface == surface)
-        return;
+        // cannot focus unmapped surface
+        if (!surface->mapped)
+            return;
 
-    if (prev_surface) {
-        // deactivate previous surface
-        struct wlr_xdg_toplevel *prev_toplevel =
-            wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
-        if (prev_toplevel != NULL)
-            wlr_xdg_toplevel_set_activated(prev_toplevel, false);
+        // already focused
+        if (prev_surface == surface)
+            return;
+
+        if (prev_surface) {
+            // deactivate previous surface
+
+            // xdg toplevel
+            struct wlr_xdg_toplevel *prev_toplevel =
+                wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
+#ifdef XWAYLAND
+            // xwayland surface
+            struct wlr_xwayland_surface *prev_xwayland_surface =
+                wlr_xwayland_surface_try_from_wlr_surface(prev_surface);
+#endif
+            // check xdg toplevel
+            if (prev_toplevel)
+                wlr_xdg_toplevel_set_activated(prev_toplevel, false);
+#ifdef XWAYLAND
+            // check xwayland surface
+            else if (prev_xwayland_surface)
+                wlr_xwayland_surface_activate(prev_xwayland_surface, false);
+#endif
+        }
+
+        // get keyboard
+        struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
+
+        // move toplevel node to top of scene tree
+        wlr_scene_node_raise_to_top(&scene_tree->node);
+
+        // activate toplevel
+        if (xdg_toplevel)
+            wlr_xdg_toplevel_set_activated(xdg_toplevel, true);
+#ifdef XWAYLAND
+        else if (xwayland_surface)
+            wlr_xwayland_surface_activate(xwayland_surface, true);
+#endif
+
+        // set seat keyboard focused surface to toplevel
+        if (keyboard != NULL)
+            wlr_seat_keyboard_notify_enter(seat, surface, keyboard->keycodes,
+                                           keyboard->num_keycodes,
+                                           &keyboard->modifiers);
     }
-
-    // get keyboard
-    struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
-
-    // move toplevel node to top of scene tree
-    wlr_scene_node_raise_to_top(&scene_tree->node);
-
-    // activate toplevel
-    wlr_xdg_toplevel_set_activated(xdg_toplevel, true);
-
-    // set seat keyboard focused surface to toplevel
-    if (keyboard != NULL)
-        wlr_seat_keyboard_notify_enter(seat, surface, keyboard->keycodes,
-                                       keyboard->num_keycodes,
-                                       &keyboard->modifiers);
 }
 
 // move or resize toplevel

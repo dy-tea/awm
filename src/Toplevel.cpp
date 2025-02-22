@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 void Toplevel::map_notify(struct wl_listener *listener, void *data) {
     // on map or display
@@ -65,19 +66,21 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
 
         // create scene tree
         toplevel->scene_tree =
-            wlr_scene_tree_create(toplevel->server->layers.floating);
-        wlr_scene_node_set_enabled(
-            &toplevel->scene_tree->node,
-            toplevel->xwayland_surface->override_redirect);
+            wlr_scene_tree_create(&toplevel->server->scene->tree);
         toplevel->scene_tree->node.data = toplevel;
 
-        wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                    toplevel->xwayland_surface->x,
-                                    toplevel->xwayland_surface->y);
-        wlr_xwayland_surface_configure(
-            toplevel->xwayland_surface, toplevel->xwayland_surface->x,
-            toplevel->xwayland_surface->y, toplevel->xwayland_surface->width,
-            toplevel->xwayland_surface->height);
+        toplevel->scene_surface =
+            wlr_scene_surface_create(toplevel->server->layers.floating,
+                                     toplevel->xwayland_surface->surface);
+        if (toplevel->scene_surface)
+            wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
+                                        toplevel->xwayland_surface->x,
+                                        toplevel->xwayland_surface->y);
+
+        if (wlr_xwayland_surface_override_redirect_wants_focus(
+                toplevel->xwayland_surface))
+            wlr_xwayland_set_seat(toplevel->server->xwayland,
+                                  toplevel->server->seat);
 
         // get the focused output
         Output *output = toplevel->server->focused_output();
@@ -389,8 +392,14 @@ Toplevel::Toplevel(struct Server *server,
     activate.notify = [](struct wl_listener *listener, void *data) {
         struct Toplevel *toplevel =
             wl_container_of(listener, toplevel, activate);
+        struct wlr_xwayland_surface *xwayland_surface =
+            toplevel->xwayland_surface;
 
-        if (!toplevel->xwayland_surface->override_redirect)
+        if (xwayland_surface->surface == NULL ||
+            !xwayland_surface->surface->mapped)
+            return;
+
+        if (!xwayland_surface->override_redirect)
             wlr_xwayland_surface_activate(toplevel->xwayland_surface, true);
     };
     wl_signal_add(&xwayland_surface->events.request_activate, &activate);

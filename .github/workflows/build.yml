@@ -17,7 +17,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install --fix-missing meson wayland-protocols wayland-utils \
-          libwlroots-dev
+          libwlroots-dev xwayland
 
       - name: pixman-1
         run: |
@@ -51,7 +51,7 @@ jobs:
         run: |
           git clone https://gitlab.freedesktop.org/wlroots/wlroots.git
           cd wlroots
-          meson setup build/
+          meson setup -Dxwayland=enabled build/
           sudo ninja -C build/ install
 
       - name: Build the project

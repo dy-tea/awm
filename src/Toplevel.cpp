@@ -80,6 +80,7 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
         // get the focused output
         Output *output = toplevel->server->focused_output();
 
+        // add to active workspace
         if (output)
             output->get_active()->add_toplevel(toplevel, true);
     }
@@ -100,122 +101,29 @@ void Toplevel::unmap_notify(struct wl_listener *listener, void *data) {
     wl_list_remove(&toplevel->link);
 }
 
-// Toplevel from xdg toplevel
-Toplevel::Toplevel(struct Server *server,
-                   struct wlr_xdg_toplevel *xdg_toplevel) {
-    // add the toplevel to the scene tree
-    this->server = server;
-    this->xdg_toplevel = xdg_toplevel;
-    scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
-                                              xdg_toplevel->base);
-    scene_tree->node.data = this;
-    xdg_toplevel->base->data = scene_tree;
-
-    // set foreign toplevel initial state if received
+// create a foreign toplevel handle
+void Toplevel::create_handle() {
+    // set foreign toplevel initial state
     handle = wlr_foreign_toplevel_handle_v1_create(
         server->wlr_foreign_toplevel_manager);
 
-    if (xdg_toplevel->title)
-        wlr_foreign_toplevel_handle_v1_set_title(handle, xdg_toplevel->title);
+    if (xdg_toplevel) {
+        if (xdg_toplevel->title)
+            wlr_foreign_toplevel_handle_v1_set_title(handle,
+                                                     xdg_toplevel->title);
 
-    if (xdg_toplevel->app_id)
-        wlr_foreign_toplevel_handle_v1_set_app_id(handle, xdg_toplevel->app_id);
+        if (xdg_toplevel->app_id)
+            wlr_foreign_toplevel_handle_v1_set_app_id(handle,
+                                                      xdg_toplevel->app_id);
+    } else if (xwayland_surface) {
+        if (xwayland_surface->title)
+            wlr_foreign_toplevel_handle_v1_set_title(handle,
+                                                     xwayland_surface->title);
 
-    // xdg_toplevel_map
-    map.notify = map_notify;
-    wl_signal_add(&xdg_toplevel->base->surface->events.map, &map);
-
-    // xdg_toplevel_unmap
-    unmap.notify = unmap_notify;
-    wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &unmap);
-
-    // xdg_toplevel_commit
-    commit.notify = [](struct wl_listener *listener, void *data) {
-        // on surface state change
-        struct Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
-        struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
-
-        if (xdg_toplevel->base->initial_commit)
-            // let client pick dimensions
-            wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
-    };
-    wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
-
-    // xdg_toplevel_destroy
-    destroy.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, destroy);
-
-        wl_list_remove(&toplevel->map.link);
-        wl_list_remove(&toplevel->unmap.link);
-        wl_list_remove(&toplevel->commit.link);
-        wl_list_remove(&toplevel->destroy.link);
-        wl_list_remove(&toplevel->request_move.link);
-        wl_list_remove(&toplevel->request_resize.link);
-        wl_list_remove(&toplevel->request_maximize.link);
-        wl_list_remove(&toplevel->request_fullscreen.link);
-
-        wl_list_remove(&toplevel->handle_request_maximize.link);
-        wl_list_remove(&toplevel->handle_request_minimize.link);
-        wl_list_remove(&toplevel->handle_request_fullscreen.link);
-        wl_list_remove(&toplevel->handle_request_activate.link);
-        wl_list_remove(&toplevel->handle_request_close.link);
-        wl_list_remove(&toplevel->handle_set_rectangle.link);
-        wl_list_remove(&toplevel->handle_destroy.link);
-
-        delete toplevel;
-    };
-    wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
-
-    // request_move
-    request_move.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, request_move);
-
-        // start interactivity
-        toplevel->begin_interactive(CURSORMODE_MOVE, 0);
-    };
-    wl_signal_add(&xdg_toplevel->events.request_move, &request_move);
-
-    // request_resize
-    request_resize.notify = [](struct wl_listener *listener, void *data) {
-        /* This event is raised when a client would like to begin an interactive
-         * resize, typically because the user clicked on their client-side
-         * decorations. Note that a more sophisticated compositor should check
-         * the provided serial against a list of button press serials sent to
-         * this client, to prevent the client from requesting this whenever they
-         * want. */
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, request_resize);
-        struct wlr_xdg_toplevel_resize_event *event =
-            static_cast<wlr_xdg_toplevel_resize_event *>(data);
-
-        toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
-    };
-    wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
-
-    // request_maximize
-    request_maximize.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, request_maximize);
-
-        toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
-    };
-    wl_signal_add(&xdg_toplevel->events.request_maximize, &request_maximize);
-
-    // request_fullscreen
-    request_fullscreen.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, request_fullscreen);
-
-        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
-    };
-    wl_signal_add(&xdg_toplevel->events.request_fullscreen,
-                  &request_fullscreen);
-
-    /*
-     * foreign toplevel listeners
-     */
+        if (xwayland_surface->class_)
+            wlr_foreign_toplevel_handle_v1_set_app_id(handle,
+                                                      xwayland_surface->class_);
+    }
 
     // handle_request_maximize
     handle_request_maximize.notify = [](struct wl_listener *listener,
@@ -329,11 +237,121 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&handle->events.destroy, &handle_destroy);
 }
 
+// Toplevel from xdg toplevel
+Toplevel::Toplevel(struct Server *server,
+                   struct wlr_xdg_toplevel *xdg_toplevel) {
+    // add the toplevel to the scene tree
+    this->server = server;
+    this->xdg_toplevel = xdg_toplevel;
+    scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
+                                              xdg_toplevel->base);
+    scene_tree->node.data = this;
+    xdg_toplevel->base->data = scene_tree;
+
+    // create foreign toplevel handle
+    create_handle();
+
+    // xdg_toplevel_map
+    map.notify = map_notify;
+    wl_signal_add(&xdg_toplevel->base->surface->events.map, &map);
+
+    // xdg_toplevel_unmap
+    unmap.notify = unmap_notify;
+    wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &unmap);
+
+    // xdg_toplevel_commit
+    commit.notify = [](struct wl_listener *listener, void *data) {
+        // on surface state change
+        struct Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
+        struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
+
+        if (xdg_toplevel->base->initial_commit)
+            // let client pick dimensions
+            wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
+    };
+    wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
+
+    // xdg_toplevel_destroy
+    destroy.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, destroy);
+
+        wl_list_remove(&toplevel->map.link);
+        wl_list_remove(&toplevel->unmap.link);
+        wl_list_remove(&toplevel->commit.link);
+        wl_list_remove(&toplevel->destroy.link);
+        wl_list_remove(&toplevel->request_move.link);
+        wl_list_remove(&toplevel->request_resize.link);
+        wl_list_remove(&toplevel->request_maximize.link);
+        wl_list_remove(&toplevel->request_fullscreen.link);
+
+        wl_list_remove(&toplevel->handle_request_maximize.link);
+        wl_list_remove(&toplevel->handle_request_minimize.link);
+        wl_list_remove(&toplevel->handle_request_fullscreen.link);
+        wl_list_remove(&toplevel->handle_request_activate.link);
+        wl_list_remove(&toplevel->handle_request_close.link);
+        wl_list_remove(&toplevel->handle_set_rectangle.link);
+        wl_list_remove(&toplevel->handle_destroy.link);
+
+        delete toplevel;
+    };
+    wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
+
+    // request_move
+    request_move.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, request_move);
+
+        // start interactivity
+        toplevel->begin_interactive(CURSORMODE_MOVE, 0);
+    };
+    wl_signal_add(&xdg_toplevel->events.request_move, &request_move);
+
+    // request_resize
+    request_resize.notify = [](struct wl_listener *listener, void *data) {
+        /* This event is raised when a client would like to begin an interactive
+         * resize, typically because the user clicked on their client-side
+         * decorations. Note that a more sophisticated compositor should check
+         * the provided serial against a list of button press serials sent to
+         * this client, to prevent the client from requesting this whenever they
+         * want. */
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, request_resize);
+        struct wlr_xdg_toplevel_resize_event *event =
+            static_cast<wlr_xdg_toplevel_resize_event *>(data);
+
+        toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
+    };
+    wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
+
+    // request_maximize
+    request_maximize.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, request_maximize);
+
+        toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
+    };
+    wl_signal_add(&xdg_toplevel->events.request_maximize, &request_maximize);
+
+    // request_fullscreen
+    request_fullscreen.notify = [](struct wl_listener *listener, void *data) {
+        struct Toplevel *toplevel =
+            wl_container_of(listener, toplevel, request_fullscreen);
+
+        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
+    };
+    wl_signal_add(&xdg_toplevel->events.request_fullscreen,
+                  &request_fullscreen);
+}
+
 // Toplevel from xwayland surface
 Toplevel::Toplevel(struct Server *server,
                    struct wlr_xwayland_surface *xwayland_surface) {
     this->server = server;
     this->xwayland_surface = xwayland_surface;
+
+    // create foreign toplevel handle
+    create_handle();
 
     // destroy
     destroy.notify = [](struct wl_listener *listener, void *data) {
@@ -345,6 +363,14 @@ Toplevel::Toplevel(struct Server *server,
         wl_list_remove(&toplevel->associate.link);
         wl_list_remove(&toplevel->dissociate.link);
         wl_list_remove(&toplevel->configure.link);
+
+        wl_list_remove(&toplevel->handle_request_maximize.link);
+        wl_list_remove(&toplevel->handle_request_minimize.link);
+        wl_list_remove(&toplevel->handle_request_fullscreen.link);
+        wl_list_remove(&toplevel->handle_request_activate.link);
+        wl_list_remove(&toplevel->handle_request_close.link);
+        wl_list_remove(&toplevel->handle_set_rectangle.link);
+        wl_list_remove(&toplevel->handle_destroy.link);
 
         delete toplevel;
     };

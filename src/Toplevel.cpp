@@ -552,10 +552,10 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
     if (mode == CURSORMODE_MOVE) {
         if (xdg_toplevel->current.maximized) {
             // unmaximize if maximized
-            wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width,
-                                      saved_geometry.height);
-            wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
-            wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+            saved_geometry.y = cursor->cursor->y - 10; // TODO Magic number here
+            saved_geometry.x = cursor->cursor->x - (saved_geometry.width / 2);
+
+            set_maximized(false);
         }
 
         // follow cursor

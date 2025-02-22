@@ -562,30 +562,32 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
 // set the position and size of a toplevel, send a configure
 void Toplevel::set_position_size(double x, double y, int width, int height) {
     // get output layout at cursor
-    wlr_cursor *cursor = server->cursor->cursor;
-    struct wlr_output *wlr_output = wlr_output_layout_output_at(
-        server->output_manager->layout, cursor->x, cursor->y);
+    struct wlr_output *wlr_output = server->focused_output()->wlr_output;
 
-    // get output scale
-    float scale = wlr_output->scale;
+    if (xdg_toplevel) {
+        // get output scale
+        float scale = wlr_output->scale;
 
-    if (xdg_toplevel->current.maximized)
-        // unmaximize if maximized
-        wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
-    else {
-        // save current geometry
-        saved_geometry.x = scene_tree->node.x;
-        saved_geometry.y = scene_tree->node.y;
-        saved_geometry.width = xdg_toplevel->current.width;
-        saved_geometry.height = xdg_toplevel->current.height;
+        if (xdg_toplevel->current.maximized)
+            // unmaximize if maximized
+            wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
+        else {
+            // save current geometry
+            saved_geometry.x = scene_tree->node.x;
+            saved_geometry.y = scene_tree->node.y;
+            saved_geometry.width = xdg_toplevel->current.width;
+            saved_geometry.height = xdg_toplevel->current.height;
+        }
+
+        // set position and size
+        wlr_scene_node_set_position(&scene_tree->node, x, y);
+        wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
+
+        // schedule configure
+        wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+    } else {
+        wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
     }
-
-    // set position and size
-    wlr_scene_node_set_position(&scene_tree->node, x, y);
-    wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
-
-    // schedule configure
-    wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 }
 
 void Toplevel::set_position_size(struct wlr_fbox geometry) {

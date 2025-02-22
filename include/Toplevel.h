@@ -3,8 +3,8 @@
 struct Toplevel {
     struct wl_list link;
     struct Server *server;
-    struct wlr_scene_tree *scene_tree;
-    struct wlr_scene_surface *scene_surface;
+    struct wlr_scene_tree *scene_tree{nullptr};
+    struct wlr_scene_surface *scene_surface{nullptr};
 
     struct wlr_xdg_toplevel *xdg_toplevel{nullptr};
 

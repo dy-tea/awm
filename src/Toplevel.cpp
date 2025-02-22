@@ -63,19 +63,19 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
     else {
         // xwayland surface
 
-        // create scene tree
-        toplevel->scene_tree =
-            wlr_scene_tree_create(&toplevel->server->scene->tree);
-        toplevel->scene_tree->node.data = toplevel;
-
+        // scene surface
         toplevel->scene_surface =
             wlr_scene_surface_create(toplevel->server->layers.floating,
                                      toplevel->xwayland_surface->surface);
-        if (toplevel->scene_surface)
+
+        if (toplevel->scene_surface) {
             wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
                                         toplevel->xwayland_surface->x,
                                         toplevel->xwayland_surface->y);
+            toplevel->scene_surface->buffer->node.data = toplevel;
+        }
 
+        // set seat if requested
         if (wlr_xwayland_surface_override_redirect_wants_focus(
                 toplevel->xwayland_surface))
             wlr_xwayland_set_seat(toplevel->server->xwayland,
@@ -494,12 +494,12 @@ void Toplevel::focus() {
         if (prev_surface == surface)
             return;
 
+        // deactivate previous surface
         if (prev_surface) {
-            // deactivate previous surface
-
             // xdg toplevel
             struct wlr_xdg_toplevel *prev_toplevel =
                 wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
+
 #ifdef XWAYLAND
             // xwayland surface
             struct wlr_xwayland_surface *prev_xwayland_surface =
@@ -519,7 +519,12 @@ void Toplevel::focus() {
         struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
 
         // move toplevel node to top of scene tree
-        wlr_scene_node_raise_to_top(&scene_tree->node);
+#ifdef XWAYLAND
+        if (scene_surface)
+            wlr_scene_node_raise_to_top(&scene_surface->buffer->node);
+        else
+#endif
+            wlr_scene_node_raise_to_top(&scene_tree->node);
 
         // activate toplevel
         if (xdg_toplevel)
@@ -642,17 +647,35 @@ void Toplevel::set_position_size(struct wlr_fbox geometry) {
 // get the geometry of the toplevel
 struct wlr_fbox Toplevel::get_geometry() {
     struct wlr_fbox geometry;
-    geometry.x = scene_tree->node.x;
-    geometry.y = scene_tree->node.y;
-    geometry.width = xdg_toplevel->current.width;
-    geometry.height = xdg_toplevel->current.height;
+
+    if (xdg_toplevel) {
+        geometry.x = scene_tree->node.x;
+        geometry.y = scene_tree->node.y;
+        geometry.width = xdg_toplevel->current.width;
+        geometry.height = xdg_toplevel->current.height;
+    }
+#ifdef XWAYLAND
+    else {
+        geometry.x = scene_surface->buffer->node.x;
+        geometry.y = scene_surface->buffer->node.y;
+        geometry.width = xwayland_surface->surface->current.width;
+        geometry.height = xwayland_surface->surface->current.height;
+    }
+#endif
+
     return geometry;
 }
 
 // set the visibility of the toplevel
 void Toplevel::set_hidden(bool hidden) {
     this->hidden = hidden;
-    wlr_scene_node_set_enabled(&scene_tree->node, !hidden);
+
+    if (xdg_toplevel)
+        wlr_scene_node_set_enabled(&scene_tree->node, !hidden);
+#ifdef XWAYLAND
+    else
+        wlr_scene_node_set_enabled(&scene_surface->buffer->node, !hidden);
+#endif
 }
 
 // set the toplevel to be fullscreened
@@ -765,8 +788,10 @@ void Toplevel::update_foreign_toplevel() {
 
 // tell the toplevel to close
 void Toplevel::close() {
-    if (xdg_toplevel == nullptr)
-        return;
-
-    wlr_xdg_toplevel_send_close(xdg_toplevel);
+    if (xdg_toplevel)
+        wlr_xdg_toplevel_send_close(xdg_toplevel);
+#ifdef XWAYLAND
+    else if (xwayland_surface)
+        wlr_xwayland_surface_close(xwayland_surface);
+#endif
 }

@@ -137,8 +137,6 @@ void Output::arrange_layer_surface(const struct wlr_box *full_area,
         wlr_scene_layer_surface_v1_configure(surface->scene_layer_surface,
                                              full_area, usable_area);
     }
-
-    server->cursor->process_motion(0, NULL, 0, 0, 0, 0);
 }
 
 // get a layer shell layer

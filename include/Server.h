@@ -91,9 +91,6 @@ struct Server {
 
     void exit() const;
 
-    void new_keyboard(wlr_input_device *device);
-    void new_pointer(wlr_pointer *device) const;
-
     Output *get_output(const wlr_output *wlr_output) const;
     Output *focused_output() const;
 

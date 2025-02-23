@@ -1,26 +1,6 @@
 #include "Server.h"
 #include <thread>
 
-// create a new keyboard
-void Server::new_keyboard(wlr_input_device *device) {
-    Keyboard *keyboard = new Keyboard(this, device);
-
-    // connect to seat
-    wlr_seat_set_keyboard(seat, keyboard->wlr_keyboard);
-
-    // add to keyboards list
-    wl_list_insert(&keyboards, &keyboard->link);
-}
-
-// create a new pointer
-void Server::new_pointer(wlr_pointer *pointer) const {
-    // set the cursor configuration
-    cursor->set_config(pointer);
-
-    // attach to device
-    wlr_cursor_attach_input_device(cursor->cursor, &pointer->base);
-}
-
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
     Output *output, *tmp;
@@ -304,12 +284,28 @@ Server::Server(Config *config) : config(config) {
         // handle device type
         switch (auto *device = static_cast<wlr_input_device *>(data);
                 device->type) {
-        case WLR_INPUT_DEVICE_KEYBOARD:
-            server->new_keyboard(device);
+        case WLR_INPUT_DEVICE_KEYBOARD: {
+            // create keyboard
+            Keyboard *keyboard = new Keyboard(server, device);
+
+            // connect to seat
+            wlr_seat_set_keyboard(server->seat, keyboard->wlr_keyboard);
+
+            // add to keyboards list
+            wl_list_insert(&server->keyboards, &keyboard->link);
             break;
-        case WLR_INPUT_DEVICE_POINTER:
-            server->new_pointer(reinterpret_cast<wlr_pointer *>(device));
+        }
+        case WLR_INPUT_DEVICE_POINTER: {
+            const auto pointer = reinterpret_cast<wlr_pointer *>(device);
+
+            // set the cursor configuration
+            server->cursor->set_config(pointer);
+
+            // attach to device
+            wlr_cursor_attach_input_device(server->cursor->cursor,
+                                           &pointer->base);
             break;
+        }
         default:
             break;
         }

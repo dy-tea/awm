@@ -31,15 +31,17 @@ struct Output {
     void arrange_layers();
 
     void update_position();
-    bool apply_config(struct OutputConfig *config, bool test_only);
+    bool apply_config(const OutputConfig *config, bool test_only);
 
-    void arrange_layer_surface(const struct wlr_box *full_area,
-                               struct wlr_box *usable_area,
-                               struct wlr_scene_tree *tree, bool exclusive);
-    struct wlr_scene_tree *shell_layer(enum zwlr_layer_shell_v1_layer layer);
+    static void arrange_layer_surface(const wlr_box *full_area,
+                                      wlr_box *usable_area,
+                                      const wlr_scene_tree *tree,
+                                      bool exclusive);
+    struct wlr_scene_tree *
+    shell_layer(enum zwlr_layer_shell_v1_layer layer) const;
 
     struct Workspace *new_workspace();
-    struct Workspace *get_active();
-    struct Workspace *get_workspace(uint32_t n);
+    struct Workspace *get_active() const;
+    struct Workspace *get_workspace(uint32_t n) const;
     bool set_workspace(uint32_t n);
 };

@@ -1,16 +1,14 @@
 #include "Server.h"
 #include <climits>
 
-Workspace::Workspace(struct Output *output, uint32_t num) {
+Workspace::Workspace(Output *output, const uint32_t num) {
     this->output = output;
     this->num = num;
     wl_list_init(&toplevels);
 }
 
-Workspace::~Workspace() {}
-
 // add a toplevel to the workspace
-void Workspace::add_toplevel(struct Toplevel *toplevel, bool focus) {
+void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
     // add to toplevels list
     wl_list_insert(&toplevels, &toplevel->link);
 
@@ -23,7 +21,7 @@ void Workspace::add_toplevel(struct Toplevel *toplevel, bool focus) {
 }
 
 // close a toplevel
-void Workspace::close(struct Toplevel *toplevel) {
+void Workspace::close(const Toplevel *toplevel) {
     // active toplevels need extra handling
     if (toplevel == active_toplevel) {
         if (wl_list_length(&toplevels) > 1)
@@ -41,13 +39,13 @@ void Workspace::close(struct Toplevel *toplevel) {
 // close the active toplevel
 void Workspace::close_active() {
     // get active toplevel
-    if (Toplevel *active = active_toplevel)
+    if (const Toplevel *active = active_toplevel)
         // send close
         close(active);
 }
 
 // returns true if the workspace contains the passed toplevel
-bool Workspace::contains(struct Toplevel *toplevel) {
+bool Workspace::contains(const Toplevel *toplevel) const {
     // no toplevels
     if (wl_list_empty(&toplevels))
         return false;
@@ -63,8 +61,7 @@ bool Workspace::contains(struct Toplevel *toplevel) {
 
 // move a toplevel to another workspace, returns true on success
 // false on no movement or failure
-bool Workspace::move_to(struct Toplevel *toplevel,
-                        struct Workspace *workspace) {
+bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
     // no movement
     if (workspace == this)
         return false;
@@ -101,8 +98,8 @@ bool Workspace::move_to(struct Toplevel *toplevel,
     return false;
 }
 
-// set the workspace's visibility
-void Workspace::set_hidden(bool hidden) {
+// set the workspace visibility
+void Workspace::set_hidden(const bool hidden) {
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link)
         // set every toplevel to the value of hidden
@@ -110,10 +107,10 @@ void Workspace::set_hidden(bool hidden) {
 }
 
 // swap the active toplevel geometry with other toplevel geometry
-void Workspace::swap(struct Toplevel *other) {
-    // get the geomety of both toplevels
-    struct wlr_fbox active = active_toplevel->get_geometry();
-    struct wlr_fbox swapped = other->get_geometry();
+void Workspace::swap(Toplevel *other) const {
+    // get the geometry of both toplevels
+    const wlr_fbox active = active_toplevel->get_geometry();
+    const wlr_fbox swapped = other->get_geometry();
 
     // swap the geometry
     active_toplevel->set_position_size(swapped);
@@ -122,13 +119,13 @@ void Workspace::swap(struct Toplevel *other) {
 
 // get the toplevel relative to the active one in the specified direction
 // returns nullptr if no toplevel matches query
-struct Toplevel *Workspace::in_direction(enum wlr_direction direction) {
+Toplevel *Workspace::in_direction(const wlr_direction direction) const {
     // no other toplevel to focus
     if (wl_list_length(&toplevels) < 2)
         return nullptr;
 
     // get the geometry of the active toplevel
-    wlr_fbox active_geometry = active_toplevel->get_geometry();
+    const wlr_fbox active_geometry = active_toplevel->get_geometry();
 
     // define a target
     Toplevel *curr, *tmp;
@@ -198,7 +195,7 @@ void Workspace::focus() {
 }
 
 // focus the passed toplevel
-void Workspace::focus_toplevel(struct Toplevel *toplevel) {
+void Workspace::focus_toplevel(Toplevel *toplevel) {
     if (!contains(toplevel))
         return;
 
@@ -216,7 +213,7 @@ void Workspace::focus_next() {
         return;
 
     // focus next, wrapping around if at end
-    struct wl_list *next = active_toplevel->link.next;
+    wl_list *next = active_toplevel->link.next;
     if (next == &toplevels)
         next = toplevels.next;
 
@@ -231,7 +228,7 @@ void Workspace::focus_prev() {
         return;
 
     // focus prev, wrapping around if at start
-    struct wl_list *prev = active_toplevel->link.prev;
+    wl_list *prev = active_toplevel->link.prev;
     if (prev == &toplevels)
         prev = toplevels.prev;
 
@@ -247,7 +244,7 @@ void Workspace::tile() {
         return;
 
     // get the output's usable area
-    struct wlr_box box = output->usable_area;
+    wlr_box box = output->usable_area;
 
     int toplevel_count = wl_list_length(&toplevels);
 

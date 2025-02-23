@@ -5,8 +5,8 @@
 #include "wlr.h"
 
 // send a notification
-inline void notify_send(const std::string format, ...) {
-    // get varidiac
+inline void notify_send(const std::string &format, ...) {
+    // get variadic
     va_list args;
     va_start(args, format);
     char buffer[1024];
@@ -14,7 +14,7 @@ inline void notify_send(const std::string format, ...) {
     va_end(args);
 
     // convert buffer to string
-    std::string message = std::string(buffer);
+    const std::string message = std::string(buffer);
 
     // log
     wlr_log(WLR_ERROR, "%s", message.c_str());

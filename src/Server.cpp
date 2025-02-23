@@ -2,8 +2,8 @@
 #include <thread>
 
 // create a new keyboard
-void Server::new_keyboard(struct wlr_input_device *device) {
-    struct Keyboard *keyboard = new Keyboard(this, device);
+void Server::new_keyboard(wlr_input_device *device) {
+    Keyboard *keyboard = new Keyboard(this, device);
 
     // connect to seat
     wlr_seat_set_keyboard(seat, keyboard->wlr_keyboard);
@@ -13,7 +13,7 @@ void Server::new_keyboard(struct wlr_input_device *device) {
 }
 
 // create a new pointer
-void Server::new_pointer(struct wlr_pointer *pointer) {
+void Server::new_pointer(wlr_pointer *pointer) const {
     // set the cursor configuration
     cursor->set_config(pointer);
 
@@ -22,7 +22,7 @@ void Server::new_pointer(struct wlr_pointer *pointer) {
 }
 
 // get workspace by toplevel
-struct Workspace *Server::get_workspace(struct Toplevel *toplevel) {
+Workspace *Server::get_workspace(Toplevel *toplevel) const {
     Output *output, *tmp;
     Workspace *workspace, *tmp1;
 
@@ -40,59 +40,57 @@ struct Workspace *Server::get_workspace(struct Toplevel *toplevel) {
 // get a node tree surface from its location and cast it to the generic
 // type provided
 template <typename T>
-T *Server::surface_at(double lx, double ly, struct wlr_surface **surface,
+T *Server::surface_at(const double lx, const double ly, wlr_surface **surface,
                       double *sx, double *sy) {
     // get the scene node and ensure it's a buffer
-    struct wlr_scene_node *node =
-        wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
+    wlr_scene_node *node = wlr_scene_node_at(&scene->tree.node, lx, ly, sx, sy);
     if (!node || node->type != WLR_SCENE_NODE_BUFFER)
-        return NULL;
+        return nullptr;
 
     // get the scene buffer and surface of the node
-    struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
-    struct wlr_scene_surface *scene_surface =
+    wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
+    wlr_scene_surface *scene_surface =
         wlr_scene_surface_try_from_buffer(scene_buffer);
     if (!scene_surface || !scene_surface->surface)
-        return NULL;
+        return nullptr;
 
     // set the scene surface
     *surface = scene_surface->surface;
 
     // get the scene tree of the node's parent
-    struct wlr_scene_tree *tree = node->parent;
+    wlr_scene_tree *tree = node->parent;
     if (!tree || tree->node.type != WLR_SCENE_NODE_TREE)
-        return NULL;
+        return nullptr;
 
     // find the topmost node of the scene tree
-    while (tree && tree->node.data == NULL)
+    while (tree && !tree->node.data)
         tree = tree->node.parent;
 
     // invalid tree
     if (!tree || !tree->node.parent)
-        return NULL;
+        return nullptr;
 
     // return the topmost node's data
-    return (T *)(tree->node.data);
+    return static_cast<T *>(tree->node.data);
 }
 
 // find a toplevel by location
-struct Toplevel *Server::toplevel_at(double lx, double ly,
-                                     struct wlr_surface **surface, double *sx,
-                                     double *sy) {
+Toplevel *Server::toplevel_at(const double lx, const double ly,
+                              wlr_surface **surface, double *sx, double *sy) {
     Toplevel *toplevel = surface_at<Toplevel>(lx, ly, surface, sx, sy);
 
     // ensure role is not layer surface
     if (toplevel && surface && (*surface)->mapped &&
         strcmp((*surface)->role->name, "zwlr_layer_surface_v1") != 0)
         return toplevel;
-    else
-        return nullptr;
+
+    return nullptr;
 }
 
 // find a layer surface by location
-struct LayerSurface *Server::layer_surface_at(double lx, double ly,
-                                              struct wlr_surface **surface,
-                                              double *sx, double *sy) {
+LayerSurface *Server::layer_surface_at(const double lx, const double ly,
+                                       wlr_surface **surface, double *sx,
+                                       double *sy) {
     LayerSurface *layer_surface =
         surface_at<LayerSurface>(lx, ly, surface, sx, sy);
 
@@ -100,21 +98,21 @@ struct LayerSurface *Server::layer_surface_at(double lx, double ly,
     if (layer_surface && surface && (*surface)->mapped &&
         strcmp((*surface)->role->name, "zwlr_layer_surface_v1") == 0)
         return layer_surface;
-    else
-        return nullptr;
+
+    return nullptr;
 }
 
 // get output by wlr_output
-struct Output *Server::get_output(struct wlr_output *wlr_output) {
+Output *Server::get_output(const wlr_output *wlr_output) const {
     return output_manager->get_output(wlr_output);
 }
 
 // get the focused output
-struct Output *Server::focused_output() {
+Output *Server::focused_output() const {
     return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
 }
 
-Server::Server(struct Config *config) {
+Server::Server(Config *config) {
     // set config from file
     this->config = config;
 
@@ -126,15 +124,15 @@ Server::Server(struct Config *config) {
 
     // backend
     backend =
-        wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
-    if (backend == NULL) {
+        wlr_backend_autocreate(wl_display_get_event_loop(wl_display), nullptr);
+    if (!backend) {
         wlr_log(WLR_ERROR, "failed to create wlr_backend");
         ::exit(1);
     }
 
     // renderer
     renderer = wlr_renderer_autocreate(backend);
-    if (renderer == NULL) {
+    if (!renderer) {
         wlr_log(WLR_ERROR, "failed to create wlr_renderer");
         ::exit(1);
     }
@@ -143,7 +141,7 @@ Server::Server(struct Config *config) {
 
     // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);
-    if (allocator == NULL) {
+    if (!allocator) {
         wlr_log(WLR_ERROR, "failed to create wlr_allocator");
         ::exit(1);
     }
@@ -165,22 +163,21 @@ Server::Server(struct Config *config) {
     xdg_shell = wlr_xdg_shell_create(wl_display, 6);
 
     // new_xdg_toplevel
-    new_xdg_toplevel.notify = [](struct wl_listener *listener, void *data) {
-        struct Server *server =
-            wl_container_of(listener, server, new_xdg_toplevel);
+    new_xdg_toplevel.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_xdg_toplevel);
 
         // toplevels are managed by workspaces
-        [[maybe_unused]] struct Toplevel *toplevel =
+        [[maybe_unused]] Toplevel *toplevel =
             new Toplevel(server, static_cast<wlr_xdg_toplevel *>(data));
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 
     // new_xdg_popup
-    new_xdg_popup.notify = [](struct wl_listener *listener, void *data) {
+    new_xdg_popup.notify = [](wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_xdg_popup);
 
         // popups do not need to be tracked
-        [[maybe_unused]] struct Popup *popup =
+        [[maybe_unused]] Popup *popup =
             new Popup(static_cast<wlr_xdg_popup *>(data), server);
     };
     wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
@@ -198,7 +195,7 @@ Server::Server(struct Config *config) {
     wlr_layer_shell = wlr_layer_shell_v1_create(wl_display, 5);
 
     // new_shell_surface
-    new_shell_surface.notify = [](struct wl_listener *listener, void *data) {
+    new_shell_surface.notify = [](wl_listener *listener, void *data) {
         // layer surface created
         Server *server = wl_container_of(listener, server, new_shell_surface);
         wlr_layer_surface_v1 *surface =
@@ -207,9 +204,9 @@ Server::Server(struct Config *config) {
         Output *output = nullptr;
 
         // assume focused output if not set
-        if (surface->output) {
+        if (surface->output)
             output = server->get_output(surface->output);
-        } else {
+        else {
             output = server->focused_output();
 
             if (output)
@@ -222,39 +219,36 @@ Server::Server(struct Config *config) {
 
         // add to layer surfaces
         LayerSurface *layer_surface = new LayerSurface(output, surface);
-        if (layer_surface)
-            wl_list_insert(&server->layer_surfaces, &layer_surface->link);
+        wl_list_insert(&server->layer_surfaces, &layer_surface->link);
     };
     wl_signal_add(&wlr_layer_shell->events.new_surface, &new_shell_surface);
 
     // renderer_lost
-    renderer_lost.notify = [](struct wl_listener *listener, void *data) {
+    renderer_lost.notify = [](wl_listener *listener, void *data) {
         // renderer recovery (thanks sway)
-        struct Server *server =
-            wl_container_of(listener, server, renderer_lost);
+        Server *server = wl_container_of(listener, server, renderer_lost);
 
         wlr_log(WLR_INFO, "Re-creating renderer after GPU reset");
 
         // create new renderer
-        struct wlr_renderer *renderer =
-            wlr_renderer_autocreate(server->backend);
-        if (renderer == NULL) {
+        wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
+        if (!renderer) {
             wlr_log(WLR_ERROR, "Unable to create renderer");
             return;
         }
 
         // create new allocator
-        struct wlr_allocator *allocator =
+        wlr_allocator *allocator =
             wlr_allocator_autocreate(server->backend, renderer);
-        if (allocator == NULL) {
+        if (!allocator) {
             wlr_log(WLR_ERROR, "Unable to create allocator");
             wlr_renderer_destroy(renderer);
             return;
         }
 
         // replace old and renderer and allocator
-        struct wlr_renderer *old_renderer = server->renderer;
-        struct wlr_allocator *old_allocator = server->allocator;
+        wlr_renderer *old_renderer = server->renderer;
+        wlr_allocator *old_allocator = server->allocator;
         server->renderer = renderer;
         server->allocator = allocator;
 
@@ -266,7 +260,7 @@ Server::Server(struct Config *config) {
         wlr_compositor_set_renderer(server->compositor, renderer);
 
         // reinint outputs
-        struct Output *output, *tmp;
+        Output *output, *tmp;
         wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
                               link)
             wlr_output_init_render(output->wlr_output, server->allocator,
@@ -289,18 +283,19 @@ Server::Server(struct Config *config) {
     wl_list_init(&keyboards);
 
     // new_input
-    new_input.notify = [](struct wl_listener *listener, void *data) {
+    new_input.notify = [](wl_listener *listener, void *data) {
         // create input device based on type
-        struct Server *server = wl_container_of(listener, server, new_input);
-        struct wlr_input_device *device = static_cast<wlr_input_device *>(data);
+        Server *server = wl_container_of(listener, server, new_input);
 
         // handle device type
-        switch (device->type) {
+        switch (wlr_input_device *device =
+                    static_cast<wlr_input_device *>(data);
+                device->type) {
         case WLR_INPUT_DEVICE_KEYBOARD:
             server->new_keyboard(device);
             break;
         case WLR_INPUT_DEVICE_POINTER:
-            server->new_pointer((wlr_pointer *)device);
+            server->new_pointer(reinterpret_cast<wlr_pointer *>(device));
             break;
         default:
             break;
@@ -319,14 +314,13 @@ Server::Server(struct Config *config) {
     seat = wlr_seat_create(wl_display, "seat0");
 
     // request_cursor (seat)
-    request_cursor.notify = [](struct wl_listener *listener, void *data) {
+    request_cursor.notify = [](wl_listener *listener, void *data) {
         // client-provided cursor image
-        struct Server *server =
-            wl_container_of(listener, server, request_cursor);
+        Server *server = wl_container_of(listener, server, request_cursor);
 
-        struct wlr_seat_pointer_request_set_cursor_event *event =
+        wlr_seat_pointer_request_set_cursor_event *event =
             static_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
-        struct wlr_seat_client *focused_client =
+        wlr_seat_client *focused_client =
             server->seat->pointer_state.focused_client;
 
         // only obey focused client
@@ -337,13 +331,12 @@ Server::Server(struct Config *config) {
     wl_signal_add(&seat->events.request_set_cursor, &request_cursor);
 
     // request_set_selection (seat)
-    request_set_selection.notify = [](struct wl_listener *listener,
-                                      void *data) {
+    request_set_selection.notify = [](wl_listener *listener, void *data) {
         // user selection
-        struct Server *server =
+        Server *server =
             wl_container_of(listener, server, request_set_selection);
 
-        struct wlr_seat_request_set_selection_event *event =
+        wlr_seat_request_set_selection_event *event =
             static_cast<wlr_seat_request_set_selection_event *>(data);
 
         wlr_seat_set_selection(server->seat, event->source, event->serial);
@@ -353,13 +346,13 @@ Server::Server(struct Config *config) {
     // virtual pointer manager
     virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(wl_display);
 
-    new_virtual_pointer.notify = [](struct wl_listener *listener, void *data) {
+    new_virtual_pointer.notify = [](wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_virtual_pointer);
 
-        struct wlr_virtual_pointer_v1_new_pointer_event *event =
+        wlr_virtual_pointer_v1_new_pointer_event *event =
             static_cast<wlr_virtual_pointer_v1_new_pointer_event *>(data);
-        struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
-        struct wlr_input_device *device = &pointer->pointer.base;
+        wlr_virtual_pointer_v1 *pointer = event->new_pointer;
+        wlr_input_device *device = &pointer->pointer.base;
 
         wlr_cursor_attach_input_device(server->cursor->cursor, device);
         if (event->suggested_output)
@@ -422,8 +415,8 @@ Server::Server(struct Config *config) {
     std::string socket;
     for (unsigned int i = 1; i <= 32; i++) {
         socket = "wayland-" + std::to_string(i);
-        int ret = wl_display_add_socket(wl_display, socket.c_str());
-        if (!ret)
+        if (const int ret = wl_display_add_socket(wl_display, socket.c_str());
+            !ret)
             break;
         else
             wlr_log(WLR_ERROR,
@@ -459,12 +452,12 @@ Server::Server(struct Config *config) {
     // init xwayland
     if ((xwayland = wlr_xwayland_create(wl_display, compositor, 1))) {
         // xwayland_ready
-        xwayland_ready.notify = [](struct wl_listener *listener, void *data) {
+        xwayland_ready.notify = [](wl_listener *listener, void *data) {
             Server *server = wl_container_of(listener, server, xwayland_ready);
 
             wlr_xwayland_set_seat(server->xwayland, server->seat);
 
-            struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
+            wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
                 server->cursor->cursor_mgr, "default", 1);
             if (xcursor) {
                 wlr_xwayland_set_cursor(
@@ -477,12 +470,11 @@ Server::Server(struct Config *config) {
         wl_signal_add(&xwayland->events.ready, &xwayland_ready);
 
         // new_xwayland_surface
-        new_xwayland_surface.notify = [](struct wl_listener *listener,
-                                         void *data) {
-            struct Server *server =
+        new_xwayland_surface.notify = [](wl_listener *listener, void *data) {
+            Server *server =
                 wl_container_of(listener, server, new_xwayland_surface);
 
-            struct wlr_xwayland_surface *surface =
+            wlr_xwayland_surface *surface =
                 static_cast<wlr_xwayland_surface *>(data);
             [[maybe_unused]] Toplevel *toplevel = new Toplevel(server, surface);
         };
@@ -496,33 +488,33 @@ Server::Server(struct Config *config) {
 #endif
 
     // set up signal handler
-    struct sigaction sa;
-    sa.sa_handler = [](int sig) {
+    struct sigaction sa{};
+    sa.sa_handler = [](const int sig) {
         if (sig == SIGCHLD)
-            while (waitpid(-1, NULL, WNOHANG) > 0)
+            while (waitpid(-1, nullptr, WNOHANG) > 0)
                 ;
         else if (sig == SIGINT || sig == SIGTERM)
             Server::get().exit();
     };
     sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
-    sigaction(SIGCHLD, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGPIPE, &sa, NULL);
+    sigaction(SIGCHLD, &sa, nullptr);
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGTERM, &sa, nullptr);
+    sigaction(SIGPIPE, &sa, nullptr);
 
-    // set wayland diplay to our socket
+    // set wayland display to our socket
     setenv("WAYLAND_DISPLAY", socket.c_str(), true);
 
     // set xdg current desktop for portals
     setenv("XDG_CURRENT_DESKTOP", "awm", true);
 
     // set envvars from config
-    for (std::pair<std::string, std::string> kv : config->startup_env)
-        setenv(kv.first.c_str(), kv.second.c_str(), true);
+    for (const auto &[key, value] : config->startup_env)
+        setenv(key.c_str(), value.c_str(), true);
 
     // run startup commands from config
-    for (std::string command : config->startup_commands)
+    for (const std::string &command : config->startup_commands)
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 
@@ -544,11 +536,11 @@ Server::Server(struct Config *config) {
     wl_display_run(wl_display);
 }
 
-void Server::exit() {
+void Server::exit() const {
     wl_display_terminate(wl_display);
 
     // run exit commands
-    for (std::string command : config->exit_commands)
+    for (const std::string &command : config->exit_commands)
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 }
@@ -572,7 +564,7 @@ Server::~Server() {
     wl_list_remove(&new_shell_surface.link);
     wl_list_remove(&new_virtual_pointer.link);
 
-    struct LayerSurface *surface, *tmp;
+    LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;
 
     wl_list_remove(&xwayland_ready.link);

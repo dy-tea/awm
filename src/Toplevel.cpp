@@ -1,27 +1,23 @@
 #include "Server.h"
 
-void Toplevel::map_notify(struct wl_listener *listener, void *data) {
+void Toplevel::map_notify(wl_listener *listener, void *data) {
     // on map or display
-    struct Toplevel *toplevel = wl_container_of(listener, toplevel, map);
-
-    struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
+    Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
     // xdg toplevel
-    if (xdg_toplevel) {
+    if (const wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel) {
 
         // get the focused output
-        Output *output = toplevel->server->focused_output();
-
-        if (output) {
+        if (Output *output = toplevel->server->focused_output()) {
             // set the fractional scale for this surface
-            float scale = output->wlr_output->scale;
+            const float scale = output->wlr_output->scale;
             wlr_fractional_scale_v1_notify_scale(xdg_toplevel->base->surface,
                                                  scale);
             wlr_surface_set_preferred_buffer_scale(xdg_toplevel->base->surface,
                                                    ceil(scale));
 
             // get usable area of the output
-            struct wlr_box usable_area = output->usable_area;
+            wlr_box usable_area = output->usable_area;
 
             // get scheduled width and height
             uint32_t width = xdg_toplevel->scheduled.width > 0
@@ -38,10 +34,11 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
             }
 
             // ensure size does not exceed output
-            width = std::min(width, (uint32_t)usable_area.width);
-            height = std::min(height, (uint32_t)usable_area.height);
+            width = std::min(width, static_cast<uint32_t>(usable_area.width));
+            height =
+                std::min(height, static_cast<uint32_t>(usable_area.height));
 
-            struct wlr_box output_box;
+            wlr_box output_box;
             wlr_output_layout_get_box(toplevel->server->output_manager->layout,
                                       output->wlr_output, &output_box);
 
@@ -87,18 +84,15 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
             wlr_xwayland_set_seat(toplevel->server->xwayland,
                                   toplevel->server->seat);
 
-        // get the focused output
-        Output *output = toplevel->server->focused_output();
-
         // add to active workspace
-        if (output)
+        if (Output *output = toplevel->server->focused_output())
             output->get_active()->add_toplevel(toplevel, true);
     }
 #endif
 }
 
-void Toplevel::unmap_notify(struct wl_listener *listener, void *data) {
-    struct Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
+void Toplevel::unmap_notify(wl_listener *listener, void *data) {
+    Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
 
     // deactivate
     if (toplevel == toplevel->server->grabbed_toplevel)
@@ -140,9 +134,8 @@ void Toplevel::create_handle() {
 #endif
 
     // handle_request_maximize
-    handle_request_maximize.notify = [](struct wl_listener *listener,
-                                        void *data) {
-        struct Toplevel *toplevel =
+    handle_request_maximize.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_maximize);
 
         wlr_foreign_toplevel_handle_v1_maximized_event *event =
@@ -154,9 +147,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
 
     // handle_request_minimize
-    handle_request_minimize.notify = [](struct wl_listener *listener,
-                                        void *data) {
-        struct Toplevel *toplevel =
+    handle_request_minimize.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_minimize);
 
         // wlr_foreign_toplevel_handle_v1_minimized_event *event =
@@ -174,9 +166,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.request_minimize, &handle_request_minimize);
 
     // handle_request_fullscreen
-    handle_request_fullscreen.notify = [](struct wl_listener *listener,
-                                          void *data) {
-        struct Toplevel *toplevel =
+    handle_request_fullscreen.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_fullscreen);
 
         wlr_foreign_toplevel_handle_v1_fullscreen_event *event =
@@ -202,9 +193,8 @@ void Toplevel::create_handle() {
                   &handle_request_fullscreen);
 
     // handle_request_activate
-    handle_request_activate.notify = [](struct wl_listener *listener,
-                                        void *data) {
-        struct Toplevel *toplevel =
+    handle_request_activate.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_activate);
 
         // send focus
@@ -214,8 +204,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.request_activate, &handle_request_activate);
 
     // handle_request_close
-    handle_request_close.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
+    handle_request_close.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_close);
 
         // send close
@@ -225,8 +215,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.request_close, &handle_request_close);
 
     // handle_set_rectangle
-    handle_set_rectangle.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
+    handle_set_rectangle.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_close);
 
         wlr_foreign_toplevel_handle_v1_set_rectangle_event *event =
@@ -242,8 +232,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.set_rectangle, &handle_set_rectangle);
 
     // handle_destroy
-    handle_destroy.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
+    handle_destroy.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_destroy);
 
         delete toplevel;
@@ -252,8 +242,7 @@ void Toplevel::create_handle() {
 }
 
 // Toplevel from xdg toplevel
-Toplevel::Toplevel(struct Server *server,
-                   struct wlr_xdg_toplevel *xdg_toplevel) {
+Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel) {
     // add the toplevel to the scene tree
     this->server = server;
     this->xdg_toplevel = xdg_toplevel;
@@ -274,10 +263,10 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &unmap);
 
     // xdg_toplevel_commit
-    commit.notify = [](struct wl_listener *listener, void *data) {
+    commit.notify = [](wl_listener *listener, void *data) {
         // on surface state change
-        struct Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
-        struct wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
+        Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
+        wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
 
         if (xdg_toplevel->base->initial_commit)
             // let client pick dimensions
@@ -286,9 +275,8 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 
     // xdg_toplevel_destroy
-    destroy.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, destroy);
+    destroy.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
 
         wl_list_remove(&toplevel->map.link);
         wl_list_remove(&toplevel->unmap.link);
@@ -312,9 +300,8 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
 
     // request_move
-    request_move.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, request_move);
+    request_move.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, request_move);
 
         // start interactivity
         toplevel->begin_interactive(CURSORMODE_MOVE, 0);
@@ -322,16 +309,16 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xdg_toplevel->events.request_move, &request_move);
 
     // request_resize
-    request_resize.notify = [](struct wl_listener *listener, void *data) {
+    request_resize.notify = [](wl_listener *listener, void *data) {
         /* This event is raised when a client would like to begin an interactive
          * resize, typically because the user clicked on their client-side
          * decorations. Note that a more sophisticated compositor should check
          * the provided serial against a list of button press serials sent to
          * this client, to prevent the client from requesting this whenever they
          * want. */
-        struct Toplevel *toplevel =
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_resize);
-        struct wlr_xdg_toplevel_resize_event *event =
+        wlr_xdg_toplevel_resize_event *event =
             static_cast<wlr_xdg_toplevel_resize_event *>(data);
 
         toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
@@ -339,8 +326,8 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
 
     // request_maximize
-    request_maximize.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
+    request_maximize.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_maximize);
 
         toplevel->set_maximized(toplevel->xdg_toplevel->requested.maximized);
@@ -348,8 +335,8 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xdg_toplevel->events.request_maximize, &request_maximize);
 
     // request_fullscreen
-    request_fullscreen.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
+    request_fullscreen.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_fullscreen);
 
         toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
@@ -362,8 +349,7 @@ Toplevel::~Toplevel() {}
 
 // Toplevel from xwayland surface
 #ifdef XWAYLAND
-Toplevel::Toplevel(struct Server *server,
-                   struct wlr_xwayland_surface *xwayland_surface) {
+Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface) {
     this->server = server;
     this->xwayland_surface = xwayland_surface;
 
@@ -371,9 +357,8 @@ Toplevel::Toplevel(struct Server *server,
     create_handle();
 
     // destroy
-    destroy.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, destroy);
+    destroy.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
 
         wl_list_remove(&toplevel->destroy.link);
         wl_list_remove(&toplevel->activate.link);
@@ -394,10 +379,9 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xwayland_surface->events.destroy, &destroy);
 
     // activate
-    activate.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, activate);
-        struct wlr_xwayland_surface *xwayland_surface =
+    activate.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, activate);
+        const wlr_xwayland_surface *xwayland_surface =
             toplevel->xwayland_surface;
 
         if (xwayland_surface->surface == NULL ||
@@ -410,9 +394,8 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xwayland_surface->events.request_activate, &activate);
 
     // associate
-    associate.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, associate);
+    associate.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, associate);
 
         // map
         toplevel->map.notify = map_notify;
@@ -427,9 +410,8 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xwayland_surface->events.associate, &associate);
 
     // dissociate
-    dissociate.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, dissociate);
+    dissociate.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, dissociate);
 
         // unmap
         wl_list_remove(&toplevel->map.link);
@@ -438,11 +420,10 @@ Toplevel::Toplevel(struct Server *server,
     wl_signal_add(&xwayland_surface->events.dissociate, &dissociate);
 
     // configure
-    configure.notify = [](struct wl_listener *listener, void *data) {
-        struct Toplevel *toplevel =
-            wl_container_of(listener, toplevel, configure);
+    configure.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, configure);
 
-        struct wlr_xwayland_surface_configure_event *event =
+        wlr_xwayland_surface_configure_event *event =
             static_cast<wlr_xwayland_surface_configure_event *>(data);
 
         // unconfigured
@@ -474,9 +455,9 @@ Toplevel::Toplevel(struct Server *server,
 #endif
 
 // focus keyboard to surface
-void Toplevel::focus() {
-    struct wlr_seat *seat = server->seat;
-    struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
+void Toplevel::focus() const {
+    wlr_seat *seat = server->seat;
+    wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
 
     if ((xdg_toplevel && xdg_toplevel->base && xdg_toplevel->base->surface)
 #ifdef XWAYLAND
@@ -486,10 +467,10 @@ void Toplevel::focus() {
     ) {
 #ifdef XWAYLAND
         // handle xdg toplevel or xwayland surface
-        struct wlr_surface *surface = xdg_toplevel ? xdg_toplevel->base->surface
-                                                   : xwayland_surface->surface;
+        wlr_surface *surface = xdg_toplevel ? xdg_toplevel->base->surface
+                                            : xwayland_surface->surface;
 #else
-        struct wlr_surface *surface = xdg_toplevel->base->surface;
+        wlr_surface *surface = xdg_toplevel->base->surface;
 #endif
 
         // cannot focus unmapped surface
@@ -503,12 +484,12 @@ void Toplevel::focus() {
         // deactivate previous surface
         if (prev_surface) {
             // xdg toplevel
-            struct wlr_xdg_toplevel *prev_toplevel =
+            wlr_xdg_toplevel *prev_toplevel =
                 wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
 
 #ifdef XWAYLAND
             // xwayland surface
-            struct wlr_xwayland_surface *prev_xwayland_surface =
+            wlr_xwayland_surface *prev_xwayland_surface =
                 wlr_xwayland_surface_try_from_wlr_surface(prev_surface);
 #endif
             // check xdg toplevel
@@ -522,7 +503,7 @@ void Toplevel::focus() {
         }
 
         // get keyboard
-        struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
+        wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
 
         // move toplevel node to top of scene tree
 #ifdef XWAYLAND
@@ -536,12 +517,12 @@ void Toplevel::focus() {
         if (xdg_toplevel)
             wlr_xdg_toplevel_set_activated(xdg_toplevel, true);
 #ifdef XWAYLAND
-        else if (xwayland_surface)
+        else
             wlr_xwayland_surface_activate(xwayland_surface, true);
 #endif
 
         // set seat keyboard focused surface to toplevel
-        if (keyboard != NULL)
+        if (keyboard)
             wlr_seat_keyboard_notify_enter(seat, surface, keyboard->keycodes,
                                            keyboard->num_keycodes,
                                            &keyboard->modifiers);
@@ -549,7 +530,7 @@ void Toplevel::focus() {
 }
 
 // move or resize toplevel
-void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
+void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
     server->grabbed_toplevel = this;
 
     Cursor *cursor = server->cursor;
@@ -574,7 +555,7 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
         if (!target->contains(this) && current) {
             current->move_to(this, target);
 
-            struct wlr_box output_box = target->output->layout_geometry;
+            wlr_box output_box = target->output->layout_geometry;
 
             double new_x = cursor->cursor->x - cursor->grab_x;
             double new_y = cursor->cursor->y - cursor->grab_y;
@@ -591,9 +572,9 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
             return;
 
         // get toplevel geometry
-        struct wlr_box *geo_box = &xdg_toplevel->base->geometry;
+        wlr_box *geo_box = &xdg_toplevel->base->geometry;
 
-        // calcualate borders
+        // calculate borders
         double border_x = (scene_tree->node.x + geo_box->x) +
                           ((edges & WLR_EDGE_RIGHT) ? geo_box->width : 0);
         double border_y = (scene_tree->node.y + geo_box->y) +
@@ -614,13 +595,14 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
 }
 
 // set the position and size of a toplevel, send a configure
-void Toplevel::set_position_size(double x, double y, int width, int height) {
+void Toplevel::set_position_size(double x, double y, const int width,
+                                 const int height) {
     // get output layout at cursor
-    struct wlr_output *wlr_output = server->focused_output()->wlr_output;
+    const wlr_output *wlr_output = server->focused_output()->wlr_output;
 
     if (xdg_toplevel) {
         // get output scale
-        float scale = wlr_output->scale;
+        const float scale = wlr_output->scale;
 
         if (xdg_toplevel->current.maximized)
             // unmaximize if maximized
@@ -643,13 +625,13 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
 #endif
 }
 
-void Toplevel::set_position_size(struct wlr_fbox geometry) {
+void Toplevel::set_position_size(const wlr_fbox &geometry) {
     set_position_size(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
 // get the geometry of the toplevel
-struct wlr_fbox Toplevel::get_geometry() {
-    struct wlr_fbox geometry;
+wlr_fbox Toplevel::get_geometry() const {
+    wlr_fbox geometry{};
 
     if (xdg_toplevel) {
         geometry.x = scene_tree->node.x;
@@ -682,19 +664,19 @@ void Toplevel::set_hidden(bool hidden) {
 }
 
 // set the toplevel to be fullscreened
-void Toplevel::set_fullscreen(bool fullscreen) {
+void Toplevel::set_fullscreen(const bool fullscreen) {
     // cannot fullscreen
     if (!xdg_toplevel->base->initialized)
         return;
 
     // get output
-    Output *output = server->focused_output();
+    const Output *output = server->focused_output();
 
     // get output scale
-    float scale = output->wlr_output->scale;
+    const float scale = output->wlr_output->scale;
 
     // get output geometry
-    struct wlr_box output_box;
+    wlr_box output_box{};
     wlr_output_layout_get_box(server->output_manager->layout,
                               output->wlr_output, &output_box);
 
@@ -740,13 +722,13 @@ void Toplevel::set_maximized(bool maximized) {
         wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, false);
 
     // get output
-    Output *output = server->focused_output();
+    const Output *output = server->focused_output();
 
     // get output scale
     float scale = output->wlr_output->scale;
 
     // get usable output area
-    struct wlr_box output_box = output->usable_area;
+    wlr_box output_box = output->usable_area;
 
     if (maximized) {
         // save current geometry
@@ -773,7 +755,7 @@ void Toplevel::set_maximized(bool maximized) {
 }
 
 // update foreign toplevel on window state change
-void Toplevel::update_foreign_toplevel() {
+void Toplevel::update_foreign_toplevel() const {
     // update foreign state with xdg toplevel state
     wlr_foreign_toplevel_handle_v1_set_maximized(
         handle, xdg_toplevel->current.maximized);
@@ -784,7 +766,7 @@ void Toplevel::update_foreign_toplevel() {
 }
 
 // tell the toplevel to close
-void Toplevel::close() {
+void Toplevel::close() const {
     if (xdg_toplevel)
         wlr_xdg_toplevel_send_close(xdg_toplevel);
 #ifdef XWAYLAND

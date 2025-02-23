@@ -9,7 +9,7 @@ struct Bind {
     uint32_t modifiers{0};
     xkb_keysym_t sym;
 
-    bool operator==(const Bind other) {
+    bool operator==(const Bind other) const {
         return modifiers == other.modifiers && sym == other.sym;
     }
 };
@@ -24,20 +24,20 @@ struct OutputConfig {
     double scale{1.0};
     bool adaptive_sync{false};
 
-    OutputConfig() {};
+    OutputConfig() = default;
 
-    OutputConfig(struct wlr_output_configuration_head_v1 *config_head) {
+    explicit OutputConfig(const wlr_output_configuration_head_v1 *config_head) {
         enabled = config_head->state.enabled;
 
-        if (config_head->state.mode != NULL) {
-            struct wlr_output_mode *mode = config_head->state.mode;
+        if (config_head->state.mode) {
+            wlr_output_mode *mode = config_head->state.mode;
             width = mode->width;
             height = mode->height;
-            refresh = mode->refresh / 1000.f;
+            refresh = mode->refresh / 1000.0;
         } else {
             width = config_head->state.custom_mode.width;
             height = config_head->state.custom_mode.height;
-            refresh = config_head->state.custom_mode.refresh / 1000.f;
+            refresh = config_head->state.custom_mode.refresh / 1000.0;
         }
         x = config_head->state.x;
         y = config_head->state.y;
@@ -59,10 +59,10 @@ struct Config {
 
     // keyboard
     std::string keyboard_layout{"us"};
-    std::string keyboard_model{""};
-    std::string keyboard_variant{""};
-    std::string keyboard_options{""};
-    int repeat_rate{25}, repeat_delay{600};
+    std::string keyboard_model;
+    std::string keyboard_variant;
+    std::string keyboard_options;
+    int64_t repeat_rate{25}, repeat_delay{600};
 
     // cursor
     struct {
@@ -75,7 +75,7 @@ struct Config {
         bool natural_scroll{true};
         libinput_config_dwt_state disable_while_typing{
             LIBINPUT_CONFIG_DWT_ENABLED};
-        int left_handed{0};
+        int64_t left_handed{0};
         libinput_config_middle_emulation_state middle_emulation{
             LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED};
         libinput_config_scroll_method scroll_method{LIBINPUT_CONFIG_SCROLL_2FG};
@@ -146,15 +146,10 @@ struct Config {
     std::vector<OutputConfig *> outputs;
 
     Config();
-    Config(std::string path);
-    ~Config();
+    explicit Config(const std::string &path);
+    ~Config() = default;
 
     bool load();
 
-    void set_bind(std::string name, toml::Table *source, Bind *target);
-    struct Bind *parse_bind(std::string definition);
-
-    template <typename T> void connect(std::pair<bool, T> pair, T *target);
-
-    void update(struct Server *server);
+    void update(const struct Server *server);
 };

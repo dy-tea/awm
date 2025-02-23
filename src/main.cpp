@@ -2,9 +2,9 @@
 
 #include <wordexp.h>
 
-int main(int argc, char *argv[]) {
+int main(const int argc, char *argv[]) {
     // start logger
-    wlr_log_init(WLR_DEBUG, NULL);
+    wlr_log_init(WLR_DEBUG, nullptr);
 
     // startup and config
     std::string startup_cmd, config_path;
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     }
 
     // load config
-    struct Config *config;
+    Config *config;
 
     if (config_path.empty()) {
         wlr_log(WLR_INFO, "No config found, loading defaults");
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
         config->startup_commands.push_back(startup_cmd);
 
     // start server
-    struct Server *server = new Server(config);
+    Server *server = new Server(config);
     delete server;
     delete config;
 }

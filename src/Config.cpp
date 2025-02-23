@@ -3,13 +3,75 @@
 #include <libinput.h>
 #include <sstream>
 
+// get the wlr modifier enum value from the string representation
+uint32_t parse_modifier(const std::string &modifier) {
+    const std::string modifiers[] = {
+        "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
+    };
+
+    for (int i = 0; i != 8; ++i)
+        if (modifier == modifiers[i])
+            return 1 << i;
+
+    return 69420;
+}
+
+// create a bind from a space-seperated string of modifiers and key
+Bind *parse_bind(const std::string &definition) {
+    Bind *bind = new Bind;
+
+    std::string token;
+    std::stringstream ss(definition);
+
+    while (std::getline(ss, token, ' ')) {
+        if (token == "Number") {
+            bind->sym = XKB_KEY_NoSymbol;
+            continue;
+        }
+
+        const xkb_keysym_t sym =
+            xkb_keysym_from_name(token.c_str(), XKB_KEYSYM_NO_FLAGS);
+
+        if (sym == XKB_KEY_NoSymbol) {
+            const uint32_t modifier = parse_modifier(token);
+
+            if (modifier == 69420) {
+                notify_send("No such keycode or modifier '%s'", token.c_str());
+                delete bind;
+                return nullptr;
+            }
+
+            bind->modifiers |= modifier;
+        } else
+            bind->sym = sym;
+    }
+
+    return bind;
+}
+
+// helper function to bind a variable from a given table and row name
+void set_bind(const std::string &name, const toml::Table *source,
+              Bind *target) {
+    if (auto [fst, snd] = source->getString(name); fst)
+        if (const Bind *parsed = parse_bind(snd)) {
+            *target = *parsed;
+            delete parsed;
+        }
+}
+
+// helper function to connect the second pair if the first bool is true
+template <typename T> void connect(const std::pair<bool, T> &pair, T *target) {
+    if (pair.first)
+        *target = pair.second;
+}
+
 Config::Config() {
     path = "";
     last_write_time = std::filesystem::file_time_type::min();
     load();
 }
 
-Config::Config(std::string path) {
+Config::Config(const std::string &path) {
     // path
     this->path = path;
 
@@ -19,8 +81,6 @@ Config::Config(std::string path) {
     // load config at path
     load();
 }
-
-Config::~Config() {}
 
 // load config from path
 bool Config::load() {
@@ -39,11 +99,9 @@ bool Config::load() {
         config_file.table->getTable("startup");
     if (startup) {
         // startup commands
-        std::unique_ptr<toml::Array> exec = startup->getArray("exec");
 
-        if (exec) {
-            auto commands = exec->getStringVector();
-            if (commands) {
+        if (std::unique_ptr<toml::Array> exec = startup->getArray("exec")) {
+            if (auto commands = exec->getStringVector()) {
                 // clear commands
                 startup_commands.clear();
 
@@ -54,24 +112,18 @@ bool Config::load() {
         }
 
         // renderer
-        auto r = startup->getString("renderer");
-        if (r.first)
-            renderer = r.second;
+        connect(startup->getString("renderer"), &renderer);
 
         // env vars
-        std::unique_ptr<toml::Array> env = startup->getArray("env");
-
-        if (env) {
-            auto tables = env->getTableVector();
-
-            if (tables)
-                for (toml::Table table : *tables) {
+        if (std::unique_ptr<toml::Array> env = startup->getArray("env")) {
+            if (auto tables = env->getTableVector())
+                for (const toml::Table &table : *tables) {
                     std::vector<std::string> keys = table.keys();
 
                     // clear env vars
                     startup_env.clear();
 
-                    for (std::string key : keys) {
+                    for (const std::string &key : keys) {
                         // try both string and int values
                         auto intval = table.getInt(key);
                         auto stringval = table.getString(key);
@@ -94,10 +146,8 @@ bool Config::load() {
         config_file.table->getTable("exit");
     if (exit_table) {
         // list of commands to run on exit
-        auto exec = exit_table->getArray("exec");
-        if (exec) {
-            auto commands = exec->getStringVector();
-            if (commands) {
+        if (auto exec = exit_table->getArray("exec")) {
+            if (auto commands = exec->getStringVector()) {
                 // clear exit commands
                 exit_commands.clear();
 
@@ -113,34 +163,22 @@ bool Config::load() {
         config_file.table->getTable("keyboard");
     if (keyboard) {
         // get layout
-        auto layout = keyboard->getString("layout");
-        if (layout.first)
-            keyboard_layout = layout.second;
+        connect(keyboard->getString("layout"), &keyboard_layout);
 
         // get model
-        auto model = keyboard->getString("model");
-        if (model.first)
-            keyboard_model = model.second;
+        connect(keyboard->getString("model"), &keyboard_model);
 
         // get variant
-        auto variant = keyboard->getString("variant");
-        if (variant.first)
-            keyboard_variant = variant.second;
+        connect(keyboard->getString("variant"), &keyboard_variant);
 
         // get options
-        auto options = keyboard->getString("options");
-        if (options.first)
-            keyboard_options = options.second;
+        connect(keyboard->getString("options"), &keyboard_options);
 
         // repeat rate
-        auto rate = keyboard->getInt("repeat_rate");
-        if (rate.first)
-            repeat_rate = rate.second;
+        connect(keyboard->getInt("repeat_rate"), &repeat_rate);
 
         // repeat delay
-        auto delay = keyboard->getInt("repeat_delay");
-        if (delay.first)
-            repeat_delay = delay.second;
+        connect(keyboard->getInt("repeat_delay"), &repeat_delay);
     } else
         // no keyboard config
         wlr_log(WLR_INFO, "no keyboard configuration found, using us layout");
@@ -153,13 +191,13 @@ bool Config::load() {
         auto tap_to_click = pointer->getBool("tap_to_click");
         if (tap_to_click.first)
             cursor.tap_to_click =
-                (libinput_config_tap_state)tap_to_click.second;
+                static_cast<libinput_config_tap_state>(tap_to_click.second);
 
         // tap and drag
         auto tap_and_drag = pointer->getBool("tap_and_drag");
         if (tap_and_drag.first)
             cursor.tap_and_drag =
-                (libinput_config_drag_state)tap_and_drag.second;
+                static_cast<libinput_config_drag_state>(tap_and_drag.second);
 
         // drag lock
         auto drag_lock = pointer->getString("drag_lock");
@@ -178,8 +216,8 @@ bool Config::load() {
                             drag_lock.second.c_str());
         }
 
-        // tap buttom map
-        auto tap_button_map = pointer->getString("tap_buttom_map");
+        // tap button map
+        auto tap_button_map = pointer->getString("tap_button_map");
         if (tap_button_map.first) {
             if (tap_button_map.second == "lrm")
                 cursor.tap_button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
@@ -192,26 +230,24 @@ bool Config::load() {
         }
 
         // natural scroll
-        auto natural_scroll = pointer->getBool("natural_scroll");
-        if (natural_scroll.first)
-            cursor.natural_scroll = natural_scroll.second;
+        connect(pointer->getBool("natural_scroll"), &cursor.natural_scroll);
 
         // disable while typing
         auto disable_while_typing = pointer->getBool("disable_while_typing");
         if (disable_while_typing.first)
             cursor.disable_while_typing =
-                (libinput_config_dwt_state)disable_while_typing.second;
+                static_cast<libinput_config_dwt_state>(
+                    disable_while_typing.second);
 
-        // left handed
-        auto left_handed = pointer->getInt("left_handed");
-        if (left_handed.first)
-            cursor.left_handed = left_handed.second;
+        // left-handed
+        connect(pointer->getInt("left_handed"), &cursor.left_handed);
 
         // middle emulation
         auto middle_emulation = pointer->getBool("middle_emulation");
         if (middle_emulation.first)
             cursor.middle_emulation =
-                (libinput_config_middle_emulation_state)middle_emulation.second;
+                static_cast<libinput_config_middle_emulation_state>(
+                    middle_emulation.second);
 
         // scroll method
         auto scroll_method = pointer->getString("scroll_method");
@@ -246,40 +282,36 @@ bool Config::load() {
         }
 
         // event mode
-        auto event_mode = pointer->getString("event_mode");
-        if (event_mode.first) {
-            if (event_mode.second == "enabled")
+        if (auto [fst, snd] = pointer->getString("event_mode"); fst) {
+            if (snd == "enabled")
                 cursor.event_mode = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
-            else if (event_mode.second == "disabled")
+            else if (snd == "disabled")
                 cursor.event_mode = LIBINPUT_CONFIG_SEND_EVENTS_DISABLED;
-            else if (event_mode.second == "mousedisabled")
+            else if (snd == "mousedisabled")
                 cursor.event_mode =
                     LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
             else
                 notify_send("No such option in pointer.event_mode ['enabled', "
                             "'disabled', 'mousedisabled']: %s",
-                            event_mode.second.c_str());
+                            snd.c_str());
         }
 
         // profile
-        auto profile = pointer->getString("profile");
-        if (profile.first) {
-            if (profile.second == "none")
+        if (auto [fst, snd] = pointer->getString("profile"); fst) {
+            if (snd == "none")
                 cursor.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
-            else if (profile.second == "flat")
+            else if (snd == "flat")
                 cursor.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
-            else if (profile.second == "adaptive")
+            else if (snd == "adaptive")
                 cursor.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
             else
                 notify_send("No such option in pointer.profile ['none', "
                             "'flat', 'adaptive']: %s",
-                            profile.second.c_str());
+                            snd.c_str());
         }
 
         // accel speed
-        auto accel_speed = pointer->getDouble("accel_speed");
-        if (accel_speed.first)
-            cursor.accel_speed = accel_speed.second;
+        connect(pointer->getDouble("accel_speed"), &cursor.accel_speed);
     }
 
     // get awm binds
@@ -360,7 +392,7 @@ bool Config::load() {
         commands.clear();
 
         if (tables)
-            for (toml::Table &table : *tables.get()) {
+            for (toml::Table &table : *tables) {
                 auto bind = table.getString("bind");
                 auto exec = table.getString("exec");
 
@@ -379,9 +411,8 @@ bool Config::load() {
     std::unique_ptr<toml::Array> monitor_tables =
         config_file.table->getArray("monitors");
     if (monitor_tables) {
-        auto tables = monitor_tables->getTableVector();
-        if (tables)
-            for (toml::Table &table : *tables.get()) {
+        if (auto tables = monitor_tables->getTableVector())
+            for (toml::Table &table : *tables) {
                 // create new output config
                 OutputConfig *oc = new OutputConfig();
 
@@ -414,7 +445,7 @@ bool Config::load() {
                     for (int i = 0; i != WL_OUTPUT_TRANSFORM_FLIPPED_270 + 1;
                          ++i)
                         if (transform.second == transform_values[i]) {
-                            oc->transform = (wl_output_transform)i;
+                            oc->transform = static_cast<wl_output_transform>(i);
                             break;
                         }
 
@@ -442,72 +473,10 @@ bool Config::load() {
     return true;
 }
 
-// get the wlr modifier enum value from the string representation
-uint32_t parse_modifier(std::string modifier) {
-    const std::string modifiers[] = {
-        "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
-    };
-
-    for (int i = 0; i != 8; ++i)
-        if (modifier == modifiers[i])
-            return 1 << i;
-
-    return 69420;
-}
-
-// create a bind from a space-seperated string of modifiers and key
-struct Bind *Config::parse_bind(std::string definition) {
-    Bind *bind = new Bind;
-
-    std::string token;
-    std::stringstream ss(definition);
-
-    while (std::getline(ss, token, ' ')) {
-        if (token == "Number") {
-            bind->sym = XKB_KEY_NoSymbol;
-            continue;
-        }
-
-        xkb_keysym_t sym =
-            xkb_keysym_from_name(token.c_str(), XKB_KEYSYM_NO_FLAGS);
-
-        if (sym == XKB_KEY_NoSymbol) {
-            uint32_t modifier = parse_modifier(token);
-
-            if (modifier == 69420) {
-                notify_send("No such keycode or modifier '%s'", token.c_str());
-                delete bind;
-                return nullptr;
-            }
-
-            bind->modifiers |= modifier;
-        } else
-            bind->sym = sym;
-    }
-
-    return bind;
-}
-
-// helper function to bind a variable from a given table and row name
-void Config::set_bind(std::string name, toml::Table *source, Bind *target) {
-    auto row = source->getString(name);
-    if (row.first)
-        if (Bind *parsed = parse_bind(row.second)) {
-            *target = *parsed;
-            delete parsed;
-        }
-}
-
-// helper function to connect the second pair if the first bool is true
-template <typename T> void Config::connect(std::pair<bool, T> pair, T *target) {
-    if (pair.first)
-        *target = pair.second;
-}
-
 // update the config
-void Config::update(struct Server *server) {
+void Config::update(const Server *server) {
     // get current write time
-    std::filesystem::file_time_type current_write_time =
+    const std::filesystem::file_time_type current_write_time =
         std::filesystem::last_write_time(path);
 
     // check if the file has been modified
@@ -522,7 +491,7 @@ void Config::update(struct Server *server) {
         return;
 
     // update keyboard config
-    struct wlr_keyboard *wlr_keyboard = wlr_seat_get_keyboard(server->seat);
+    const wlr_keyboard *wlr_keyboard = wlr_seat_get_keyboard(server->seat);
     Keyboard *keyboard = static_cast<Keyboard *>(wlr_keyboard->data);
     keyboard->update_config();
 

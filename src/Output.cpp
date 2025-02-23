@@ -1,6 +1,6 @@
 #include "Server.h"
 
-Output::Output(struct Server *server, struct wlr_output *wlr_output) {
+Output::Output(Server *server, struct wlr_output *wlr_output) {
     this->wlr_output = wlr_output;
     this->server = server;
     wl_list_init(&workspaces);
@@ -24,19 +24,19 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     update_position();
 
     // frame
-    frame.notify = [](struct wl_listener *listener, void *data) {
+    frame.notify = [](wl_listener *listener, void *data) {
         // called once per frame
-        struct Output *output = wl_container_of(listener, output, frame);
-        struct wlr_scene *scene = output->server->scene;
+        Output *output = wl_container_of(listener, output, frame);
+        wlr_scene *scene = output->server->scene;
 
-        struct wlr_scene_output *scene_output =
+        wlr_scene_output *scene_output =
             wlr_scene_get_scene_output(scene, output->wlr_output);
 
         // render scene
-        wlr_scene_output_commit(scene_output, NULL);
+        wlr_scene_output_commit(scene_output, nullptr);
 
         // get frame time
-        struct timespec now;
+        timespec now{};
         clock_gettime(CLOCK_MONOTONIC, &now);
         wlr_scene_output_send_frame_done(scene_output, &now);
 
@@ -45,11 +45,10 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     wl_signal_add(&wlr_output->events.frame, &frame);
 
     // request_state
-    request_state.notify = [](struct wl_listener *listener, void *data) {
-        struct Output *output =
-            wl_container_of(listener, output, request_state);
+    request_state.notify = [](wl_listener *listener, void *data) {
+        Output *output = wl_container_of(listener, output, request_state);
 
-        const struct wlr_output_event_request_state *event =
+        const wlr_output_event_request_state *event =
             static_cast<wlr_output_event_request_state *>(data);
 
         wlr_output_commit_state(output->wlr_output, event->state);
@@ -58,8 +57,8 @@ Output::Output(struct Server *server, struct wlr_output *wlr_output) {
     wl_signal_add(&wlr_output->events.request_state, &request_state);
 
     // destroy
-    destroy.notify = [](struct wl_listener *listener, void *data) {
-        struct Output *output = wl_container_of(listener, output, destroy);
+    destroy.notify = [](wl_listener *listener, void *data) {
+        Output *output = wl_container_of(listener, output, destroy);
         delete output;
     };
     wl_signal_add(&wlr_output->events.destroy, &destroy);
@@ -77,9 +76,9 @@ Output::~Output() {
 
 // arrange all layers
 void Output::arrange_layers() {
-    struct wlr_box usable = {0};
+    wlr_box usable = {0};
     wlr_output_effective_resolution(wlr_output, &usable.width, &usable.height);
-    const struct wlr_box full_area = usable;
+    const wlr_box full_area = usable;
 
     // exclusive surfaces
     arrange_layer_surface(&full_area, &usable, layers.overlay, true);
@@ -94,18 +93,18 @@ void Output::arrange_layers() {
     arrange_layer_surface(&full_area, &usable, layers.background, false);
 
     // check if usable area changed
-    if (memcmp(&usable, &usable_area, sizeof(struct wlr_box)) != 0)
+    if (memcmp(&usable, &usable_area, sizeof(wlr_box)) != 0)
         usable_area = usable;
 
     // handle keyboard interactive layers
     LayerSurface *topmost = nullptr;
-    struct wlr_scene_tree *layers_above_shell[] = {layers.overlay, layers.top};
+    wlr_scene_tree *layers_above_shell[] = {layers.overlay, layers.top};
 
-    for (auto layer : layers_above_shell) {
-        struct wlr_scene_node *node;
+    for (const wlr_scene_tree *layer : layers_above_shell) {
+        wlr_scene_node *node;
         wl_list_for_each_reverse(node, &layer->children, link) {
-            LayerSurface *surface = static_cast<LayerSurface *>(node->data);
-            if (surface &&
+            if (LayerSurface *surface = static_cast<LayerSurface *>(node->data);
+                surface &&
                 surface->wlr_layer_surface->current.keyboard_interactive ==
                     ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
                 surface->wlr_layer_surface->surface->mapped) {
@@ -121,13 +120,13 @@ void Output::arrange_layers() {
 }
 
 // arrange a surface layer
-void Output::arrange_layer_surface(const struct wlr_box *full_area,
-                                   struct wlr_box *usable_area,
-                                   struct wlr_scene_tree *tree,
-                                   bool exclusive) {
-    struct wlr_scene_node *node;
+void Output::arrange_layer_surface(const wlr_box *full_area,
+                                   wlr_box *usable_area,
+                                   const wlr_scene_tree *tree,
+                                   const bool exclusive) {
+    wlr_scene_node *node;
     wl_list_for_each(node, &tree->children, link) {
-        LayerSurface *surface = (LayerSurface *)node->data;
+        const LayerSurface *surface = static_cast<LayerSurface *>(node->data);
         if (!surface || !surface->wlr_layer_surface->initialized)
             continue;
 
@@ -141,8 +140,8 @@ void Output::arrange_layer_surface(const struct wlr_box *full_area,
 }
 
 // get a layer shell layer
-struct wlr_scene_tree *
-Output::shell_layer(enum zwlr_layer_shell_v1_layer layer) {
+wlr_scene_tree *
+Output::shell_layer(const enum zwlr_layer_shell_v1_layer layer) const {
     switch (layer) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
         return layers.background;
@@ -158,15 +157,15 @@ Output::shell_layer(enum zwlr_layer_shell_v1_layer layer) {
 }
 
 // create a new workspace for this output
-struct Workspace *Output::new_workspace() {
-    struct Workspace *workspace = new Workspace(this, max_workspace++);
+Workspace *Output::new_workspace() {
+    Workspace *workspace = new Workspace(this, max_workspace++);
 
     wl_list_insert(&workspaces, &workspace->link);
     return workspace;
 }
 
 // get the workspace numbered n
-struct Workspace *Output::get_workspace(uint32_t n) {
+Workspace *Output::get_workspace(const uint32_t n) const {
     Workspace *workspace, *tmp;
     wl_list_for_each_safe(workspace, tmp, &workspaces,
                           link) if (workspace->num == n) return workspace;
@@ -175,7 +174,7 @@ struct Workspace *Output::get_workspace(uint32_t n) {
 }
 
 // get the currently focused workspace
-struct Workspace *Output::get_active() {
+Workspace *Output::get_active() const {
     if (wl_list_empty(&workspaces))
         return nullptr;
 
@@ -184,7 +183,7 @@ struct Workspace *Output::get_active() {
 }
 
 // change the focused workspace to workspace n
-bool Output::set_workspace(uint32_t n) {
+bool Output::set_workspace(const uint32_t n) {
     Workspace *requested = get_workspace(n);
 
     // workspace does not exist
@@ -192,8 +191,7 @@ bool Output::set_workspace(uint32_t n) {
         return false;
 
     // hide workspace we are moving from
-    Workspace *previous = get_active();
-    if (previous)
+    if (Workspace *previous = get_active())
         previous->set_hidden(true);
 
     // set new workspace to the active one
@@ -214,9 +212,9 @@ void Output::update_position() {
 }
 
 // apply a config to the output
-bool Output::apply_config(struct OutputConfig *config, bool test_only) {
+bool Output::apply_config(const OutputConfig *config, const bool test_only) {
     // create output state
-    struct wlr_output_state state;
+    wlr_output_state state{};
     wlr_output_state_init(&state);
 
     // enabled
@@ -227,18 +225,19 @@ bool Output::apply_config(struct OutputConfig *config, bool test_only) {
         bool mode_set = false;
         if (config->width > 0 && config->height > 0 && config->refresh > 0) {
             // find matching mode
-            struct wlr_output_mode *mode, *best_mode = nullptr;
+            wlr_output_mode *mode, *best_mode = nullptr;
             wl_list_for_each(
                 mode, &wlr_output->modes,
                 link) if ((mode->width == config->width &&
                            mode->height == config->height) &&
                           (!best_mode ||
-                           (abs((int)(mode->refresh / 1000.0 -
-                                      config->refresh)) < 1.5 &&
-                            abs((int)(mode->refresh / 1000.0 -
-                                      config->refresh)) <
-                                abs((int)(best_mode->refresh / 1000.0 -
-                                          config->refresh))))) best_mode = mode;
+                           (abs(static_cast<int>(mode->refresh / 1000.0 -
+                                                 config->refresh)) < 1.5 &&
+                            abs(static_cast<int>(mode->refresh / 1000.0 -
+                                                 config->refresh)) <
+                                abs(static_cast<int>(
+                                    best_mode->refresh / 1000.0 -
+                                    config->refresh))))) best_mode = mode;
 
             if (best_mode) {
                 wlr_output_state_set_mode(&state, best_mode);
@@ -256,7 +255,8 @@ bool Output::apply_config(struct OutputConfig *config, bool test_only) {
 
         // scale
         if (config->scale > 0)
-            wlr_output_state_set_scale(&state, config->scale);
+            wlr_output_state_set_scale(&state,
+                                       static_cast<float>(config->scale));
 
         // transform
         wlr_output_state_set_transform(&state, config->transform);
@@ -277,7 +277,8 @@ bool Output::apply_config(struct OutputConfig *config, bool test_only) {
         if (success) {
             // update position
             wlr_output_layout_add(server->output_manager->layout, wlr_output,
-                                  config->x, config->y);
+                                  static_cast<int>(config->x),
+                                  static_cast<int>(config->y));
 
             // rearrange
             arrange_layers();

@@ -1,20 +1,19 @@
 #include "wlr.h"
 
 struct LayerSurface {
-    struct wl_list link;
+    wl_list link;
     struct Output *output;
-    struct wlr_layer_surface_v1 *wlr_layer_surface;
-    struct wlr_scene_layer_surface_v1 *scene_layer_surface;
-    struct wl_listener map;
-    struct wl_listener unmap;
-    struct wl_listener commit;
-    struct wl_listener new_popup;
-    struct wl_listener destroy;
+    wlr_layer_surface_v1 *wlr_layer_surface;
+    wlr_scene_layer_surface_v1 *scene_layer_surface;
+    wl_listener map;
+    wl_listener unmap;
+    wl_listener commit;
+    wl_listener new_popup;
+    wl_listener destroy;
 
     bool mapped{false};
 
-    LayerSurface(struct Output *output,
-                 struct wlr_layer_surface_v1 *wlr_layer_surface);
+    LayerSurface(Output *output, wlr_layer_surface_v1 *wlr_layer_surface);
     ~LayerSurface();
 
     void handle_focus();

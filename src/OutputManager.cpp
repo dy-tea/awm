@@ -1,7 +1,7 @@
 #include "Server.h"
 #include <map>
 
-OutputManager::OutputManager(struct Server *server) {
+OutputManager::OutputManager(Server *server) {
     this->server = server;
 
     layout = wlr_output_layout_create(server->wl_display);
@@ -12,7 +12,7 @@ OutputManager::OutputManager(struct Server *server) {
     this->wlr_output_manager = wlr_output_manager_v1_create(server->wl_display);
 
     // apply
-    apply.notify = [](struct wl_listener *listener, void *data) {
+    apply.notify = [](wl_listener *listener, void *data) {
         OutputManager *manager = wl_container_of(listener, manager, apply);
 
         manager->apply_config(static_cast<wlr_output_configuration_v1 *>(data),
@@ -21,7 +21,7 @@ OutputManager::OutputManager(struct Server *server) {
     wl_signal_add(&wlr_output_manager->events.apply, &apply);
 
     // test
-    test.notify = [](struct wl_listener *listener, void *data) {
+    test.notify = [](wl_listener *listener, void *data) {
         OutputManager *manager = wl_container_of(listener, manager, test);
 
         manager->apply_config(static_cast<wlr_output_configuration_v1 *>(data),
@@ -30,25 +30,24 @@ OutputManager::OutputManager(struct Server *server) {
     wl_signal_add(&wlr_output_manager->events.test, &test);
 
     // destroy
-    destroy.notify = [](struct wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, void *data) {
         OutputManager *manager = wl_container_of(listener, manager, destroy);
         delete manager;
     };
     wl_signal_add(&wlr_output_manager->events.destroy, &destroy);
 
     // new_output
-    new_output.notify = [](struct wl_listener *listener, void *data) {
+    new_output.notify = [](wl_listener *listener, void *data) {
         // new display / monitor available
-        struct OutputManager *manager =
-            wl_container_of(listener, manager, new_output);
-        struct Server *server = manager->server;
-        struct wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
+        OutputManager *manager = wl_container_of(listener, manager, new_output);
+        Server *server = manager->server;
+        wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
 
         // set allocator and renderer for output
         wlr_output_init_render(wlr_output, server->allocator, server->renderer);
 
         // add to outputs list
-        struct Output *output = new Output(server, wlr_output);
+        Output *output = new Output(server, wlr_output);
         wl_list_insert(&manager->outputs, &output->link);
 
         // find matching config
@@ -69,7 +68,7 @@ OutputManager::OutputManager(struct Server *server) {
                     output->wlr_output->name);
 
             // create new state
-            struct wlr_output_state state;
+            wlr_output_state state{};
             wlr_output_state_init(&state);
 
             // use preferred mode
@@ -102,25 +101,24 @@ OutputManager::OutputManager(struct Server *server) {
     wl_signal_add(&server->backend->events.new_output, &new_output);
 
     // change
-    change.notify = [](struct wl_listener *listener, void *data) {
-        struct wlr_output_configuration_v1 *config =
+    change.notify = [](wl_listener *listener, void *data) {
+        wlr_output_configuration_v1 *config =
             wlr_output_configuration_v1_create();
-        struct OutputManager *manager =
-            wl_container_of(listener, manager, change);
+        OutputManager *manager = wl_container_of(listener, manager, change);
 
-        struct Output *output;
+        Output *output;
         wl_list_for_each(output, &manager->outputs, link) {
             // get the config head for each output
-            struct wlr_output_configuration_head_v1 *config_head =
+            wlr_output_configuration_head_v1 *config_head =
                 wlr_output_configuration_head_v1_create(config,
                                                         output->wlr_output);
 
             // get the output box
-            struct wlr_box output_box;
+            wlr_box output_box{};
             wlr_output_layout_get_box(manager->layout, output->wlr_output,
                                       &output_box);
 
-            // mark the output enabled if it's swithed off but not disabled
+            // mark the output enabled if it's switched off but not disabled
             config_head->state.enabled = !wlr_box_empty(&output_box);
             config_head->state.x = output_box.x;
             config_head->state.y = output_box.y;
@@ -141,8 +139,8 @@ OutputManager::~OutputManager() {
     wl_list_remove(&change.link);
 }
 
-void OutputManager::apply_config(struct wlr_output_configuration_v1 *cfg,
-                                 bool test_only) {
+void OutputManager::apply_config(wlr_output_configuration_v1 *cfg,
+                                 bool test_only) const {
     // create a map of output names to configs
     std::map<std::string, OutputConfig *> config_map;
 
@@ -150,8 +148,8 @@ void OutputManager::apply_config(struct wlr_output_configuration_v1 *cfg,
     for (OutputConfig *c : server->config->outputs)
         config_map[c->name] = c;
 
-    // oveerride with new configs from cfg
-    struct wlr_output_configuration_head_v1 *config_head;
+    // override with new configs from cfg
+    wlr_output_configuration_head_v1 *config_head;
     wl_list_for_each(config_head, &cfg->heads, link) {
         std::string name = config_head->state.output->name;
         config_map[name] = new OutputConfig(config_head);
@@ -173,7 +171,7 @@ void OutputManager::apply_config(struct wlr_output_configuration_v1 *cfg,
 }
 
 // get output by wlr_output
-struct Output *OutputManager::get_output(struct wlr_output *wlr_output) {
+Output *OutputManager::get_output(const wlr_output *wlr_output) {
     // check each output
     Output *output, *tmp;
     wl_list_for_each_safe(output, tmp, &outputs,
@@ -186,20 +184,20 @@ struct Output *OutputManager::get_output(struct wlr_output *wlr_output) {
 }
 
 // get the output based on screen coordinates
-struct Output *OutputManager::output_at(double x, double y) {
-    struct wlr_output *wlr_output = wlr_output_layout_output_at(layout, x, y);
+Output *OutputManager::output_at(const double x, const double y) {
+    const wlr_output *wlr_output = wlr_output_layout_output_at(layout, x, y);
 
     // no output found
-    if (wlr_output == NULL)
-        return NULL;
+    if (!wlr_output)
+        return nullptr;
 
     // get associated output
     return get_output(wlr_output);
 }
 
 // arrange layer shell layers on each output
-void OutputManager::arrange() {
-    struct Output *output, *tmp;
+void OutputManager::arrange() const {
+    Output *output, *tmp;
     wl_list_for_each_safe(output, tmp, &outputs, link) {
         // tell outputs to update their positions
         output->update_position();

@@ -1,20 +1,15 @@
 #include "Server.h"
 
-LayerSurface::LayerSurface(struct Output *output,
-                           struct wlr_layer_surface_v1 *wlr_layer_surface) {
+LayerSurface::LayerSurface(Output *output,
+                           wlr_layer_surface_v1 *wlr_layer_surface) {
     this->output = output;
     this->wlr_layer_surface = wlr_layer_surface;
 
     // create scene layer for surface
-    struct wlr_scene_tree *layer_tree =
+    wlr_scene_tree *layer_tree =
         output->shell_layer(wlr_layer_surface->pending.layer);
     scene_layer_surface =
         wlr_scene_layer_surface_v1_create(layer_tree, wlr_layer_surface);
-
-    if (!scene_layer_surface) {
-        wlr_log(WLR_ERROR, "failed to create scene layer surface");
-        return;
-    }
 
     // set fractional scale
     wlr_fractional_scale_v1_notify_scale(wlr_layer_surface->surface,
@@ -28,10 +23,10 @@ LayerSurface::LayerSurface(struct Output *output,
     output->arrange_layers();
 
     // map surface
-    map.notify = [](struct wl_listener *listener, void *data) {
+    map.notify = [](wl_listener *listener, void *data) {
         // get seat and pointer focus on map
         LayerSurface *surface = wl_container_of(listener, surface, map);
-        wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
+        const wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
         // rearrange
         surface->output->arrange_layers();
@@ -45,7 +40,7 @@ LayerSurface::LayerSurface(struct Output *output,
     wl_signal_add(&wlr_layer_surface->surface->events.map, &map);
 
     // unmap surface
-    unmap.notify = [](struct wl_listener *listener, void *data) {
+    unmap.notify = [](wl_listener *listener, void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, unmap);
 
         wlr_layer_surface_v1_configure(
@@ -61,7 +56,7 @@ LayerSurface::LayerSurface(struct Output *output,
     wl_signal_add(&wlr_layer_surface->surface->events.unmap, &unmap);
 
     // commit surface
-    commit.notify = [](struct wl_listener *listener, void *data) {
+    commit.notify = [](wl_listener *listener, void *data) {
         // on display
         LayerSurface *surface = wl_container_of(listener, surface, commit);
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
@@ -79,7 +74,7 @@ LayerSurface::LayerSurface(struct Output *output,
 
         if (surface->wlr_layer_surface->current.committed &
             WLR_LAYER_SURFACE_V1_STATE_LAYER) {
-            struct wlr_scene_tree *new_tree =
+            wlr_scene_tree *new_tree =
                 output->shell_layer(surface->wlr_layer_surface->current.layer);
             wlr_scene_node_reparent(&surface->scene_layer_surface->tree->node,
                                     new_tree);
@@ -98,18 +93,18 @@ LayerSurface::LayerSurface(struct Output *output,
     wl_signal_add(&wlr_layer_surface->surface->events.commit, &commit);
 
     // new_popup
-    new_popup.notify = [](struct wl_listener *listener, void *data) {
+    new_popup.notify = [](wl_listener *listener, void *data) {
         LayerSurface *layer_surface =
             wl_container_of(listener, layer_surface, new_popup);
 
         if (data) [[maybe_unused]]
-            struct Popup *popup = new Popup(static_cast<wlr_xdg_popup *>(data),
-                                            layer_surface->output->server);
+            Popup *popup = new Popup(static_cast<wlr_xdg_popup *>(data),
+                                     layer_surface->output->server);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 
     // destroy
-    destroy.notify = [](struct wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, destroy);
         delete surface;
     };
@@ -142,8 +137,8 @@ void LayerSurface::handle_focus() {
         return;
 
     // receive keyboard
-    struct wlr_surface *surface = wlr_layer_surface->surface;
-    struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(output->server->seat);
+    wlr_surface *surface = wlr_layer_surface->surface;
+    const wlr_keyboard *keyboard = wlr_seat_get_keyboard(output->server->seat);
 
     // notify keyboard enter
     if (keyboard)

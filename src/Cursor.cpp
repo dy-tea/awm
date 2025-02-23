@@ -1,6 +1,6 @@
 #include "Server.h"
 
-Cursor::Cursor(struct Server *server) {
+Cursor::Cursor(Server *server) {
     // create wlr cursor and xcursor
     this->server = server;
     cursor = wlr_cursor_create();
@@ -13,12 +13,10 @@ Cursor::Cursor(struct Server *server) {
         wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
 
     // set cursor shape
-    request_set_shape.notify = [](struct wl_listener *listener, void *data) {
-        struct Cursor *cursor =
-            wl_container_of(listener, cursor, request_set_shape);
-        struct wlr_cursor_shape_manager_v1_request_set_shape_event *event =
-            static_cast<
-                struct wlr_cursor_shape_manager_v1_request_set_shape_event *>(
+    request_set_shape.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, request_set_shape);
+        wlr_cursor_shape_manager_v1_request_set_shape_event *event =
+            static_cast<wlr_cursor_shape_manager_v1_request_set_shape_event *>(
                 data);
 
         if (cursor->cursor_mode != CURSORMODE_PASSTHROUGH)
@@ -33,10 +31,10 @@ Cursor::Cursor(struct Server *server) {
                   &request_set_shape);
 
     // cursor_motion
-    motion.notify = [](struct wl_listener *listener, void *data) {
+    motion.notify = [](wl_listener *listener, void *data) {
         // relative motion event
-        struct Cursor *cursor = wl_container_of(listener, cursor, motion);
-        struct wlr_pointer_motion_event *event =
+        Cursor *cursor = wl_container_of(listener, cursor, motion);
+        wlr_pointer_motion_event *event =
             static_cast<wlr_pointer_motion_event *>(data);
 
         // process motion
@@ -47,11 +45,10 @@ Cursor::Cursor(struct Server *server) {
     wl_signal_add(&cursor->events.motion, &motion);
 
     // cursor_motion_absolute
-    motion_absolute.notify = [](struct wl_listener *listener, void *data) {
+    motion_absolute.notify = [](wl_listener *listener, void *data) {
         // absolute motion event
-        struct Cursor *cursor =
-            wl_container_of(listener, cursor, motion_absolute);
-        struct wlr_pointer_motion_absolute_event *event =
+        Cursor *cursor = wl_container_of(listener, cursor, motion_absolute);
+        wlr_pointer_motion_absolute_event *event =
             static_cast<wlr_pointer_motion_absolute_event *>(data);
 
         // warp cursor
@@ -74,9 +71,9 @@ Cursor::Cursor(struct Server *server) {
     wl_signal_add(&cursor->events.motion_absolute, &motion_absolute);
 
     // cursor_button
-    button.notify = [](struct wl_listener *listener, void *data) {
-        struct Cursor *cursor = wl_container_of(listener, cursor, button);
-        struct wlr_pointer_button_event *event =
+    button.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, button);
+        wlr_pointer_button_event *event =
             static_cast<wlr_pointer_button_event *>(data);
 
         // forward to seat
@@ -91,17 +88,17 @@ Cursor::Cursor(struct Server *server) {
             Server *server = cursor->server;
 
             double sx, sy;
-            struct wlr_surface *surface = NULL;
+            wlr_surface *surface = NULL;
 
             // layer surface focus
-            struct LayerSurface *layer_surface = server->layer_surface_at(
+            LayerSurface *layer_surface = server->layer_surface_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
             if (layer_surface && surface && surface->mapped)
                 if (layer_surface->should_focus())
                     layer_surface->handle_focus();
 
             // toplevel focus
-            struct Toplevel *toplevel = server->toplevel_at(
+            Toplevel *toplevel = server->toplevel_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
             if (toplevel && surface && surface->mapped)
                 server->focused_output()->get_active()->focus_toplevel(
@@ -111,11 +108,12 @@ Cursor::Cursor(struct Server *server) {
     wl_signal_add(&cursor->events.button, &button);
 
     // cursor_axis
-    axis.notify = [](struct wl_listener *listener, void *data) {
+    axis.notify = [](wl_listener *listener, void *data) {
         // scroll wheel etc
-        struct Cursor *cursor = wl_container_of(listener, cursor, axis);
+        Cursor *cursor = wl_container_of(listener, cursor, axis);
 
-        struct wlr_pointer_axis_event *event = (wlr_pointer_axis_event *)data;
+        wlr_pointer_axis_event *event =
+            static_cast<wlr_pointer_axis_event *>(data);
 
         // forward to seat
         wlr_seat_pointer_notify_axis(cursor->server->seat, event->time_msec,
@@ -126,8 +124,8 @@ Cursor::Cursor(struct Server *server) {
     wl_signal_add(&cursor->events.axis, &axis);
 
     // cursor_frame
-    frame.notify = [](struct wl_listener *listener, void *data) {
-        struct Cursor *cursor = wl_container_of(listener, cursor, frame);
+    frame.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, frame);
 
         // forward to seat
         wlr_seat_pointer_notify_frame(cursor->server->seat);
@@ -150,17 +148,16 @@ Cursor::~Cursor() {
 // deactivate cursor
 void Cursor::reset_mode() {
     cursor_mode = CURSORMODE_PASSTHROUGH;
-    server->grabbed_toplevel = NULL;
+    server->grabbed_toplevel = nullptr;
 }
 
-void Cursor::process_motion(uint32_t time, struct wlr_input_device *device,
-                            double dx, double dy, double unaccel_dx,
-                            double unaccel_dy) {
+void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
+                            double dy, double unaccel_dx, double unaccel_dy) {
     if (time) {
         // send relative motion event
         wlr_relative_pointer_manager_v1_send_relative_motion(
             server->wlr_relative_pointer_manager, server->seat,
-            (uint64_t)time * 1000, dx, dy, unaccel_dx, unaccel_dy);
+            static_cast<uint64_t>(time) * 1000, dx, dy, unaccel_dx, unaccel_dy);
 
         // move cursor
         wlr_cursor_move(cursor, device, dx, dy);
@@ -177,10 +174,10 @@ void Cursor::process_motion(uint32_t time, struct wlr_input_device *device,
 
     // otherwise mode is passthrough
     double sx, sy;
-    struct wlr_surface *surface = NULL;
+    wlr_surface *surface = nullptr;
 
     // get the toplevel under the cursor (if exists)
-    struct Toplevel *toplevel =
+    const Toplevel *toplevel =
         server->toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
     if (toplevel && surface && surface->mapped) {
         // connect the seat to the toplevel
@@ -190,7 +187,7 @@ void Cursor::process_motion(uint32_t time, struct wlr_input_device *device,
     }
 
     // get the layer surface under the cursor (if exists)
-    struct LayerSurface *layer_surface =
+    LayerSurface *layer_surface =
         server->layer_surface_at(cursor->x, cursor->y, &surface, &sx, &sy);
     if (layer_surface && surface && surface->mapped) {
         // connect the seat to the layer surface
@@ -215,7 +212,7 @@ void Cursor::process_move() {
 
 // resize a toplevel
 void Cursor::process_resize() {
-    struct Toplevel *toplevel = server->grabbed_toplevel;
+    Toplevel *toplevel = server->grabbed_toplevel;
 
     // do not resize fullscreen toplevel
     if (toplevel->xdg_toplevel->current.fullscreen)
@@ -248,7 +245,7 @@ void Cursor::process_resize() {
             new_right = new_left + 1;
     }
 
-    struct wlr_box *geo_box = &toplevel->xdg_toplevel->base->geometry;
+    const wlr_box *geo_box = &toplevel->xdg_toplevel->base->geometry;
     wlr_scene_node_set_position(&toplevel->scene_tree->node,
                                 new_left - geo_box->x, new_top - geo_box->y);
 
@@ -257,12 +254,12 @@ void Cursor::process_resize() {
 }
 
 // set the cursor libinput configuration
-void Cursor::set_config(struct wlr_pointer *pointer) {
-    struct libinput_device *device;
-    struct Config *config = server->config;
+void Cursor::set_config(wlr_pointer *pointer) {
+    const Config *config = server->config;
 
-    if (wlr_input_device_is_libinput(&pointer->base) &&
-        (device = wlr_libinput_get_device_handle(&pointer->base))) {
+    if (libinput_device * device;
+        wlr_input_device_is_libinput(&pointer->base) &&
+        ((device = wlr_libinput_get_device_handle(&pointer->base)))) {
 
         if (libinput_device_config_tap_get_finger_count(device)) {
             // tap to click
@@ -277,14 +274,14 @@ void Cursor::set_config(struct wlr_pointer *pointer) {
             libinput_device_config_tap_set_drag_lock_enabled(
                 device, config->cursor.drag_lock);
 
-            // buttom map
+            // button map
             libinput_device_config_tap_set_button_map(
                 device, config->cursor.tap_button_map);
         }
 
         // natural scroll
         if (libinput_device_config_scroll_has_natural_scroll(device)) {
-            // NOTE: workaround for now since I'm ingoring config
+            // NOTE: workaround for now since I'm ignoring config
             if (libinput_device_has_capability(device,
                                                LIBINPUT_DEVICE_CAP_TOUCH))
                 libinput_device_config_scroll_set_natural_scroll_enabled(device,
@@ -299,7 +296,7 @@ void Cursor::set_config(struct wlr_pointer *pointer) {
             libinput_device_config_dwt_set_enabled(
                 device, config->cursor.disable_while_typing);
 
-        // left handed
+        // left-handed
         if (libinput_device_config_left_handed_is_available(device))
             libinput_device_config_left_handed_set(device,
                                                    config->cursor.left_handed);

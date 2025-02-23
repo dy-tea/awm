@@ -565,8 +565,10 @@ Server::~Server() {
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;
 
+#ifdef XWAYLAND
     wl_list_remove(&xwayland_ready.link);
     wl_list_remove(&new_xwayland_surface.link);
+#endif
 
     wlr_scene_node_destroy(&scene->tree.node);
     wlr_allocator_destroy(allocator);

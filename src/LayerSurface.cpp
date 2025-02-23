@@ -125,7 +125,7 @@ LayerSurface::~LayerSurface() {
 }
 
 // handle keyboard focus for layer shells
-void LayerSurface::handle_focus() {
+void LayerSurface::handle_focus() const {
     // ensure layer surface is ready to receive focus
     if (!wlr_layer_surface || !wlr_layer_surface->surface ||
         !wlr_layer_surface->surface->mapped || !scene_layer_surface)
@@ -148,7 +148,7 @@ void LayerSurface::handle_focus() {
 }
 
 // returns true if layer surface should be focusable
-bool LayerSurface::should_focus() {
+bool LayerSurface::should_focus() const {
     if (!wlr_layer_surface || !wlr_layer_surface->surface ||
         !wlr_layer_surface->surface->mapped)
         return false;

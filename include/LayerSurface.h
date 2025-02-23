@@ -16,6 +16,6 @@ struct LayerSurface {
     LayerSurface(Output *output, wlr_layer_surface_v1 *wlr_layer_surface);
     ~LayerSurface();
 
-    void handle_focus();
-    bool should_focus();
+    void handle_focus() const;
+    bool should_focus() const;
 };

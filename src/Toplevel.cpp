@@ -160,6 +160,7 @@ void Toplevel::create_handle() {
 
         notify_send(
             "Minimizing foreign toplevels is not supported, expect issues");
+        wlr_scene_node_lower_to_bottom(&toplevel->scene_tree->node);
 
         toplevel->update_foreign_toplevel();
     };
@@ -242,10 +243,9 @@ void Toplevel::create_handle() {
 }
 
 // Toplevel from xdg toplevel
-Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel) {
+Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
+    : server(server), xdg_toplevel(xdg_toplevel) {
     // add the toplevel to the scene tree
-    this->server = server;
-    this->xdg_toplevel = xdg_toplevel;
     scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
                                               xdg_toplevel->base);
     scene_tree->node.data = this;
@@ -266,9 +266,9 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel) {
     commit.notify = [](wl_listener *listener, void *data) {
         // on surface state change
         Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
-        wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
 
-        if (xdg_toplevel->base->initial_commit)
+        if (wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
+            xdg_toplevel->base->initial_commit)
             // let client pick dimensions
             wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
     };
@@ -286,6 +286,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel) {
         wl_list_remove(&toplevel->request_resize.link);
         wl_list_remove(&toplevel->request_maximize.link);
         wl_list_remove(&toplevel->request_fullscreen.link);
+        wl_list_remove(&toplevel->request_minimize.link);
 
         wl_list_remove(&toplevel->handle_request_maximize.link);
         wl_list_remove(&toplevel->handle_request_minimize.link);
@@ -343,16 +344,28 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel) {
     };
     wl_signal_add(&xdg_toplevel->events.request_fullscreen,
                   &request_fullscreen);
+
+    // request_minimize
+    request_minimize.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
+            wl_container_of(listener, toplevel, request_minimize);
+
+        // move toplevel to the bottom
+        wlr_scene_node_lower_to_bottom(&toplevel->scene_tree->node);
+
+        // focus the next toplevel in the workspace
+        if (Workspace *workspace = toplevel->server->get_workspace(toplevel))
+            workspace->focus_next();
+    };
+    wl_signal_add(&xdg_toplevel->events.request_minimize, &request_minimize);
 }
 
 Toplevel::~Toplevel() {}
 
 // Toplevel from xwayland surface
 #ifdef XWAYLAND
-Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface) {
-    this->server = server;
-    this->xwayland_surface = xwayland_surface;
-
+Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
+    : server(server), xwayland_surface(xwayland_surface) {
     // create foreign toplevel handle
     create_handle();
 
@@ -595,8 +608,8 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 }
 
 // set the position and size of a toplevel, send a configure
-void Toplevel::set_position_size(double x, double y, const int width,
-                                 const int height) {
+void Toplevel::set_position_size(const double x, const double y,
+                                 const int width, const int height) {
     // get output layout at cursor
     const wlr_output *wlr_output = server->focused_output()->wlr_output;
 
@@ -781,7 +794,8 @@ void Toplevel::save_geometry() {
 
     // current.width and .height are not set when a toplevel is created, but
     // saved geometry is.
-    if (!xdg_toplevel->current.width == 0 && !xdg_toplevel->current.height == 0) {
+    if (!xdg_toplevel->current.width == 0 &&
+        !xdg_toplevel->current.height == 0) {
         saved_geometry.width = xdg_toplevel->current.width;
         saved_geometry.height = xdg_toplevel->current.height;
     }

@@ -16,7 +16,7 @@ struct Toplevel {
     wl_listener request_resize;
     wl_listener request_maximize;
     wl_listener request_fullscreen;
-    //  wl_listener request_minimize;
+    wl_listener request_minimize;
     //  wl_listener request_show_window_menu;
     //  wl_listener set_parent;
     //  wl_listener set_title;
@@ -58,7 +58,7 @@ struct Toplevel {
     void create_handle();
 
     void focus() const;
-    void begin_interactive(enum CursorMode mode, uint32_t edges);
+    void begin_interactive(CursorMode mode, uint32_t edges);
     void set_position_size(double x, double y, int width, int height);
     void set_position_size(const wlr_fbox &geometry);
     wlr_fbox get_geometry() const;

@@ -55,6 +55,12 @@ void Toplevel::map_notify(struct wl_listener *listener, void *data) {
             // set the position
             wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
 
+            // saving geometry
+            toplevel->saved_geometry.width = width;
+            toplevel->saved_geometry.height = height;
+            toplevel->saved_geometry.x = x;
+            toplevel->saved_geometry.y = y;
+
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel, true);
         }
@@ -552,10 +558,10 @@ void Toplevel::begin_interactive(enum CursorMode mode, uint32_t edges) {
     if (mode == CURSORMODE_MOVE) {
         if (xdg_toplevel->current.maximized) {
             // unmaximize if maximized
-            wlr_xdg_toplevel_set_size(xdg_toplevel, saved_geometry.width,
-                                      saved_geometry.height);
-            wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
-            wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
+            saved_geometry.y = cursor->cursor->y - 10; // TODO Magic number here
+            saved_geometry.x = cursor->cursor->x - (saved_geometry.width / 2);
+
+            set_maximized(false);
         }
 
         // follow cursor
@@ -621,10 +627,7 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
             wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
         else {
             // save current geometry
-            saved_geometry.x = scene_tree->node.x;
-            saved_geometry.y = scene_tree->node.y;
-            saved_geometry.width = xdg_toplevel->current.width;
-            saved_geometry.height = xdg_toplevel->current.height;
+            save_geometry();
         }
 
         // set position and size
@@ -697,10 +700,7 @@ void Toplevel::set_fullscreen(bool fullscreen) {
 
     if (fullscreen) {
         // save current geometry
-        saved_geometry.x = scene_tree->node.x;
-        saved_geometry.y = scene_tree->node.y;
-        saved_geometry.width = xdg_toplevel->current.width;
-        saved_geometry.height = xdg_toplevel->current.height;
+        save_geometry();
 
         // set to top left of output, width and height the size of output
         wlr_scene_node_set_position(&scene_tree->node, output_box.x,
@@ -750,10 +750,7 @@ void Toplevel::set_maximized(bool maximized) {
 
     if (maximized) {
         // save current geometry
-        saved_geometry.x = scene_tree->node.x;
-        saved_geometry.y = scene_tree->node.y;
-        saved_geometry.width = xdg_toplevel->current.width;
-        saved_geometry.height = xdg_toplevel->current.height;
+        save_geometry();
 
         // set to top left of output, width and height the size of output
         wlr_scene_node_set_position(&scene_tree->node,
@@ -794,4 +791,16 @@ void Toplevel::close() {
     else if (xwayland_surface)
         wlr_xwayland_surface_close(xwayland_surface);
 #endif
+}
+
+void Toplevel::save_geometry() {
+    saved_geometry.x = scene_tree->node.x;
+    saved_geometry.y = scene_tree->node.y;
+
+    // current.width and .height are not set when a toplevel is created, but
+    // saved geometry is.
+    if (!xdg_toplevel->current.width == 0 && !xdg_toplevel->current.height == 0) {
+        saved_geometry.width = xdg_toplevel->current.width;
+        saved_geometry.height = xdg_toplevel->current.height;
+    }
 }

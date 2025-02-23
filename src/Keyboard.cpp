@@ -211,8 +211,7 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device) {
         // key is pressed or released
         Keyboard *keyboard = wl_container_of(listener, keyboard, key);
         const Server *server = keyboard->server;
-        wlr_keyboard_key_event *event =
-            static_cast<wlr_keyboard_key_event *>(data);
+        const auto *event = static_cast<wlr_keyboard_key_event *>(data);
         wlr_seat *seat = server->seat;
 
         // libinput keycode -> xkbcommon

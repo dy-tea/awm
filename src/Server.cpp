@@ -450,7 +450,7 @@ Server::Server(Config *config) {
     unsetenv("DISPLAY");
 
     // init xwayland
-    if ((xwayland = wlr_xwayland_create(wl_display, compositor, 1))) {
+    if ((xwayland = wlr_xwayland_create(wl_display, compositor, true))) {
         // xwayland_ready
         xwayland_ready.notify = [](wl_listener *listener, void *data) {
             Server *server = wl_container_of(listener, server, xwayland_ready);

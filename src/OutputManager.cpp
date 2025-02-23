@@ -41,7 +41,7 @@ OutputManager::OutputManager(Server *server) {
         // new display / monitor available
         OutputManager *manager = wl_container_of(listener, manager, new_output);
         Server *server = manager->server;
-        wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
+        auto *wlr_output = static_cast<struct wlr_output *>(data);
 
         // set allocator and renderer for output
         wlr_output_init_render(wlr_output, server->allocator, server->renderer);

@@ -99,7 +99,7 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
 }
 
 // set the workspace visibility
-void Workspace::set_hidden(const bool hidden) {
+void Workspace::set_hidden(const bool hidden) const {
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link)
         // set every toplevel to the value of hidden
@@ -134,7 +134,7 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
     Toplevel *target = nullptr;
 
     // find the smallest positive distance, absolute axis
-    auto validate = [&](double distance, double axis) {
+    auto validate = [&](const double distance, const double axis) {
         // note the greater or equals is needed for tiled windows since they
         // are placed perfectly on the same axis
         if (distance > 0 && distance <= min_distance && axis < other) {

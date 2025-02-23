@@ -414,7 +414,7 @@ bool Config::load() {
         if (auto tables = monitor_tables->getTableVector())
             for (toml::Table &table : *tables) {
                 // create new output config
-                OutputConfig *oc = new OutputConfig();
+                auto *oc = new OutputConfig();
 
                 // name
                 connect(table.getString("name"), &oc->name);
@@ -492,7 +492,7 @@ void Config::update(const Server *server) {
 
     // update keyboard config
     const wlr_keyboard *wlr_keyboard = wlr_seat_get_keyboard(server->seat);
-    Keyboard *keyboard = static_cast<Keyboard *>(wlr_keyboard->data);
+    const auto *keyboard = static_cast<Keyboard *>(wlr_keyboard->data);
     keyboard->update_config();
 
     // update cursor config

@@ -38,7 +38,7 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
             height =
                 std::min(height, static_cast<uint32_t>(usable_area.height));
 
-            wlr_box output_box;
+            wlr_box output_box{};
             wlr_output_layout_get_box(toplevel->server->output_manager->layout,
                                       output->wlr_output, &output_box);
 
@@ -78,6 +78,25 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
             toplevel->scene_surface->buffer->node.data = toplevel;
         }
 
+        // xwayland commit
+        toplevel->xwayland_commit.notify = [](wl_listener *listener,
+                                              void *data) {
+            Toplevel *toplevel =
+                wl_container_of(listener, toplevel, xwayland_commit);
+            const wlr_surface_state *state =
+                &toplevel->xwayland_surface->surface->current;
+
+            wlr_box new_box{};
+            new_box.width = state->width;
+            new_box.height = state->height;
+
+            if (new_box.width != toplevel->saved_geometry.width ||
+                new_box.height != toplevel->saved_geometry.height)
+                memcpy(&toplevel->saved_geometry, &new_box, sizeof(wlr_box));
+        };
+        wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
+                      &toplevel->xwayland_commit);
+
         // set seat if requested
         if (wlr_xwayland_surface_override_redirect_wants_focus(
                 toplevel->xwayland_surface))
@@ -85,7 +104,7 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
                                   toplevel->server->seat);
 
         // add to active workspace
-        if (Output *output = toplevel->server->focused_output())
+        if (const Output *output = toplevel->server->focused_output())
             output->get_active()->add_toplevel(toplevel, true);
     }
 #endif
@@ -138,7 +157,7 @@ void Toplevel::create_handle() {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_maximize);
 
-        wlr_foreign_toplevel_handle_v1_maximized_event *event =
+        const auto *event =
             static_cast<wlr_foreign_toplevel_handle_v1_maximized_event *>(data);
 
         toplevel->set_maximized(event->maximized);
@@ -171,7 +190,7 @@ void Toplevel::create_handle() {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_fullscreen);
 
-        wlr_foreign_toplevel_handle_v1_fullscreen_event *event =
+        const auto *event =
             static_cast<wlr_foreign_toplevel_handle_v1_fullscreen_event *>(
                 data);
 
@@ -220,7 +239,7 @@ void Toplevel::create_handle() {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_close);
 
-        wlr_foreign_toplevel_handle_v1_set_rectangle_event *event =
+        const auto *event =
             static_cast<wlr_foreign_toplevel_handle_v1_set_rectangle_event *>(
                 data);
 
@@ -319,8 +338,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
          * want. */
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_resize);
-        wlr_xdg_toplevel_resize_event *event =
-            static_cast<wlr_xdg_toplevel_resize_event *>(data);
+        const auto *event = static_cast<wlr_xdg_toplevel_resize_event *>(data);
 
         toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
     };
@@ -429,6 +447,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         // unmap
         wl_list_remove(&toplevel->map.link);
         wl_list_remove(&toplevel->unmap.link);
+        wl_list_remove(&toplevel->commit.link);
     };
     wl_signal_add(&xwayland_surface->events.dissociate, &dissociate);
 
@@ -436,7 +455,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     configure.notify = [](wl_listener *listener, void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, configure);
 
-        wlr_xwayland_surface_configure_event *event =
+        const auto *event =
             static_cast<wlr_xwayland_surface_configure_event *>(data);
 
         // unconfigured
@@ -665,7 +684,7 @@ wlr_fbox Toplevel::get_geometry() const {
 }
 
 // set the visibility of the toplevel
-void Toplevel::set_hidden(bool hidden) {
+void Toplevel::set_hidden(const bool hidden) {
     this->hidden = hidden;
 
     if (xdg_toplevel)
@@ -725,7 +744,7 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
 }
 
 // set the toplevel to be maximized
-void Toplevel::set_maximized(bool maximized) {
+void Toplevel::set_maximized(const bool maximized) {
     // cannot maximize
     if (!xdg_toplevel->base->initialized)
         return;
@@ -738,7 +757,7 @@ void Toplevel::set_maximized(bool maximized) {
     const Output *output = server->focused_output();
 
     // get output scale
-    float scale = output->wlr_output->scale;
+    const float scale = output->wlr_output->scale;
 
     // get usable output area
     wlr_box output_box = output->usable_area;

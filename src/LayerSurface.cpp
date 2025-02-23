@@ -51,7 +51,7 @@ LayerSurface::LayerSurface(Output *output,
         // arrange layers
         surface->output->arrange_layers();
 
-        surface->output->server->cursor->process_motion(0, NULL, 0, 0, 0, 0);
+        surface->output->server->cursor->process_motion(0, nullptr, 0, 0, 0, 0);
     };
     wl_signal_add(&wlr_layer_surface->surface->events.unmap, &unmap);
 

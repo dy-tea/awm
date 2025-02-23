@@ -9,7 +9,7 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server) {
         return;
 
     // get parent scene tree
-    wlr_scene_tree *parent_tree = NULL;
+    wlr_scene_tree *parent_tree = nullptr;
 
     // check if parent is layer surface
     const wlr_layer_surface_v1 *layer =
@@ -40,7 +40,7 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server) {
     commit.notify = [](wl_listener *listener, void *data) {
         Popup *popup = wl_container_of(listener, popup, commit);
 
-        wlr_surface *surface = static_cast<wlr_surface *>(data);
+        auto *surface = static_cast<wlr_surface *>(data);
         wlr_xdg_popup *xdg_popup = wlr_xdg_popup_try_from_wlr_surface(surface);
 
         if (!xdg_popup->base->initial_commit)

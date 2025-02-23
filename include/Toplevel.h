@@ -29,6 +29,7 @@ struct Toplevel {
     wl_listener associate;
     wl_listener dissociate;
     wl_listener configure;
+    wl_listener xwayland_commit;
 #endif
 
     wlr_foreign_toplevel_handle_v1 *handle{nullptr};

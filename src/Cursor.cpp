@@ -15,7 +15,7 @@ Cursor::Cursor(Server *server) {
     // set cursor shape
     request_set_shape.notify = [](wl_listener *listener, void *data) {
         Cursor *cursor = wl_container_of(listener, cursor, request_set_shape);
-        wlr_cursor_shape_manager_v1_request_set_shape_event *event =
+        const auto *event =
             static_cast<wlr_cursor_shape_manager_v1_request_set_shape_event *>(
                 data);
 
@@ -34,8 +34,7 @@ Cursor::Cursor(Server *server) {
     motion.notify = [](wl_listener *listener, void *data) {
         // relative motion event
         Cursor *cursor = wl_container_of(listener, cursor, motion);
-        wlr_pointer_motion_event *event =
-            static_cast<wlr_pointer_motion_event *>(data);
+        const auto *event = static_cast<wlr_pointer_motion_event *>(data);
 
         // process motion
         cursor->process_motion(event->time_msec, &event->pointer->base,
@@ -48,7 +47,7 @@ Cursor::Cursor(Server *server) {
     motion_absolute.notify = [](wl_listener *listener, void *data) {
         // absolute motion event
         Cursor *cursor = wl_container_of(listener, cursor, motion_absolute);
-        wlr_pointer_motion_absolute_event *event =
+        const auto *event =
             static_cast<wlr_pointer_motion_absolute_event *>(data);
 
         // warp cursor
@@ -73,8 +72,7 @@ Cursor::Cursor(Server *server) {
     // cursor_button
     button.notify = [](wl_listener *listener, void *data) {
         Cursor *cursor = wl_container_of(listener, cursor, button);
-        wlr_pointer_button_event *event =
-            static_cast<wlr_pointer_button_event *>(data);
+        const auto *event = static_cast<wlr_pointer_button_event *>(data);
 
         // forward to seat
         wlr_seat_pointer_notify_button(cursor->server->seat, event->time_msec,
@@ -88,7 +86,7 @@ Cursor::Cursor(Server *server) {
             Server *server = cursor->server;
 
             double sx, sy;
-            wlr_surface *surface = NULL;
+            wlr_surface *surface = nullptr;
 
             // layer surface focus
             LayerSurface *layer_surface = server->layer_surface_at(
@@ -112,8 +110,7 @@ Cursor::Cursor(Server *server) {
         // scroll wheel etc
         Cursor *cursor = wl_container_of(listener, cursor, axis);
 
-        wlr_pointer_axis_event *event =
-            static_cast<wlr_pointer_axis_event *>(data);
+        const auto *event = static_cast<wlr_pointer_axis_event *>(data);
 
         // forward to seat
         wlr_seat_pointer_notify_axis(cursor->server->seat, event->time_msec,

@@ -79,6 +79,7 @@ struct Server {
     wlr_ext_image_copy_capture_manager_v1 *ext_image_copy_capture_manager;
     wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager;
     wlr_alpha_modifier_v1 *wlr_alpha_modifier;
+    wlr_single_pixel_buffer_manager_v1 *wlr_single_pixel_buffer_manager;
 
     wlr_xwayland *xwayland;
     wl_listener xwayland_ready;

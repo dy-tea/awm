@@ -811,10 +811,9 @@ void Toplevel::save_geometry() {
     saved_geometry.x = scene_tree->node.x;
     saved_geometry.y = scene_tree->node.y;
 
-    // current.width and .height are not set when a toplevel is created, but
+    // current width and height are not set when a toplevel is created, but
     // saved geometry is.
-    if (!xdg_toplevel->current.width == 0 &&
-        !xdg_toplevel->current.height == 0) {
+    if (xdg_toplevel->current.width && xdg_toplevel->current.height) {
         saved_geometry.width = xdg_toplevel->current.width;
         saved_geometry.height = xdg_toplevel->current.height;
     }

@@ -81,9 +81,11 @@ struct Server {
     wlr_alpha_modifier_v1 *wlr_alpha_modifier;
     wlr_single_pixel_buffer_manager_v1 *wlr_single_pixel_buffer_manager;
 
+#ifdef XWAYLAND
     wlr_xwayland *xwayland;
     wl_listener xwayland_ready;
     wl_listener new_xwayland_surface;
+#endif
 
     Server() = default;
     Server(Config *config);

@@ -9,8 +9,7 @@ Cursor::Cursor(Server *server) {
     cursor_mode = CURSORMODE_PASSTHROUGH;
 
     // cursor shape manager
-    cursor_shape_mgr =
-        wlr_cursor_shape_manager_v1_create(server->wl_display, 1);
+    cursor_shape_mgr = wlr_cursor_shape_manager_v1_create(server->display, 1);
 
     // set cursor shape
     request_set_shape.notify = [](wl_listener *listener, void *data) {

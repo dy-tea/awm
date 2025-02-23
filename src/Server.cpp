@@ -112,19 +112,16 @@ Output *Server::focused_output() const {
     return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
 }
 
-Server::Server(Config *config) {
-    // set config from file
-    this->config = config;
-
+Server::Server(Config *config) : config(config) {
     // set renderer
     setenv("WLR_RENDERER", config->renderer.c_str(), true);
 
     // display
-    wl_display = wl_display_create();
+    display = wl_display_create();
 
     // backend
     backend =
-        wlr_backend_autocreate(wl_display_get_event_loop(wl_display), nullptr);
+        wlr_backend_autocreate(wl_display_get_event_loop(display), nullptr);
     if (!backend) {
         wlr_log(WLR_ERROR, "failed to create wlr_backend");
         ::exit(1);
@@ -137,7 +134,21 @@ Server::Server(Config *config) {
         ::exit(1);
     }
 
-    wlr_renderer_init_wl_shm(renderer, wl_display);
+    // wl_shm
+    wlr_renderer_init_wl_shm(renderer, display);
+
+    // linux dmabuf
+    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF)) {
+        wlr_drm_create(display, renderer);
+        wlr_linux_dmabuf =
+            wlr_linux_dmabuf_v1_create_with_renderer(display, 4, renderer);
+    }
+
+    // drm syncobj manager
+    if (wlr_renderer_get_drm_fd(renderer) >= 0 && renderer->features.timeline &&
+        backend->features.timeline)
+        wlr_linux_drm_syncobj_manager_v1_create(
+            display, 1, wlr_renderer_get_drm_fd(renderer));
 
     // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);
@@ -147,9 +158,9 @@ Server::Server(Config *config) {
     }
 
     // wlr compositor
-    compositor = wlr_compositor_create(wl_display, 5, renderer);
-    wlr_subcompositor_create(wl_display);
-    wlr_data_device_manager_create(wl_display);
+    compositor = wlr_compositor_create(display, 5, renderer);
+    wlr_subcompositor_create(display);
+    wlr_data_device_manager_create(display);
 
     // output manager
     output_manager = new OutputManager(this);
@@ -159,8 +170,12 @@ Server::Server(Config *config) {
     scene_layout =
         wlr_scene_attach_output_layout(scene, output_manager->layout);
 
+    // attach dmabuf to scene
+    if (wlr_linux_dmabuf)
+        wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
+
     // create xdg shell
-    xdg_shell = wlr_xdg_shell_create(wl_display, 6);
+    xdg_shell = wlr_xdg_shell_create(display, 6);
 
     // new_xdg_toplevel
     new_xdg_toplevel.notify = [](wl_listener *listener, void *data) {
@@ -192,14 +207,13 @@ Server::Server(Config *config) {
 
     // layer shell
     wl_list_init(&layer_surfaces);
-    wlr_layer_shell = wlr_layer_shell_v1_create(wl_display, 5);
+    wlr_layer_shell = wlr_layer_shell_v1_create(display, 5);
 
     // new_shell_surface
     new_shell_surface.notify = [](wl_listener *listener, void *data) {
         // layer surface created
         Server *server = wl_container_of(listener, server, new_shell_surface);
-        wlr_layer_surface_v1 *surface =
-            static_cast<wlr_layer_surface_v1 *>(data);
+        auto *surface = static_cast<wlr_layer_surface_v1 *>(data);
 
         Output *output = nullptr;
 
@@ -274,7 +288,7 @@ Server::Server(Config *config) {
 
     // relative pointer
     wlr_relative_pointer_manager =
-        wlr_relative_pointer_manager_v1_create(wl_display);
+        wlr_relative_pointer_manager_v1_create(display);
 
     // cursor
     cursor = new Cursor(this);
@@ -288,8 +302,7 @@ Server::Server(Config *config) {
         Server *server = wl_container_of(listener, server, new_input);
 
         // handle device type
-        switch (wlr_input_device *device =
-                    static_cast<wlr_input_device *>(data);
+        switch (auto *device = static_cast<wlr_input_device *>(data);
                 device->type) {
         case WLR_INPUT_DEVICE_KEYBOARD:
             server->new_keyboard(device);
@@ -311,14 +324,14 @@ Server::Server(Config *config) {
     wl_signal_add(&backend->events.new_input, &new_input);
 
     // seat
-    seat = wlr_seat_create(wl_display, "seat0");
+    seat = wlr_seat_create(display, "seat0");
 
     // request_cursor (seat)
     request_cursor.notify = [](wl_listener *listener, void *data) {
         // client-provided cursor image
         Server *server = wl_container_of(listener, server, request_cursor);
 
-        wlr_seat_pointer_request_set_cursor_event *event =
+        const auto *event =
             static_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
         wlr_seat_client *focused_client =
             server->seat->pointer_state.focused_client;
@@ -336,7 +349,7 @@ Server::Server(Config *config) {
         Server *server =
             wl_container_of(listener, server, request_set_selection);
 
-        wlr_seat_request_set_selection_event *event =
+        const auto *event =
             static_cast<wlr_seat_request_set_selection_event *>(data);
 
         wlr_seat_set_selection(server->seat, event->source, event->serial);
@@ -344,12 +357,12 @@ Server::Server(Config *config) {
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
     // virtual pointer manager
-    virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(wl_display);
+    virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(display);
 
     new_virtual_pointer.notify = [](wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_virtual_pointer);
 
-        wlr_virtual_pointer_v1_new_pointer_event *event =
+        const auto *event =
             static_cast<wlr_virtual_pointer_v1_new_pointer_event *>(data);
         wlr_virtual_pointer_v1 *pointer = event->new_pointer;
         wlr_input_device *device = &pointer->pointer.base;
@@ -366,56 +379,49 @@ Server::Server(Config *config) {
     // xwayland_shell = new XWaylandShell(wl_display, scene);
 
     // viewporter
-    wlr_viewporter = wlr_viewporter_create(wl_display);
+    wlr_viewporter = wlr_viewporter_create(display);
 
     // presentation
-    wlr_presentation = wlr_presentation_create(wl_display, backend, 2);
+    wlr_presentation = wlr_presentation_create(display, backend, 2);
 
     // export dmabuf manager
-    wlr_export_dmabuf_manager = wlr_export_dmabuf_manager_v1_create(wl_display);
+    wlr_export_dmabuf_manager = wlr_export_dmabuf_manager_v1_create(display);
 
     // screencopy manager
-    wlr_screencopy_manager = wlr_screencopy_manager_v1_create(wl_display);
+    wlr_screencopy_manager = wlr_screencopy_manager_v1_create(display);
 
     // foreign toplevel list
     wlr_foreign_toplevel_list =
-        wlr_ext_foreign_toplevel_list_v1_create(wl_display, 1);
+        wlr_ext_foreign_toplevel_list_v1_create(display, 1);
 
     // foreign toplevel manager
     wlr_foreign_toplevel_manager =
-        wlr_foreign_toplevel_manager_v1_create(wl_display);
+        wlr_foreign_toplevel_manager_v1_create(display);
 
     // data control manager
-    wlr_data_control_manager = wlr_data_control_manager_v1_create(wl_display);
+    wlr_data_control_manager = wlr_data_control_manager_v1_create(display);
 
     // gamma control manager
-    wlr_gamma_control_manager = wlr_gamma_control_manager_v1_create(wl_display);
+    wlr_gamma_control_manager = wlr_gamma_control_manager_v1_create(display);
     wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager);
 
     // image copy capture manager
     ext_image_copy_capture_manager =
-        wlr_ext_image_copy_capture_manager_v1_create(wl_display, 1);
-    wlr_ext_output_image_capture_source_manager_v1_create(wl_display, 1);
+        wlr_ext_image_copy_capture_manager_v1_create(display, 1);
+    wlr_ext_output_image_capture_source_manager_v1_create(display, 1);
 
     // fractional scale manager
     wlr_fractional_scale_manager =
-        wlr_fractional_scale_manager_v1_create(wl_display, 1);
+        wlr_fractional_scale_manager_v1_create(display, 1);
 
     // alpha modifier
-    wlr_alpha_modifier = wlr_alpha_modifier_v1_create(wl_display);
-
-    // drm syncobj manager
-    if (wlr_renderer_get_drm_fd(renderer) >= 0 && renderer->features.timeline &&
-        backend->features.timeline) {
-        wlr_linux_drm_syncobj_manager_v1_create(
-            wl_display, 1, wlr_renderer_get_drm_fd(renderer));
-    }
+    wlr_alpha_modifier = wlr_alpha_modifier_v1_create(display);
 
     // avoid using "wayland-0" as display socket
     std::string socket;
     for (unsigned int i = 1; i <= 32; i++) {
         socket = "wayland-" + std::to_string(i);
-        if (const int ret = wl_display_add_socket(wl_display, socket.c_str());
+        if (const int ret = wl_display_add_socket(display, socket.c_str());
             !ret)
             break;
         else
@@ -433,16 +439,8 @@ Server::Server(Config *config) {
     // backend start
     if (!wlr_backend_start(backend)) {
         wlr_backend_destroy(backend);
-        wl_display_destroy(wl_display);
+        wl_display_destroy(display);
         ::exit(1);
-    }
-
-    // linux dmabuf
-    if (wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_DMABUF)) {
-        wlr_drm_create(wl_display, renderer);
-        wlr_linux_dmabuf =
-            wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, renderer);
-        wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
     }
 
 #ifdef XWAYLAND
@@ -450,7 +448,7 @@ Server::Server(Config *config) {
     unsetenv("DISPLAY");
 
     // init xwayland
-    if ((xwayland = wlr_xwayland_create(wl_display, compositor, true))) {
+    if ((xwayland = wlr_xwayland_create(display, compositor, true))) {
         // xwayland_ready
         xwayland_ready.notify = [](wl_listener *listener, void *data) {
             Server *server = wl_container_of(listener, server, xwayland_ready);
@@ -533,11 +531,11 @@ Server::Server(Config *config) {
     // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
             socket.c_str());
-    wl_display_run(wl_display);
+    wl_display_run(display);
 }
 
 void Server::exit() const {
-    wl_display_terminate(wl_display);
+    wl_display_terminate(display);
 
     // run exit commands
     for (const std::string &command : config->exit_commands)
@@ -546,7 +544,7 @@ void Server::exit() const {
 }
 
 Server::~Server() {
-    wl_display_destroy_clients(wl_display);
+    wl_display_destroy_clients(display);
 
     delete output_manager;
 
@@ -574,5 +572,5 @@ Server::~Server() {
     wlr_allocator_destroy(allocator);
     wlr_renderer_destroy(renderer);
     wlr_backend_destroy(backend);
-    wl_display_destroy(wl_display);
+    wl_display_destroy(display);
 }

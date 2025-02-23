@@ -21,7 +21,7 @@ struct Server {
 
     Config *config;
 
-    struct wl_display *wl_display;
+    wl_display *display;
     wlr_backend *backend;
     wlr_renderer *renderer;
     wlr_allocator *allocator;

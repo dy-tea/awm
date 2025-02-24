@@ -7,6 +7,7 @@
 - [XDG shell](https://wayland.app/protocols/xdg-shell)
 - [Linux DMA-BUF](https://wayland.app/protocols/linux-dmabuf-v1)
 - [DRM synchronization object](https://wayland.app/protocols/linux-drm-syncobj-v1)
+- [Session lock](https://wayland.app/protocols/ext-session-lock-v1)
 - [Single-pixel buffer](https://wayland.app/protocols/single-pixel-buffer-v1)
 - [Image Capture Source](https://wayland.app/protocols/ext-image-capture-source-v1)
 - [Image Copy Capture](https://wayland.app/protocols/ext-image-copy-capture-v1)

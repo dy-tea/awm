@@ -24,6 +24,9 @@ struct Output {
     struct wl_list workspaces;
     uint32_t max_workspace{0};
 
+    wlr_session_lock_surface_v1 *lock_surface{nullptr};
+    wl_listener destroy_lock_surface;
+
     Output(struct Server *server, struct wlr_output *wlr_output);
     ~Output();
 

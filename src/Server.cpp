@@ -89,6 +89,9 @@ Output *Server::get_output(const wlr_output *wlr_output) const {
 
 // get toplevel by wlr_surface
 Toplevel *Server::get_toplevel(wlr_surface *surface) const {
+    // check each toplevel in each workspace in each output
+    // get the toplevel by the surface
+    // optionally get xwayland toplevels
     Output *output, *tmp;
     Workspace *workspace, *tmp1;
     Toplevel *toplevel, *tmp2;
@@ -204,6 +207,7 @@ Server::Server(Config *config) : config(config) {
     layers.top = wlr_scene_tree_create(&scene->tree);
     layers.fullscreen = wlr_scene_tree_create(&scene->tree);
     layers.overlay = wlr_scene_tree_create(&scene->tree);
+    layers.lock = wlr_scene_tree_create(&scene->tree);
 
     // layer shell
     wl_list_init(&layer_surfaces);
@@ -285,6 +289,25 @@ Server::Server(Config *config) : config(config) {
         wlr_renderer_destroy(old_renderer);
     };
     wl_signal_add(&renderer->events.lost, &renderer_lost);
+
+    // session lock
+    wlr_session_lock_manager = wlr_session_lock_manager_v1_create(display);
+
+    new_session_lock.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_session_lock);
+        auto session_lock = static_cast<wlr_session_lock_v1 *>(data);
+
+        if (server->current_session_lock) {
+            wlr_session_lock_v1_destroy(session_lock);
+            return;
+        }
+
+        [[maybe_unused]] SessionLock *lock =
+            new SessionLock(server, session_lock);
+        server->current_session_lock = session_lock;
+    };
+    wl_signal_add(&wlr_session_lock_manager->events.new_lock,
+                  &new_session_lock);
 
     // relative pointer
     wlr_relative_pointer_manager =
@@ -398,7 +421,7 @@ Server::Server(Config *config) : config(config) {
         Server *server =
             wl_container_of(listener, server, new_pointer_constraint);
 
-        PointerConstraint *constraint = new PointerConstraint(
+        [[maybe_unused]] PointerConstraint *constraint = new PointerConstraint(
             static_cast<wlr_pointer_constraint_v1 *>(data));
     };
     wl_signal_add(&wlr_pointer_constraints->events.new_constraint,
@@ -590,6 +613,7 @@ Server::~Server() {
     wl_list_remove(&renderer_lost.link);
 
     wl_list_remove(&new_shell_surface.link);
+    wl_list_remove(&new_session_lock.link);
     wl_list_remove(&new_virtual_pointer.link);
     wl_list_remove(&new_pointer_constraint.link);
 

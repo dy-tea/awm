@@ -481,6 +481,10 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
 
 // focus keyboard to surface
 void Toplevel::focus() const {
+    // locked
+    if (server->locked)
+        return;
+
     wlr_seat *seat = server->seat;
     wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
 

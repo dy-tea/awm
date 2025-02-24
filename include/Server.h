@@ -9,6 +9,7 @@
 #include "OutputManager.h"
 #include "PointerConstraint.h"
 #include "Popup.h"
+#include "SessionLock.h"
 #include "Toplevel.h"
 #include "Workspace.h"
 
@@ -59,11 +60,17 @@ struct Server {
         wlr_scene_tree *fullscreen;
         wlr_scene_tree *top;
         wlr_scene_tree *overlay;
+        wlr_scene_tree *lock;
     } layers;
 
     wl_list layer_surfaces;
     wlr_layer_shell_v1 *wlr_layer_shell;
     wl_listener new_shell_surface;
+
+    wlr_session_lock_manager_v1 *wlr_session_lock_manager;
+    wlr_session_lock_v1 *current_session_lock;
+    wl_listener new_session_lock;
+    bool locked{false};
 
     wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
     wl_listener new_virtual_pointer;

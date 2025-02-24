@@ -220,7 +220,7 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device) {
         // handle binds
         bool handled = false;
 
-        if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+        if (!server->locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
             // modifiers
             uint32_t modifiers = 0;
 

@@ -88,6 +88,7 @@ executable(
     'src/Cursor.cpp',
     'src/OutputManager.cpp',
     'src/PointerConstraint.cpp',
+    'src/SessionLock.cpp',
     protocol_sources,
     protocol_code,
   ],

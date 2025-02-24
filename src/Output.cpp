@@ -102,14 +102,15 @@ void Output::arrange_layers() {
     for (const wlr_scene_tree *layer : layers_above_shell) {
         wlr_scene_node *node;
         wl_list_for_each_reverse(node, &layer->children, link) {
-            if (LayerSurface *surface = static_cast<LayerSurface *>(node->data);
-                surface &&
-                surface->wlr_layer_surface->current.keyboard_interactive ==
-                    ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE &&
-                surface->wlr_layer_surface->surface->mapped) {
-                topmost = surface;
-                break;
-            }
+            LayerSurface *surface = static_cast<LayerSurface *>(node->data);
+            if (server->locked || !surface ||
+                surface->wlr_layer_surface->current.keyboard_interactive !=
+                    ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE ||
+                !surface->wlr_layer_surface->surface->mapped)
+                continue;
+
+            topmost = surface;
+            break;
         }
         if (topmost)
             break;

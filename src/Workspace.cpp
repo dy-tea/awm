@@ -8,6 +8,10 @@ Workspace::Workspace(Output *output, const uint32_t num)
 
 // add a toplevel to the workspace
 void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
+    // ensure toplevel is not already in workspace
+    if (contains(toplevel))
+        return;
+
     // add to toplevels list
     wl_list_insert(&toplevels, &toplevel->link);
 
@@ -21,14 +25,21 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
 
 // close a toplevel
 void Workspace::close(const Toplevel *toplevel) {
+    if (!toplevel)
+        return;
+
     // active toplevels need extra handling
     if (toplevel == active_toplevel) {
         if (wl_list_length(&toplevels) > 1)
             // focus the next toplevel
             focus_next();
-        else
+        else {
             // no more active toplevel
             active_toplevel = nullptr;
+
+            // clear keyboard focus
+            wlr_seat_keyboard_notify_clear_focus(output->server->seat);
+        }
     }
 
     // send close
@@ -65,22 +76,6 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
     if (workspace == this)
         return false;
 
-    // active toplevel needs to be updated
-    if (toplevel == active_toplevel) {
-        if (wl_list_length(&toplevels) > 1) {
-            // focus the next toplevel
-            Toplevel *new_active =
-                wl_container_of(toplevels.prev, new_active, link);
-            new_active->focus();
-        } else {
-            // no more active toplevel
-            active_toplevel = nullptr;
-
-            // clear keyboard focus
-            wlr_seat_keyboard_notify_clear_focus(output->server->seat);
-        }
-    }
-
     // ensure toplevel is part of workspace
     if (contains(toplevel)) {
         // only hide toplevel if moving to a workspace on the same output
@@ -89,7 +84,17 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
 
         // move to other workspace
         wl_list_remove(&toplevel->link);
-        workspace->add_toplevel(toplevel, false);
+        workspace->add_toplevel(toplevel, true);
+
+        // Update active_toplevel if necessary
+        if (toplevel == active_toplevel) {
+            if (wl_list_length(&toplevels) > 1)
+                // focus the next toplevel
+                focus_next();
+            else
+                // no more active toplevel
+                active_toplevel = nullptr;
+        }
 
         return true;
     }

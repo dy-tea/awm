@@ -11,7 +11,6 @@
 #include "Popup.h"
 #include "Toplevel.h"
 #include "Workspace.h"
-#include "wlr.h"
 
 struct Server {
     // get singleton instance

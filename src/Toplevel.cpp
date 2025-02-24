@@ -614,10 +614,9 @@ void Toplevel::set_position_size(const double x, const double y,
         if (xdg_toplevel->current.maximized)
             // unmaximize if maximized
             wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
-        else {
+        else
             // save current geometry
             save_geometry();
-        }
 
         // set position and size
         wlr_scene_node_set_position(&scene_tree->node, x, y);
@@ -787,7 +786,7 @@ void Toplevel::save_geometry() {
     saved_geometry.y = scene_tree->node.y;
 
     // current width and height are not set when a toplevel is created, but
-    // saved geometry is.
+    // saved geometry is
     if (xdg_toplevel->current.width && xdg_toplevel->current.height) {
         saved_geometry.width = xdg_toplevel->current.width;
         saved_geometry.height = xdg_toplevel->current.height;

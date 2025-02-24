@@ -87,6 +87,26 @@ Output *Server::get_output(const wlr_output *wlr_output) const {
     return output_manager->get_output(wlr_output);
 }
 
+// get toplevel by wlr_surface
+Toplevel *Server::get_toplevel(wlr_surface *surface) const {
+    Output *output, *tmp;
+    Workspace *workspace, *tmp1;
+    Toplevel *toplevel, *tmp2;
+    wl_list_for_each_safe(output, tmp, &output_manager->outputs, link)
+        wl_list_for_each_safe(workspace, tmp1, &output->workspaces, link)
+            wl_list_for_each_safe(
+                toplevel, tmp2, &workspace->toplevels,
+                link) if ((toplevel->xdg_toplevel &&
+                           toplevel->xdg_toplevel->base->surface == surface)
+#ifdef XWAYLAND
+                          || (toplevel->xwayland_surface &&
+                              toplevel->xwayland_surface->surface == surface)
+#endif
+                              ) return toplevel;
+
+    return nullptr;
+}
+
 // get the focused output
 Output *Server::focused_output() const {
     return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
@@ -371,6 +391,19 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&virtual_pointer_mgr->events.new_virtual_pointer,
                   &new_virtual_pointer);
 
+    // pointer constraints
+    wlr_pointer_constraints = wlr_pointer_constraints_v1_create(display);
+
+    new_pointer_constraint.notify = [](wl_listener *listener, void *data) {
+        Server *server =
+            wl_container_of(listener, server, new_pointer_constraint);
+
+        PointerConstraint *constraint = new PointerConstraint(
+            static_cast<wlr_pointer_constraint_v1 *>(data));
+    };
+    wl_signal_add(&wlr_pointer_constraints->events.new_constraint,
+                  &new_pointer_constraint);
+
     // viewporter
     wlr_viewporter = wlr_viewporter_create(display);
 
@@ -558,6 +591,7 @@ Server::~Server() {
 
     wl_list_remove(&new_shell_surface.link);
     wl_list_remove(&new_virtual_pointer.link);
+    wl_list_remove(&new_pointer_constraint.link);
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

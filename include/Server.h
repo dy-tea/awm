@@ -7,6 +7,7 @@
 #include "LayerSurface.h"
 #include "Output.h"
 #include "OutputManager.h"
+#include "PointerConstraint.h"
 #include "Popup.h"
 #include "Toplevel.h"
 #include "Workspace.h"
@@ -68,6 +69,9 @@ struct Server {
     wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
     wl_listener new_virtual_pointer;
 
+    wlr_pointer_constraints_v1 *wlr_pointer_constraints;
+    wl_listener new_pointer_constraint;
+
     struct wlr_viewporter *wlr_viewporter;
     struct wlr_presentation *wlr_presentation;
     wlr_export_dmabuf_manager_v1 *wlr_export_dmabuf_manager;
@@ -105,4 +109,6 @@ struct Server {
                                    double *sx, double *sy);
 
     Workspace *get_workspace(Toplevel *toplevel) const;
+
+    Toplevel *get_toplevel(wlr_surface *surface) const;
 };

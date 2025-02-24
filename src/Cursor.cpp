@@ -28,7 +28,7 @@ Cursor::Cursor(Server *server) : server(server) {
     wl_signal_add(&cursor_shape_mgr->events.request_set_shape,
                   &request_set_shape);
 
-    // cursor_motion
+    // motion
     motion.notify = [](wl_listener *listener, void *data) {
         // relative motion event
         Cursor *cursor = wl_container_of(listener, cursor, motion);
@@ -41,7 +41,7 @@ Cursor::Cursor(Server *server) : server(server) {
     };
     wl_signal_add(&cursor->events.motion, &motion);
 
-    // cursor_motion_absolute
+    // motion_absolute
     motion_absolute.notify = [](wl_listener *listener, void *data) {
         // absolute motion event
         Cursor *cursor = wl_container_of(listener, cursor, motion_absolute);
@@ -67,7 +67,7 @@ Cursor::Cursor(Server *server) : server(server) {
     };
     wl_signal_add(&cursor->events.motion_absolute, &motion_absolute);
 
-    // cursor_button
+    // button
     button.notify = [](wl_listener *listener, void *data) {
         Cursor *cursor = wl_container_of(listener, cursor, button);
         const auto *event = static_cast<wlr_pointer_button_event *>(data);
@@ -103,7 +103,7 @@ Cursor::Cursor(Server *server) : server(server) {
     };
     wl_signal_add(&cursor->events.button, &button);
 
-    // cursor_axis
+    // axis
     axis.notify = [](wl_listener *listener, void *data) {
         // scroll wheel etc
         Cursor *cursor = wl_container_of(listener, cursor, axis);
@@ -118,7 +118,7 @@ Cursor::Cursor(Server *server) : server(server) {
     };
     wl_signal_add(&cursor->events.axis, &axis);
 
-    // cursor_frame
+    // frame
     frame.notify = [](wl_listener *listener, void *data) {
         Cursor *cursor = wl_container_of(listener, cursor, frame);
 
@@ -154,11 +154,46 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
             server->wlr_relative_pointer_manager, server->seat,
             static_cast<uint64_t>(time) * 1000, dx, dy, unaccel_dx, unaccel_dy);
 
-        // move cursor
-        wlr_cursor_move(cursor, device, dx, dy);
+        // constrain cursor
+        wlr_pointer_constraint_v1 *constraint;
+        wl_list_for_each(constraint,
+                         &server->wlr_pointer_constraints->constraints, link)
+            constrain(constraint);
+
+        if (active_constraint && cursor_mode != CURSORMODE_RESIZE &&
+            cursor_mode != CURSORMODE_MOVE) {
+            // get the toplevel which the constraint is applied to
+            const auto *toplevel =
+                server->get_toplevel(active_constraint->surface);
+
+            // ensure toplevel is focused
+            if (toplevel && active_constraint->surface ==
+                                server->seat->pointer_state.focused_surface) {
+                // calculate constraint
+                double sx = cursor->x - toplevel->get_geometry().x -
+                            toplevel->get_geometry().width;
+                double sy = cursor->y - toplevel->get_geometry().y -
+                            toplevel->get_geometry().height;
+                double cx, cy;
+
+                // apply confine on region
+                if (wlr_region_confine(&active_constraint->region, sx, sy,
+                                       sx + dx, sy + dy, &cx, &cy)) {
+                    dx = cx - sx;
+                    dy = cy - sy;
+                }
+
+                // if pointer is locked, do not move it
+                if (active_constraint->type == WLR_POINTER_CONSTRAINT_V1_LOCKED)
+                    return;
+            }
+        }
     }
 
-    // move or resize
+    // move cursor
+    wlr_cursor_move(cursor, device, dx, dy);
+
+    // move or resize toplevel
     if (cursor_mode == CURSORMODE_MOVE) {
         process_move();
         return;
@@ -263,6 +298,21 @@ void Cursor::process_resize() {
                                 new_left - geo_box->x, new_top - geo_box->y);
     wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_right - new_left,
                               new_bottom - new_top);
+}
+
+// constrain the cursor to a given pointer constraint
+void Cursor::constrain(wlr_pointer_constraint_v1 *constraint) {
+    // no change in constraint
+    if (active_constraint == constraint)
+        return;
+
+    // deactivate current constraint
+    if (active_constraint)
+        wlr_pointer_constraint_v1_send_deactivated(active_constraint);
+
+    // set the new constraint
+    active_constraint = constraint;
+    wlr_pointer_constraint_v1_send_activated(constraint);
 }
 
 // set the cursor libinput configuration

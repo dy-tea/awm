@@ -1,6 +1,7 @@
 # awm
 
 ### Supported protocols
+
 - [Presentation time](https://wayland.app/protocols/presentation-time)
 - [Viewporter](https://wayland.app/protocols/viewporter)
 - [XDG shell](https://wayland.app/protocols/xdg-shell)
@@ -15,6 +16,7 @@
 - [Foreign toplevel list](https://wayland.app/protocols/ext-foreign-toplevel-list-v1)
 - [Alpha modifier protocol](https://wayland.app/protocols/alpha-modifier-v1)
 - [Data control protocol](https://wayland.app/protocols/ext-data-control-v1)
+- [Pointer constraints](https://wayland.app/protocols/pointer-constraints-unstable-v1)
 - [Relative pointer](https://wayland.app/protocols/relative-pointer-unstable-v1)
 - [XDG output](https://wayland.app/protocols/xdg-output-unstable-v1)
 - [wlr data control](https://wayland.app/protocols/wlr-data-control-unstable-v1)
@@ -27,6 +29,7 @@
 - [wlr virtual pointer](https://wayland.app/protocols/wlr-virtual-pointer-unstable-v1)
 
 ### Dependencies
+
 - `wlroots` **0.19** (wlroots-git)
 - `xkbcommon`
 - `wayland-server`
@@ -35,7 +38,9 @@
 - `xwayland` (can be disabled in build)
 
 ### Build
+
 You can build and run using:
+
 ```sh
 # clone
 git clone https://github.com/dy-tea/awm.git --recurse-submodules
@@ -47,11 +52,14 @@ ninja -C build
 # run
 ./build/awm
 ```
+
 Additionally, you can install awm to your wayland-sessions using:
+
 ```sh
 sudo meson install -C build
-````
+```
 
 ### Configuration
+
 An example configuration can be found in [config.toml](config.toml).
 You can copy this file to `~/.config/awm/config.toml` and modify it to your liking.

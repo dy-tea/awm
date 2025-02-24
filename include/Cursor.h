@@ -28,6 +28,8 @@ struct Cursor {
 
     wl_listener request_set_shape;
 
+    wlr_pointer_constraint_v1 *active_constraint{nullptr};
+
     Cursor(Server *server);
     ~Cursor();
 
@@ -36,6 +38,7 @@ struct Cursor {
                         double dy, double unaccel_dx, double unaccel_dy);
     void process_move();
     void process_resize();
+    void constrain(wlr_pointer_constraint_v1 *constraint);
 
     void set_config(wlr_pointer *pointer);
     void reconfigure_all();

@@ -1,8 +1,8 @@
 #include "Server.h"
 
-Output::Output(Server *server, struct wlr_output *wlr_output) {
-    this->wlr_output = wlr_output;
-    this->server = server;
+Output::Output(Server *server, struct wlr_output *wlr_output)
+    : server(server), wlr_output(wlr_output) {
+
     wl_list_init(&workspaces);
 
     // create layers

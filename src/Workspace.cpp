@@ -1,9 +1,8 @@
 #include "Server.h"
 #include <climits>
 
-Workspace::Workspace(Output *output, const uint32_t num) {
-    this->output = output;
-    this->num = num;
+Workspace::Workspace(Output *output, const uint32_t num)
+    : num(num), output(output) {
     wl_list_init(&toplevels);
 }
 

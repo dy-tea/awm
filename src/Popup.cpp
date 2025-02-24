@@ -1,9 +1,7 @@
 #include "Server.h"
 
-Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server) {
-    this->xdg_popup = xdg_popup;
-    this->server = server;
-
+Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server)
+    : server(server), xdg_popup(xdg_popup) {
     // we need a parent to ascertain the type
     if (!xdg_popup->parent)
         return;

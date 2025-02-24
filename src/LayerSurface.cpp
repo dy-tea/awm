@@ -1,10 +1,8 @@
 #include "Server.h"
 
 LayerSurface::LayerSurface(Output *output,
-                           wlr_layer_surface_v1 *wlr_layer_surface) {
-    this->output = output;
-    this->wlr_layer_surface = wlr_layer_surface;
-
+                           wlr_layer_surface_v1 *wlr_layer_surface)
+    : output(output), wlr_layer_surface(wlr_layer_surface) {
     // create scene layer for surface
     wlr_scene_tree *layer_tree =
         output->shell_layer(wlr_layer_surface->pending.layer);

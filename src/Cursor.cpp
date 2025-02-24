@@ -1,8 +1,7 @@
 #include "Server.h"
 
-Cursor::Cursor(Server *server) {
+Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
-    this->server = server;
     cursor = wlr_cursor_create();
     wlr_cursor_attach_output_layout(cursor, server->output_manager->layout);
     cursor_mgr = wlr_xcursor_manager_create(nullptr, 24);
@@ -199,6 +198,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
 
 // move a toplevel
 void Cursor::process_move() {
+    // do not move fullscreen toplevel
     if (server->grabbed_toplevel->xdg_toplevel->current.fullscreen)
         return;
 
@@ -235,6 +235,7 @@ void Cursor::process_resize() {
     int new_top = grab_geobox.y;
     int new_bottom = grab_geobox.y + grab_geobox.height;
 
+    // resize top and bottom edges
     if (resize_edges & WLR_EDGE_TOP) {
         new_top = border_y;
         if (new_top >= new_bottom)
@@ -244,6 +245,8 @@ void Cursor::process_resize() {
         if (new_bottom <= new_top)
             new_bottom = new_top + 1;
     }
+
+    // resiy left and right edges
     if (resize_edges & WLR_EDGE_LEFT) {
         new_left = border_x;
         if (new_left >= new_right)
@@ -254,10 +257,10 @@ void Cursor::process_resize() {
             new_right = new_left + 1;
     }
 
+    // update toplevel position and size
     const wlr_box *geo_box = &toplevel->xdg_toplevel->base->geometry;
     wlr_scene_node_set_position(&toplevel->scene_tree->node,
                                 new_left - geo_box->x, new_top - geo_box->y);
-
     wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_right - new_left,
                               new_bottom - new_top);
 }

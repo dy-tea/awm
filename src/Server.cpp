@@ -371,9 +371,6 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&virtual_pointer_mgr->events.new_virtual_pointer,
                   &new_virtual_pointer);
 
-    // xwayland shell
-    // xwayland_shell = new XWaylandShell(wl_display, scene);
-
     // viewporter
     wlr_viewporter = wlr_viewporter_create(display);
 

@@ -23,26 +23,33 @@ Bind *parse_bind(const std::string &definition) {
     std::string token;
     std::stringstream ss(definition);
 
+    // get each space-seperated token
     while (std::getline(ss, token, ' ')) {
+        // special handling for number keys
         if (token == "Number") {
             bind->sym = XKB_KEY_NoSymbol;
             continue;
         }
 
+        // parse keysym
         const xkb_keysym_t sym =
             xkb_keysym_from_name(token.c_str(), XKB_KEYSYM_NO_FLAGS);
 
         if (sym == XKB_KEY_NoSymbol) {
+            // not a keysym, parse modifier
             const uint32_t modifier = parse_modifier(token);
 
             if (modifier == 69420) {
+                // not a keysym or modifier, tell user
                 notify_send("No such keycode or modifier '%s'", token.c_str());
                 delete bind;
                 return nullptr;
             }
 
+            // add modifier
             bind->modifiers |= modifier;
         } else
+            // add keysym
             bind->sym = sym;
     }
 

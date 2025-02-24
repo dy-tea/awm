@@ -1,15 +1,13 @@
 #include "Server.h"
 #include <map>
 
-OutputManager::OutputManager(Server *server) {
-    this->server = server;
-
+OutputManager::OutputManager(Server *server) : server(server) {
     layout = wlr_output_layout_create(server->display);
     wl_list_init(&outputs);
 
-    this->wlr_xdg_output_manager =
+    wlr_xdg_output_manager =
         wlr_xdg_output_manager_v1_create(server->display, layout);
-    this->wlr_output_manager = wlr_output_manager_v1_create(server->display);
+    wlr_output_manager = wlr_output_manager_v1_create(server->display);
 
     // apply
     apply.notify = [](wl_listener *listener, void *data) {

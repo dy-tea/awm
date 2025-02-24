@@ -330,12 +330,6 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
 
     // request_resize
     request_resize.notify = [](wl_listener *listener, void *data) {
-        /* This event is raised when a client would like to begin an interactive
-         * resize, typically because the user clicked on their client-side
-         * decorations. Note that a more sophisticated compositor should check
-         * the provided serial against a list of button press serials sent to
-         * this client, to prevent the client from requesting this whenever they
-         * want. */
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_resize);
         const auto *event = static_cast<wlr_xdg_toplevel_resize_event *>(data);
@@ -415,8 +409,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         const wlr_xwayland_surface *xwayland_surface =
             toplevel->xwayland_surface;
 
-        if (xwayland_surface->surface == NULL ||
-            !xwayland_surface->surface->mapped)
+        if (!xwayland_surface->surface || !xwayland_surface->surface->mapped)
             return;
 
         if (!xwayland_surface->override_redirect)
@@ -580,24 +573,6 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
         // follow cursor
         cursor->grab_x = cursor->cursor->x - scene_tree->node.x;
         cursor->grab_y = cursor->cursor->y - scene_tree->node.y;
-
-        // move toplevel to different workspace if it's moved into other output
-        Workspace *current = server->get_workspace(this);
-        Workspace *target = server->focused_output()->get_active();
-        if (!target->contains(this) && current) {
-            current->move_to(this, target);
-
-            wlr_box output_box = target->output->layout_geometry;
-
-            double new_x = cursor->cursor->x - cursor->grab_x;
-            double new_y = cursor->cursor->y - cursor->grab_y;
-
-            // Adjust for output offset
-            new_x -= output_box.x;
-            new_y -= output_box.y;
-
-            wlr_scene_node_set_position(&scene_tree->node, new_x, new_y);
-        }
     } else {
         // don't resize fullscreened windows
         if (xdg_toplevel->current.fullscreen)

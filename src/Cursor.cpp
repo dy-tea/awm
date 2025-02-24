@@ -202,8 +202,21 @@ void Cursor::process_move() {
     if (server->grabbed_toplevel->xdg_toplevel->current.fullscreen)
         return;
 
+    // get the output of the current workspace
+    Workspace *current = server->get_workspace(server->grabbed_toplevel);
+
+    // calculate new x and y based on cursor position
+    double new_x = cursor->x - grab_x;
+    double new_y = cursor->y - grab_y;
+
+    // set the new position
     wlr_scene_node_set_position(&server->grabbed_toplevel->scene_tree->node,
-                                cursor->x - grab_x, cursor->y - grab_y);
+                                new_x, new_y);
+
+    // move toplevel to different workspace if it's moved into other output
+    Workspace *target = server->focused_output()->get_active();
+    if (!target->contains(server->grabbed_toplevel) && current)
+        current->move_to(server->grabbed_toplevel, target);
 }
 
 // resize a toplevel

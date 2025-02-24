@@ -48,8 +48,7 @@ Output::Output(Server *server, struct wlr_output *wlr_output) {
     request_state.notify = [](wl_listener *listener, void *data) {
         Output *output = wl_container_of(listener, output, request_state);
 
-        const wlr_output_event_request_state *event =
-            static_cast<wlr_output_event_request_state *>(data);
+        const auto *event = static_cast<wlr_output_event_request_state *>(data);
 
         wlr_output_commit_state(output->wlr_output, event->state);
         output->arrange_layers();
@@ -152,7 +151,8 @@ Output::shell_layer(const enum zwlr_layer_shell_v1_layer layer) const {
     case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
         return layers.overlay;
     default:
-        return layers.background;
+        wlr_log(WLR_ERROR, "unreachable");
+        return nullptr;
     }
 }
 

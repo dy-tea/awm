@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 #include <thread>
 
 // get workspace by toplevel
@@ -230,6 +231,7 @@ Server::Server(Config *config) : config(config) {
                 surface->output = output->wlr_output;
             else {
                 wlr_log(WLR_ERROR, "no available output for layer surface");
+                wlr_layer_surface_v1_destroy(surface);
                 return;
             }
         }

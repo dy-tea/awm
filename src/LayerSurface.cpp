@@ -4,10 +4,11 @@ LayerSurface::LayerSurface(Output *output,
                            wlr_layer_surface_v1 *wlr_layer_surface)
     : output(output), wlr_layer_surface(wlr_layer_surface) {
     // create scene layer for surface
-    wlr_scene_tree *layer_tree =
+    wlr_scene_tree *scene_layer =
         output->shell_layer(wlr_layer_surface->pending.layer);
     scene_layer_surface =
-        wlr_scene_layer_surface_v1_create(layer_tree, wlr_layer_surface);
+        wlr_scene_layer_surface_v1_create(scene_layer, wlr_layer_surface);
+    scene_tree = scene_layer_surface->tree;
 
     // set fractional scale
     wlr_fractional_scale_v1_notify_scale(wlr_layer_surface->surface,
@@ -31,8 +32,7 @@ LayerSurface::LayerSurface(Output *output,
 
         // handle focus
         if (surface->wlr_layer_surface->current.keyboard_interactive &&
-            (layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_TOP ||
-             layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY))
+            layer_surface->current.layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP)
             surface->handle_focus();
     };
     wl_signal_add(&wlr_layer_surface->surface->events.map, &map);
@@ -48,8 +48,6 @@ LayerSurface::LayerSurface(Output *output,
 
         // arrange layers
         surface->output->arrange_layers();
-
-        surface->output->server->cursor->process_motion(0, nullptr, 0, 0, 0, 0);
     };
     wl_signal_add(&wlr_layer_surface->surface->events.unmap, &unmap);
 

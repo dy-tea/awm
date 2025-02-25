@@ -3,6 +3,7 @@
 struct LayerSurface {
     wl_list link;
     struct Output *output;
+    wlr_scene_tree *scene_tree;
     wlr_layer_surface_v1 *wlr_layer_surface;
     wlr_scene_layer_surface_v1 *scene_layer_surface;
     wl_listener map;

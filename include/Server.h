@@ -23,6 +23,7 @@ struct Server {
     Config *config;
 
     wl_display *display;
+    wlr_session *session;
     wlr_backend *backend;
     wlr_renderer *renderer;
     wlr_allocator *allocator;
@@ -33,6 +34,8 @@ struct Server {
     wlr_linux_dmabuf_v1 *wlr_linux_dmabuf;
 
     wl_listener renderer_lost;
+
+    int drm_fd;
 
     wlr_xdg_shell *xdg_shell;
     wl_listener new_xdg_toplevel;

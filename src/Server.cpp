@@ -124,7 +124,7 @@ Server::Server(Config *config) : config(config) {
 
     // backend
     backend =
-        wlr_backend_autocreate(wl_display_get_event_loop(display), nullptr);
+        wlr_backend_autocreate(wl_display_get_event_loop(display), &session);
     if (!backend) {
         wlr_log(WLR_ERROR, "failed to create wlr_backend");
         ::exit(1);
@@ -148,10 +148,9 @@ Server::Server(Config *config) : config(config) {
     }
 
     // drm syncobj manager
-    if (wlr_renderer_get_drm_fd(renderer) >= 0 && renderer->features.timeline &&
-        backend->features.timeline)
-        wlr_linux_drm_syncobj_manager_v1_create(
-            display, 1, wlr_renderer_get_drm_fd(renderer));
+    if ((drm_fd = wlr_renderer_get_drm_fd(renderer)) >= 0 &&
+        renderer->features.timeline && backend->features.timeline)
+        wlr_linux_drm_syncobj_manager_v1_create(display, 1, drm_fd);
 
     // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);
@@ -161,7 +160,7 @@ Server::Server(Config *config) : config(config) {
     }
 
     // wlr compositor
-    compositor = wlr_compositor_create(display, 5, renderer);
+    compositor = wlr_compositor_create(display, 6, renderer);
     wlr_subcompositor_create(display);
     wlr_data_device_manager_create(display);
 

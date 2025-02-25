@@ -6,7 +6,12 @@ project(
     'cpp_std=c++17',
   ],
 )
-add_project_arguments('-Ofast', '-g3', '-DXWAYLAND', language: 'cpp')
+
+xwayland = dependency('xwayland', required: get_option('XWAYLAND'))
+
+if xwayland.found()
+  add_project_arguments('-DXWAYLAND', language: 'cpp')
+endif
 
 wayland_scanner = find_program('wayland-scanner')
 pkg_config = find_program('pkg-config')

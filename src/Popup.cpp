@@ -38,15 +38,12 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server)
     commit.notify = [](wl_listener *listener, void *data) {
         Popup *popup = wl_container_of(listener, popup, commit);
 
-        auto *surface = static_cast<wlr_surface *>(data);
-        wlr_xdg_popup *xdg_popup = wlr_xdg_popup_try_from_wlr_surface(surface);
-
-        if (!xdg_popup->base->initial_commit)
+        if (!popup->xdg_popup->base->initial_commit)
             return;
 
         if (Output *output = popup->server->focused_output()) {
-            const wlr_box box = output->usable_area;
-            wlr_xdg_popup_unconstrain_from_box(xdg_popup, &box);
+            wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup,
+                &output->layout_geometry);
         }
     };
     wl_signal_add(&xdg_popup->base->surface->events.commit, &commit);

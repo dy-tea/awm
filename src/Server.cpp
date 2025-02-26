@@ -624,6 +624,7 @@ Server::~Server() {
 #ifdef XWAYLAND
     wl_list_remove(&xwayland_ready.link);
     wl_list_remove(&new_xwayland_surface.link);
+    wlr_xwayland_destroy(xwayland);
 #endif
 
     wlr_scene_node_destroy(&scene->tree.node);

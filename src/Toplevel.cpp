@@ -354,12 +354,15 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
 }
 
 Toplevel::~Toplevel() {
+#ifdef XWAYLAND
     if (xwayland_surface != nullptr) {
         wl_list_remove(&activate.link);
         wl_list_remove(&associate.link);
         wl_list_remove(&dissociate.link);
         wl_list_remove(&configure.link);
-    } else {
+    } else
+#endif
+    {
         wl_list_remove(&map.link);
         wl_list_remove(&unmap.link);
         wl_list_remove(&commit.link);

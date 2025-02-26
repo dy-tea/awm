@@ -531,12 +531,7 @@ void Toplevel::focus() const {
         wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
 
         // move toplevel node to top of scene tree
-#ifdef XWAYLAND
-        if (scene_surface)
-            wlr_scene_node_raise_to_top(&scene_surface->buffer->node);
-        else
-#endif
-            wlr_scene_node_raise_to_top(&scene_tree->node);
+        wlr_scene_node_raise_to_top(&scene_tree->node);
 
         // activate toplevel
         if (xdg_toplevel)

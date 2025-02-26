@@ -67,15 +67,17 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
         // xwayland surface
 
         // scene surface
-        toplevel->scene_surface =
-            wlr_scene_surface_create(toplevel->server->layers.floating,
-                                     toplevel->xwayland_surface->surface);
+        toplevel->scene_tree =
+            wlr_scene_tree_create(toplevel->server->layers.floating);
+        toplevel->scene_surface = wlr_scene_surface_create(
+            toplevel->scene_tree, toplevel->xwayland_surface->surface);
 
         if (toplevel->scene_surface) {
             wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
                                         toplevel->xwayland_surface->x,
                                         toplevel->xwayland_surface->y);
             toplevel->scene_surface->buffer->node.data = toplevel;
+            toplevel->scene_tree->node.data = toplevel;
         }
 
         // xwayland commit

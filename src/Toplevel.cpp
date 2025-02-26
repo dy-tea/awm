@@ -296,25 +296,6 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     // xdg_toplevel_destroy
     destroy.notify = [](wl_listener *listener, void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
-
-        wl_list_remove(&toplevel->map.link);
-        wl_list_remove(&toplevel->unmap.link);
-        wl_list_remove(&toplevel->commit.link);
-        wl_list_remove(&toplevel->destroy.link);
-        wl_list_remove(&toplevel->request_move.link);
-        wl_list_remove(&toplevel->request_resize.link);
-        wl_list_remove(&toplevel->request_maximize.link);
-        wl_list_remove(&toplevel->request_fullscreen.link);
-        wl_list_remove(&toplevel->request_minimize.link);
-
-        wl_list_remove(&toplevel->handle_request_maximize.link);
-        wl_list_remove(&toplevel->handle_request_minimize.link);
-        wl_list_remove(&toplevel->handle_request_fullscreen.link);
-        wl_list_remove(&toplevel->handle_request_activate.link);
-        wl_list_remove(&toplevel->handle_request_close.link);
-        wl_list_remove(&toplevel->handle_set_rectangle.link);
-        wl_list_remove(&toplevel->handle_destroy.link);
-
         delete toplevel;
     };
     wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
@@ -372,7 +353,32 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     wl_signal_add(&xdg_toplevel->events.request_minimize, &request_minimize);
 }
 
-Toplevel::~Toplevel() {}
+Toplevel::~Toplevel() {
+    if (xwayland_surface != nullptr) {
+        wl_list_remove(&activate.link);
+        wl_list_remove(&associate.link);
+        wl_list_remove(&dissociate.link);
+        wl_list_remove(&configure.link);
+    } else {
+        wl_list_remove(&map.link);
+        wl_list_remove(&unmap.link);
+        wl_list_remove(&commit.link);
+        wl_list_remove(&request_move.link);
+        wl_list_remove(&request_resize.link);
+        wl_list_remove(&request_maximize.link);
+        wl_list_remove(&request_fullscreen.link);
+        wl_list_remove(&request_minimize.link);
+    }
+
+    wl_list_remove(&destroy.link);
+    wl_list_remove(&handle_request_maximize.link);
+    wl_list_remove(&handle_request_minimize.link);
+    wl_list_remove(&handle_request_fullscreen.link);
+    wl_list_remove(&handle_request_activate.link);
+    wl_list_remove(&handle_request_close.link);
+    wl_list_remove(&handle_set_rectangle.link);
+    wl_list_remove(&handle_destroy.link);
+}
 
 // Toplevel from xwayland surface
 #ifdef XWAYLAND
@@ -384,21 +390,6 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     // destroy
     destroy.notify = [](wl_listener *listener, void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
-
-        wl_list_remove(&toplevel->destroy.link);
-        wl_list_remove(&toplevel->activate.link);
-        wl_list_remove(&toplevel->associate.link);
-        wl_list_remove(&toplevel->dissociate.link);
-        wl_list_remove(&toplevel->configure.link);
-
-        wl_list_remove(&toplevel->handle_request_maximize.link);
-        wl_list_remove(&toplevel->handle_request_minimize.link);
-        wl_list_remove(&toplevel->handle_request_fullscreen.link);
-        wl_list_remove(&toplevel->handle_request_activate.link);
-        wl_list_remove(&toplevel->handle_request_close.link);
-        wl_list_remove(&toplevel->handle_set_rectangle.link);
-        wl_list_remove(&toplevel->handle_destroy.link);
-
         delete toplevel;
     };
     wl_signal_add(&xwayland_surface->events.destroy, &destroy);
@@ -440,7 +431,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         // unmap
         wl_list_remove(&toplevel->map.link);
         wl_list_remove(&toplevel->unmap.link);
-        wl_list_remove(&toplevel->commit.link);
+        wl_list_remove(&toplevel->xwayland_commit.link);
     };
     wl_signal_add(&xwayland_surface->events.dissociate, &dissociate);
 

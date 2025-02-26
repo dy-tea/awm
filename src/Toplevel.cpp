@@ -387,9 +387,8 @@ Toplevel::~Toplevel() {
         wl_list_remove(&associate.link);
         wl_list_remove(&dissociate.link);
         wl_list_remove(&configure.link);
-    } else
+    } else {
 #endif
-    {
         wl_list_remove(&map.link);
         wl_list_remove(&unmap.link);
         wl_list_remove(&commit.link);
@@ -398,7 +397,9 @@ Toplevel::~Toplevel() {
         wl_list_remove(&request_maximize.link);
         wl_list_remove(&request_fullscreen.link);
         wl_list_remove(&request_minimize.link);
+#ifdef XWAYLAND
     }
+#endif
 
     wl_list_remove(&destroy.link);
     wl_list_remove(&handle_request_maximize.link);
@@ -410,8 +411,8 @@ Toplevel::~Toplevel() {
     wl_list_remove(&handle_destroy.link);
 }
 
-// Toplevel from xwayland surface
 #ifdef XWAYLAND
+// Toplevel from xwayland surface
 Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     : server(server), xwayland_surface(xwayland_surface) {
     // create foreign toplevel handle

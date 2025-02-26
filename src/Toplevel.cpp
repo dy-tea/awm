@@ -38,9 +38,7 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
             height =
                 std::min(height, static_cast<uint32_t>(usable_area.height));
 
-            wlr_box output_box{};
-            wlr_output_layout_get_box(toplevel->server->output_manager->layout,
-                                      output->wlr_output, &output_box);
+            wlr_box output_box = output->layout_geometry;
 
             int32_t x = output_box.x + (usable_area.width - width) / 2;
             int32_t y = output_box.y + (usable_area.height - height) / 2;
@@ -66,48 +64,64 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
     else {
         // xwayland surface
 
-        // scene surface
-        toplevel->scene_tree =
-            wlr_scene_tree_create(toplevel->server->layers.floating);
-        toplevel->scene_surface = wlr_scene_surface_create(
-            toplevel->scene_tree, toplevel->xwayland_surface->surface);
+        if (Output *output = toplevel->server->focused_output()) {
+            // create scene surface
+            toplevel->scene_tree =
+                wlr_scene_tree_create(toplevel->server->layers.floating);
+            toplevel->scene_surface = wlr_scene_surface_create(
+                toplevel->scene_tree, toplevel->xwayland_surface->surface);
 
-        if (toplevel->scene_surface) {
+            // get usable area of the output
+            wlr_box area = output->usable_area;
+
+            // center the surface to the focused output
+            int x = toplevel->xwayland_surface->x + area.x +
+                    (output->layout_geometry.width -
+                     toplevel->xwayland_surface->width) /
+                        2;
+            int y = toplevel->xwayland_surface->y + area.y +
+                    (output->layout_geometry.height -
+                     toplevel->xwayland_surface->height) /
+                        2;
+
+            // set the position
             wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
-                                        toplevel->xwayland_surface->x,
-                                        toplevel->xwayland_surface->y);
+                                        x, y);
+
+            // add the toplevel to the scene tree
             toplevel->scene_surface->buffer->node.data = toplevel;
             toplevel->scene_tree->node.data = toplevel;
-        }
 
-        // xwayland commit
-        toplevel->xwayland_commit.notify = [](wl_listener *listener,
-                                              void *data) {
-            Toplevel *toplevel =
-                wl_container_of(listener, toplevel, xwayland_commit);
-            const wlr_surface_state *state =
-                &toplevel->xwayland_surface->surface->current;
+            // xwayland commit
+            toplevel->xwayland_commit.notify = [](wl_listener *listener,
+                                                  void *data) {
+                Toplevel *toplevel =
+                    wl_container_of(listener, toplevel, xwayland_commit);
+                const wlr_surface_state *state =
+                    &toplevel->xwayland_surface->surface->current;
 
-            wlr_box new_box{};
-            new_box.width = state->width;
-            new_box.height = state->height;
+                wlr_box new_box{
+                    .width = state->width,
+                    .height = state->height,
+                };
 
-            if (new_box.width != toplevel->saved_geometry.width ||
-                new_box.height != toplevel->saved_geometry.height)
-                memcpy(&toplevel->saved_geometry, &new_box, sizeof(wlr_box));
-        };
-        wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
-                      &toplevel->xwayland_commit);
+                if (new_box.width != toplevel->saved_geometry.width ||
+                    new_box.height != toplevel->saved_geometry.height)
+                    memcpy(&toplevel->saved_geometry, &new_box,
+                           sizeof(wlr_box));
+            };
+            wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
+                          &toplevel->xwayland_commit);
 
-        // set seat if requested
-        if (wlr_xwayland_surface_override_redirect_wants_focus(
-                toplevel->xwayland_surface))
-            wlr_xwayland_set_seat(toplevel->server->xwayland,
-                                  toplevel->server->seat);
+            // set seat if requested
+            if (wlr_xwayland_surface_override_redirect_wants_focus(
+                    toplevel->xwayland_surface))
+                wlr_xwayland_set_seat(toplevel->server->xwayland,
+                                      toplevel->server->seat);
 
-        // add to active workspace
-        if (const Output *output = toplevel->server->focused_output())
+            // add to active workspace
             output->get_active()->add_toplevel(toplevel, true);
+        }
     }
 #endif
 }

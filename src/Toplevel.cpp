@@ -74,15 +74,26 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
             // get usable area of the output
             wlr_box area = output->usable_area;
 
+            // calcualte the width and height
+            int width = toplevel->xwayland_surface->width;
+            int height = toplevel->xwayland_surface->height;
+
+            // ensure size does not exceed output
+            if (width > area.width)
+                width = area.width;
+
+            if (height > area.height)
+                height = area.height;
+
             // center the surface to the focused output
             int x = toplevel->xwayland_surface->x + area.x +
-                    (output->layout_geometry.width -
-                     toplevel->xwayland_surface->width) /
-                        2;
+                    (output->layout_geometry.width - width) / 2;
             int y = toplevel->xwayland_surface->y + area.y +
-                    (output->layout_geometry.height -
-                     toplevel->xwayland_surface->height) /
-                        2;
+                    (output->layout_geometry.height - height) / 2;
+
+            // send a configure event
+            wlr_xwayland_surface_configure(toplevel->xwayland_surface, x, y,
+                                           width, height);
 
             // set the position
             wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,

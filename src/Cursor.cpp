@@ -234,7 +234,13 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
 // move a toplevel
 void Cursor::process_move() {
     // do not move fullscreen toplevel
-    if (server->grabbed_toplevel->xdg_toplevel->current.fullscreen)
+    if ((server->grabbed_toplevel->xdg_toplevel &&
+         server->grabbed_toplevel->xdg_toplevel->current.fullscreen)
+#ifdef XWAYLAND
+        || (server->grabbed_toplevel->xwayland_surface &&
+            server->grabbed_toplevel->xwayland_surface->fullscreen)
+#endif
+    )
         return;
 
     // get the output of the current workspace
@@ -259,7 +265,11 @@ void Cursor::process_resize() {
     Toplevel *toplevel = server->grabbed_toplevel;
 
     // do not resize fullscreen toplevel
-    if (toplevel->xdg_toplevel->current.fullscreen)
+    if (toplevel->xdg_toplevel->current.fullscreen
+#ifdef XWAYLAND
+        || toplevel->xwayland_surface->fullscreen
+#endif
+    )
         return;
 
     // tinywl resize
@@ -293,7 +303,8 @@ void Cursor::process_resize() {
     }
 
     // update toplevel position and size
-    const wlr_box *geo_box = &toplevel->xdg_toplevel->base->geometry;
+    const wlr_fbox *geo_box = &toplevel->saved_geometry;
+
     wlr_scene_node_set_position(&toplevel->scene_tree->node,
                                 new_left - geo_box->x, new_top - geo_box->y);
     wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_right - new_left,

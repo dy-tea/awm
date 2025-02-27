@@ -386,11 +386,16 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
 
 Toplevel::~Toplevel() {
 #ifdef XWAYLAND
-    if (xwayland_surface != nullptr) {
+    if (xwayland_surface) {
         wl_list_remove(&activate.link);
         wl_list_remove(&associate.link);
         wl_list_remove(&dissociate.link);
         wl_list_remove(&configure.link);
+        wl_list_remove(&xwayland_resize.link);
+        wl_list_remove(&xwayland_move.link);
+        wl_list_remove(&xwayland_maximize.link);
+        wl_list_remove(&xwayland_fullscreen.link);
+        wl_list_remove(&xwayland_close.link);
     } else {
 #endif
         wl_list_remove(&map.link);
@@ -502,6 +507,54 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         toplevel->server->output_manager->arrange();
     };
     wl_signal_add(&xwayland_surface->events.request_configure, &configure);
+
+    // resize
+    xwayland_resize.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
+            wl_container_of(listener, toplevel, xwayland_resize);
+        const auto *event = static_cast<wlr_xwayland_resize_event *>(data);
+
+        toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
+    };
+    wl_signal_add(&xwayland_surface->events.request_resize, &xwayland_resize);
+
+    // move
+    xwayland_move.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, xwayland_move);
+
+        toplevel->begin_interactive(CURSORMODE_MOVE, 0);
+    };
+    wl_signal_add(&xwayland_surface->events.request_move, &xwayland_move);
+
+    // maximize
+    xwayland_maximize.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
+            wl_container_of(listener, toplevel, xwayland_maximize);
+
+        toplevel->set_maximized(toplevel->xwayland_surface->maximized_horz &&
+                                toplevel->xwayland_surface->maximized_vert);
+    };
+    wl_signal_add(&xwayland_surface->events.request_maximize,
+                  &xwayland_maximize);
+
+    // fullscreen
+    xwayland_fullscreen.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
+            wl_container_of(listener, toplevel, xwayland_fullscreen);
+
+        toplevel->set_fullscreen(toplevel->xwayland_surface->fullscreen);
+    };
+    wl_signal_add(&xwayland_surface->events.request_fullscreen,
+                  &xwayland_fullscreen);
+
+    // close
+    xwayland_close.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
+            wl_container_of(listener, toplevel, xwayland_close);
+
+        toplevel->close();
+    };
+    wl_signal_add(&xwayland_surface->events.request_close, &xwayland_close);
 }
 #endif
 
@@ -624,8 +677,8 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
             geo_box = &xdg_toplevel->base->geometry;
 #ifdef XWAYLAND
         else if (xwayland_surface) {
-            geo_box->x = xwayland_surface->x;
-            geo_box->y = xwayland_surface->y;
+            geo_box->x = scene_tree->node.x;
+            geo_box->y = scene_tree->node.y;
             geo_box->width = xwayland_surface->width;
             geo_box->height = xwayland_surface->height;
         }

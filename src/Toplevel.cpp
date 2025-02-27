@@ -780,14 +780,6 @@ void Toplevel::set_hidden(const bool hidden) {
 
 // set the toplevel to be fullscreened
 void Toplevel::set_fullscreen(const bool fullscreen) {
-    // cannot fullscreen
-    if (!xdg_toplevel->base->initialized
-#ifdef XWAYLAND
-        || !xwayland_surface->surface
-#endif
-    )
-        return;
-
     // get output
     const Output *output = server->focused_output();
 

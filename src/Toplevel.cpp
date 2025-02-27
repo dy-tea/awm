@@ -346,6 +346,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
             wl_container_of(listener, toplevel, request_resize);
         const auto *event = static_cast<wlr_xdg_toplevel_resize_event *>(data);
 
+        // start interactivity
         toplevel->begin_interactive(CURSORMODE_RESIZE, event->edges);
     };
     wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
@@ -649,11 +650,9 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
         }
 #ifdef XWAYLAND
         else if (xwayland_surface && xwayland_surface->maximized_horz &&
-                 xwayland_surface->maximized_vert) {
-            // save current geometry
-            saved_geometry.x = xwayland_surface->x;
-            saved_geometry.y = xwayland_surface->y;
-        }
+                 xwayland_surface->maximized_vert)
+            // unmaximize if maximized
+            save_geometry();
 #endif
 
         // follow cursor
@@ -669,33 +668,26 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 #endif
 
         // get toplevel geometry
-        wlr_box *geo_box{};
-
-#ifdef XWAYLAND
-        if (xdg_toplevel)
-#endif
-            geo_box = &xdg_toplevel->base->geometry;
-#ifdef XWAYLAND
-        else if (xwayland_surface) {
-            geo_box->x = scene_tree->node.x;
-            geo_box->y = scene_tree->node.y;
-            geo_box->width = xwayland_surface->width;
-            geo_box->height = xwayland_surface->height;
-        }
-#endif
+        wlr_fbox geo_box = get_geometry();
+        wlr_box box = {
+            .x = static_cast<int>(geo_box.x),
+            .y = static_cast<int>(geo_box.y),
+            .width = static_cast<int>(geo_box.width),
+            .height = static_cast<int>(geo_box.height),
+        };
 
         // calculate borders
-        double border_x = (scene_tree->node.x + geo_box->x) +
-                          ((edges & WLR_EDGE_RIGHT) ? geo_box->width : 0);
-        double border_y = (scene_tree->node.y + geo_box->y) +
-                          ((edges & WLR_EDGE_BOTTOM) ? geo_box->height : 0);
+        double border_x = (scene_tree->node.x + box.x) +
+                          ((edges & WLR_EDGE_RIGHT) ? box.width : 0);
+        double border_y = (scene_tree->node.y + box.y) +
+                          ((edges & WLR_EDGE_BOTTOM) ? box.height : 0);
 
         // move with border
         cursor->grab_x = cursor->cursor->x - border_x;
         cursor->grab_y = cursor->cursor->y - border_y;
 
         // change size
-        cursor->grab_geobox = *geo_box;
+        cursor->grab_geobox = box;
         cursor->grab_geobox.x += scene_tree->node.x;
         cursor->grab_geobox.y += scene_tree->node.y;
 
@@ -907,21 +899,26 @@ void Toplevel::close() const {
 #endif
 }
 
+// save the current geometry of the toplevel to saved_geometry
 void Toplevel::save_geometry() {
-    saved_geometry.x = scene_tree->node.x;
-    saved_geometry.y = scene_tree->node.y;
+    wlr_fbox geometry = get_geometry();
+    saved_geometry.x = geometry.x;
+    saved_geometry.y = geometry.y;
 
     // current width and height are not set when a toplevel is created, but
     // saved geometry is
-    if (xdg_toplevel && xdg_toplevel->current.width &&
-        xdg_toplevel->current.height) {
-        saved_geometry.width = xdg_toplevel->current.width;
-        saved_geometry.height = xdg_toplevel->current.height;
-    }
+    if (geometry.width && geometry.height) {
 #ifdef XWAYLAND
-    else {
-        saved_geometry.width = xwayland_surface->surface->current.width;
-        saved_geometry.height = xwayland_surface->surface->current.height;
-    }
+        if (xdg_toplevel) {
+            saved_geometry.width = geometry.width;
+            saved_geometry.height = geometry.height;
+        } else {
+            saved_geometry.width = xwayland_surface->surface->current.width;
+            saved_geometry.height = xwayland_surface->surface->current.height;
+        }
+#else
+        saved_geometry.width = geometry.width;
+        saved_geometry.height = geometry.height;
 #endif
+    }
 }

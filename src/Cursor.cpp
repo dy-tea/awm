@@ -265,9 +265,14 @@ void Cursor::process_resize() {
     Toplevel *toplevel = server->grabbed_toplevel;
 
     // do not resize fullscreen toplevel
-    if (toplevel->xdg_toplevel->current.fullscreen
+    if (
 #ifdef XWAYLAND
-        || toplevel->xwayland_surface->fullscreen
+        (toplevel->xdg_toplevel &&
+#endif
+         toplevel->xdg_toplevel->current.fullscreen
+#ifdef XWAYLAND
+         ) ||
+        (toplevel->xwayland_surface && toplevel->xwayland_surface->fullscreen)
 #endif
     )
         return;
@@ -303,12 +308,9 @@ void Cursor::process_resize() {
     }
 
     // update toplevel position and size
-    const wlr_fbox *geo_box = &toplevel->saved_geometry;
-
-    wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                new_left - geo_box->x, new_top - geo_box->y);
-    wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_right - new_left,
-                              new_bottom - new_top);
+    const wlr_fbox geo_box = toplevel->get_geometry();
+    toplevel->set_position_size(new_left - geo_box.x, new_top - geo_box.y,
+                                new_right - new_left, new_bottom - new_top);
 }
 
 // constrain the cursor to a given pointer constraint

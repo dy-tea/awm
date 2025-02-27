@@ -85,11 +85,15 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
             if (height > area.height)
                 height = area.height;
 
-            // center the surface to the focused output
-            int x = toplevel->xwayland_surface->x + area.x +
-                    (output->layout_geometry.width - width) / 2;
-            int y = toplevel->xwayland_surface->y + area.y +
-                    (output->layout_geometry.height - height) / 2;
+            // get surface position
+            int x = toplevel->xwayland_surface->x;
+            int y = toplevel->xwayland_surface->y;
+
+            // center the surface to the focused output if zero
+            if (!x)
+                x += area.x + (output->layout_geometry.width - width) / 2;
+            if (!y)
+                y += area.y + (output->layout_geometry.height - height) / 2;
 
             // send a configure event
             wlr_xwayland_surface_configure(toplevel->xwayland_surface, x, y,

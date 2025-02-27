@@ -763,6 +763,11 @@ wlr_fbox Toplevel::get_geometry() const {
     }
 #endif
 
+    if (!geometry.width)
+        geometry.width = saved_geometry.width;
+    if (!geometry.height)
+        geometry.height = saved_geometry.height;
+
     return geometry;
 }
 

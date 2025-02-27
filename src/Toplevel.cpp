@@ -191,7 +191,8 @@ void Toplevel::create_handle() {
         const auto *event =
             static_cast<wlr_foreign_toplevel_handle_v1_maximized_event *>(data);
 
-        toplevel->set_maximized(event->maximized);
+        if (toplevel->maximized() != event->maximized)
+            toplevel->set_maximized(event->maximized);
         toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
@@ -237,7 +238,8 @@ void Toplevel::create_handle() {
         }
 
         // set fullscreen
-        toplevel->set_fullscreen(event->fullscreen);
+        if (event->fullscreen != toplevel->fullscreen())
+            toplevel->set_fullscreen(event->fullscreen);
         toplevel->update_foreign_toplevel();
     };
     wl_signal_add(&handle->events.request_fullscreen,
@@ -532,8 +534,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, xwayland_maximize);
 
-        toplevel->set_maximized(toplevel->xwayland_surface->maximized_horz &&
-                                toplevel->xwayland_surface->maximized_vert);
+        toplevel->toggle_maximized();
     };
     wl_signal_add(&xwayland_surface->events.request_maximize,
                   &xwayland_maximize);
@@ -543,7 +544,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, xwayland_fullscreen);
 
-        toplevel->set_fullscreen(toplevel->xwayland_surface->fullscreen);
+        toplevel->toggle_fullscreen();
     };
     wl_signal_add(&xwayland_surface->events.request_fullscreen,
                   &xwayland_fullscreen);
@@ -641,19 +642,18 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
     cursor->cursor_mode = mode;
 
     if (mode == CURSORMODE_MOVE) {
-        if (xdg_toplevel && xdg_toplevel->current.maximized) {
+        if ((xdg_toplevel && xdg_toplevel->current.maximized)
+#ifdef XWAYLAND
+            || (xwayland_surface && xwayland_surface->maximized_horz &&
+                xwayland_surface->maximized_vert)
+#endif
+        ) {
             // unmaximize if maximized
             saved_geometry.y = cursor->cursor->y - 10; // TODO Magic number here
             saved_geometry.x = cursor->cursor->x - (saved_geometry.width / 2);
 
             set_maximized(false);
         }
-#ifdef XWAYLAND
-        else if (xwayland_surface && xwayland_surface->maximized_horz &&
-                 xwayland_surface->maximized_vert)
-            // unmaximize if maximized
-            save_geometry();
-#endif
 
         // follow cursor
         cursor->grab_x = cursor->cursor->x - scene_tree->node.x;
@@ -702,40 +702,37 @@ void Toplevel::set_position_size(const double x, const double y,
     // get output layout at cursor
     const wlr_output *wlr_output = server->focused_output()->wlr_output;
 
+    // toggle maximized if maximized
+    if (maximized()) {
+#ifdef XWAYLAND
+        if (xdg_toplevel)
+#endif
+            wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
+#ifdef XWAYLAND
+        else
+            wlr_xwayland_surface_set_maximized(xwayland_surface, false, false);
+#endif
+    } else
+        // save current geometry
+        save_geometry();
+
+    wlr_scene_node_set_position(&scene_tree->node, x, y);
+
 #ifdef XWAYLAND
     if (xdg_toplevel) {
 #endif
         // get output scale
         const float scale = wlr_output->scale;
 
-        if (xdg_toplevel->current.maximized)
-            // unmaximize if maximized
-            wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
-        else
-            // save current geometry
-            save_geometry();
-
         // set position and size
-        wlr_scene_node_set_position(&scene_tree->node, x, y);
         wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
 
         // schedule configure
         wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 #ifdef XWAYLAND
-    } else {
-        if (xwayland_surface->maximized_horz &&
-            xwayland_surface->maximized_vert)
-            // unmaximize if maximized
-            xwayland_surface->maximized_horz =
-                xwayland_surface->maximized_vert = false;
-        else
-            // save current geometry
-            save_geometry();
-
-        // set position and size
-        wlr_scene_node_set_position(&scene_surface->buffer->node, x, y);
+    } else
+        // schedule configure
         wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
-    }
 #endif
 }
 
@@ -746,20 +743,18 @@ void Toplevel::set_position_size(const wlr_fbox &geometry) {
 // get the geometry of the toplevel
 wlr_fbox Toplevel::get_geometry() const {
     wlr_fbox geometry{};
+    geometry.x = scene_tree->node.x;
+    geometry.y = scene_tree->node.y;
 
 #ifdef XWAYLAND
     if (xdg_toplevel) {
 #endif
-        geometry.x = scene_tree->node.x;
-        geometry.y = scene_tree->node.y;
         geometry.width = xdg_toplevel->current.width;
         geometry.height = xdg_toplevel->current.height;
 #ifdef XWAYLAND
     } else {
-        geometry.x = scene_surface->buffer->node.x;
-        geometry.y = scene_surface->buffer->node.y;
-        geometry.width = xwayland_surface->surface->current.width;
-        geometry.height = xwayland_surface->surface->current.height;
+        geometry.width = xwayland_surface->width;
+        geometry.height = xwayland_surface->height;
     }
 #endif
 
@@ -783,13 +778,35 @@ void Toplevel::set_hidden(const bool hidden) {
 #endif
 }
 
+// returns true if the toplevel is maximized
+bool Toplevel::maximized() const {
+#ifdef XWAYLAND
+    if (xdg_toplevel)
+#endif
+        return xdg_toplevel->current.maximized;
+#ifdef XWAYLAND
+    else
+        return xwayland_surface->maximized_horz ||
+               xwayland_surface->maximized_vert;
+#endif
+}
+
+// returns true if the toplevel is fullscreen
+bool Toplevel::fullscreen() const {
+#ifdef XWAYLAND
+    if (xdg_toplevel)
+#endif
+        return xdg_toplevel->current.fullscreen;
+#ifdef XWAYLAND
+    else
+        return xwayland_surface->fullscreen;
+#endif
+};
+
 // set the toplevel to be fullscreened
 void Toplevel::set_fullscreen(const bool fullscreen) {
     // get output
     const Output *output = server->focused_output();
-
-    // get output scale
-    const float scale = output->wlr_output->scale;
 
     // get output geometry
     wlr_box output_box = output->layout_geometry;
@@ -811,16 +828,15 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
         wlr_scene_node_reparent(&scene_tree->node, server->layers.fullscreen);
 
         // set to top left of output, width and height the size of output
-        set_position_size(output_box.x, output_box.y, output_box.width / scale,
-                          output_box.height / scale);
+        set_position_size(output_box.x, output_box.y, output_box.width,
+                          output_box.height);
     } else {
         // move scene tree node to toplevel tree
         wlr_scene_node_reparent(&scene_tree->node, server->layers.floating);
 
         // set back to saved geometry
         set_position_size(saved_geometry.x, saved_geometry.y,
-                          saved_geometry.width / scale,
-                          saved_geometry.height / scale);
+                          saved_geometry.width, saved_geometry.height);
     }
 }
 
@@ -837,9 +853,6 @@ void Toplevel::set_maximized(const bool maximized) {
     // get output
     const Output *output = server->focused_output();
 
-    // get output scale
-    const float scale = output->wlr_output->scale;
-
     // get usable output area
     wlr_box output_box = output->usable_area;
 
@@ -850,8 +863,8 @@ void Toplevel::set_maximized(const bool maximized) {
         wlr_xdg_toplevel_set_maximized(xdg_toplevel, maximized);
 #ifdef XWAYLAND
     else
-        xwayland_surface->maximized_horz = xwayland_surface->maximized_vert =
-            maximized;
+        wlr_xwayland_surface_set_maximized(xwayland_surface, maximized,
+                                           maximized);
 #endif
 
     if (maximized) {
@@ -861,12 +874,11 @@ void Toplevel::set_maximized(const bool maximized) {
         // set to top left of output, width and height the size of output
         set_position_size(output_box.x + output->layout_geometry.x,
                           output_box.y + output->layout_geometry.y,
-                          output_box.width / scale, output_box.height / scale);
+                          output_box.width, output_box.height);
     } else
         // set back to saved geometry
         set_position_size(saved_geometry.x, saved_geometry.y,
-                          saved_geometry.width / scale,
-                          saved_geometry.height / scale);
+                          saved_geometry.width, saved_geometry.height);
 }
 
 // update foreign toplevel on window state change
@@ -880,17 +892,11 @@ void Toplevel::update_foreign_toplevel() const {
         handle, xdg_toplevel->current.activated);
 }
 
-// tell the toplevel to close
-void Toplevel::close() const {
-#ifdef XWAYLAND
-    if (xdg_toplevel)
-#endif
-        wlr_xdg_toplevel_send_close(xdg_toplevel);
-#ifdef XWAYLAND
-    else if (xwayland_surface)
-        wlr_xwayland_surface_close(xwayland_surface);
-#endif
-}
+// toggle maximized
+void Toplevel::toggle_maximized() { set_maximized(!maximized()); }
+
+// toggle fullscreen
+void Toplevel::toggle_fullscreen() { set_fullscreen(!fullscreen()); }
 
 // save the current geometry of the toplevel to saved_geometry
 void Toplevel::save_geometry() {
@@ -914,4 +920,16 @@ void Toplevel::save_geometry() {
         saved_geometry.height = geometry.height;
 #endif
     }
+}
+
+// tell the toplevel to close
+void Toplevel::close() const {
+#ifdef XWAYLAND
+    if (xdg_toplevel)
+#endif
+        wlr_xdg_toplevel_send_close(xdg_toplevel);
+#ifdef XWAYLAND
+    else if (xwayland_surface)
+        wlr_xwayland_surface_close(xwayland_surface);
+#endif
 }

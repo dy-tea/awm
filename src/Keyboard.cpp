@@ -30,7 +30,7 @@ bool Keyboard::handle_bind(const Bind bind) {
         if (active == nullptr)
             return false;
 
-        active->set_fullscreen(!active->xdg_toplevel->current.fullscreen);
+        active->toggle_fullscreen();
     } else if (bind == config->window_previous) {
         // focus the previous toplevel in the active workspace
         output->get_active()->focus_prev();

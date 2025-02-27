@@ -69,8 +69,12 @@ struct Toplevel {
     void set_position_size(const wlr_fbox &geometry);
     wlr_fbox get_geometry() const;
     void set_hidden(bool hidden);
+    bool fullscreen() const;
+    bool maximized() const;
     void set_fullscreen(bool fullscreen);
     void set_maximized(bool maximized);
+    void toggle_fullscreen();
+    void toggle_maximized();
     void save_geometry();
     void close() const;
 

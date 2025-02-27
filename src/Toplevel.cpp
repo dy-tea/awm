@@ -829,14 +829,6 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
 
 // set the toplevel to be maximized
 void Toplevel::set_maximized(const bool maximized) {
-    // cannot maximize
-    if (!xdg_toplevel->base->initialized
-#ifdef XWAYLAND
-        || !xwayland_surface->surface
-#endif
-    )
-        return;
-
     // unfullscreen if fullscreened
     if (xdg_toplevel->current.fullscreen)
         wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, false);

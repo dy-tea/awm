@@ -169,11 +169,11 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
             // ensure toplevel is focused
             if (toplevel && active_constraint->surface ==
                                 server->seat->pointer_state.focused_surface) {
+                const wlr_box geo_box = toplevel->geometry;
+
                 // calculate constraint
-                double sx = cursor->x - toplevel->get_geometry().x -
-                            toplevel->get_geometry().width;
-                double sy = cursor->y - toplevel->get_geometry().y -
-                            toplevel->get_geometry().height;
+                double sx = cursor->x - geo_box.x - geo_box.width;
+                double sy = cursor->y - geo_box.y - geo_box.height;
                 double cx, cy;
 
                 // apply confine on region
@@ -267,7 +267,8 @@ void Cursor::process_resize() {
     // do not resize fullscreen toplevel
     if ((toplevel->xdg_toplevel && toplevel->xdg_toplevel->current.fullscreen)
 #ifdef XWAYLAND
-    || (toplevel->xwayland_surface && toplevel->xwayland_surface->fullscreen)
+        ||
+        (toplevel->xwayland_surface && toplevel->xwayland_surface->fullscreen)
 #endif
     )
         return;
@@ -291,7 +292,7 @@ void Cursor::process_resize() {
             new_bottom = new_top + 1;
     }
 
-    // resiy left and right edges
+    // resize left and right edges
     if (resize_edges & WLR_EDGE_LEFT) {
         new_left = border_x;
         if (new_left >= new_right)
@@ -302,23 +303,29 @@ void Cursor::process_resize() {
             new_right = new_left + 1;
     }
 
-    // update toplevel position and size
-    const wlr_fbox *geo_box = &toplevel->saved_geometry;
-    wlr_scene_node_set_position(&toplevel->scene_tree->node,
-                                new_left - geo_box->x, new_top - geo_box->y);
+    // calculate new geometry
+    wlr_box geo_box = toplevel->get_geometry();
+    geo_box.x = new_left - geo_box.x;
+    geo_box.y = new_top - geo_box.y;
+    geo_box.width = new_right - new_left;
+    geo_box.height = new_bottom - new_top;
+
+    // set position in scene
+    wlr_scene_node_set_position(&toplevel->scene_tree->node, geo_box.x,
+                                geo_box.y);
+
 #ifdef XWAYLAND
-    if (toplevel->xdg_toplevel) {
+    if (toplevel->xdg_toplevel)
 #endif
-        wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_right - new_left,
-                                  new_bottom - new_top);
+        // set xdg toplevel size
+        wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, geo_box.width,
+                                  geo_box.height);
 #ifdef XWAYLAND
-    } else {
-        wlr_xwayland_surface_configure(toplevel->xwayland_surface,
-                    new_left - geo_box->x,
-                    new_top - geo_box->y,
-                 new_right - new_left ,
-                new_bottom - new_top);
-    }
+    else
+        // set xwayland surface size
+        wlr_xwayland_surface_configure(toplevel->xwayland_surface, geo_box.x,
+                                       geo_box.y, geo_box.width,
+                                       geo_box.height);
 #endif
 }
 

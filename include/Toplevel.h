@@ -49,7 +49,8 @@ struct Toplevel {
 
     bool hidden{false};
 
-    wlr_fbox saved_geometry;
+    wlr_box geometry{};
+    wlr_box saved_geometry{};
 
     Toplevel(Server *server, wlr_xdg_toplevel *wlr_xdg_toplevel);
     ~Toplevel();
@@ -66,8 +67,8 @@ struct Toplevel {
     void focus() const;
     void begin_interactive(CursorMode mode, uint32_t edges);
     void set_position_size(double x, double y, int width, int height);
-    void set_position_size(const wlr_fbox &geometry);
-    wlr_fbox get_geometry() const;
+    void set_position_size(const wlr_box &geometry);
+    wlr_box get_geometry();
     void set_hidden(bool hidden);
     bool fullscreen() const;
     bool maximized() const;

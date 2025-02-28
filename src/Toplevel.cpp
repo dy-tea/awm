@@ -650,7 +650,7 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
         ) {
             // unmaximize if maximized
             saved_geometry.y = cursor->cursor->y - 10; // TODO Magic number here
-            saved_geometry.x = cursor->cursor->x - (saved_geometry.width / 2);
+            saved_geometry.x = cursor->cursor->x - (saved_geometry.width / 2.0);
 
             set_maximized(false);
         }
@@ -668,26 +668,20 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 #endif
 
         // get toplevel geometry
-        wlr_fbox geo_box = get_geometry();
-        wlr_box box = {
-            .x = static_cast<int>(geo_box.x),
-            .y = static_cast<int>(geo_box.y),
-            .width = static_cast<int>(geo_box.width),
-            .height = static_cast<int>(geo_box.height),
-        };
+        const wlr_box geo_box = get_geometry();
 
         // calculate borders
-        double border_x = (scene_tree->node.x + box.x) +
-                          ((edges & WLR_EDGE_RIGHT) ? box.width : 0);
-        double border_y = (scene_tree->node.y + box.y) +
-                          ((edges & WLR_EDGE_BOTTOM) ? box.height : 0);
+        double border_x = (scene_tree->node.x + geo_box.x) +
+                          ((edges & WLR_EDGE_RIGHT) ? geo_box.width : 0);
+        double border_y = (scene_tree->node.y + geo_box.y) +
+                          ((edges & WLR_EDGE_BOTTOM) ? geo_box.height : 0);
 
         // move with border
         cursor->grab_x = cursor->cursor->x - border_x;
         cursor->grab_y = cursor->cursor->y - border_y;
 
         // change size
-        cursor->grab_geobox = box;
+        cursor->grab_geobox = geo_box;
         cursor->grab_geobox.x += scene_tree->node.x;
         cursor->grab_geobox.y += scene_tree->node.y;
 
@@ -736,32 +730,24 @@ void Toplevel::set_position_size(const double x, const double y,
 #endif
 }
 
-void Toplevel::set_position_size(const wlr_fbox &geometry) {
+void Toplevel::set_position_size(const wlr_box &geometry) {
     set_position_size(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
 // get the geometry of the toplevel
-wlr_fbox Toplevel::get_geometry() const {
-    wlr_fbox geometry{};
-    geometry.x = scene_tree->node.x;
-    geometry.y = scene_tree->node.y;
-
+wlr_box Toplevel::get_geometry() {
 #ifdef XWAYLAND
     if (xdg_toplevel) {
 #endif
-        geometry.width = xdg_toplevel->current.width;
-        geometry.height = xdg_toplevel->current.height;
+        geometry = xdg_toplevel->base->geometry;
 #ifdef XWAYLAND
     } else {
-        geometry.width = xwayland_surface->width;
-        geometry.height = xwayland_surface->height;
+        geometry.x = xwayland_surface->x;
+        geometry.y = xwayland_surface->y;
+        geometry.width = xwayland_surface->surface->current.width;
+        geometry.height = xwayland_surface->surface->current.height;
     }
 #endif
-
-    if (!geometry.width)
-        geometry.width = saved_geometry.width;
-    if (!geometry.height)
-        geometry.height = saved_geometry.height;
 
     return geometry;
 }
@@ -900,7 +886,7 @@ void Toplevel::toggle_fullscreen() { set_fullscreen(!fullscreen()); }
 
 // save the current geometry of the toplevel to saved_geometry
 void Toplevel::save_geometry() {
-    wlr_fbox geometry = get_geometry();
+    wlr_box geometry = get_geometry();
     saved_geometry.x = geometry.x;
     saved_geometry.y = geometry.y;
 

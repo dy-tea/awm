@@ -113,8 +113,8 @@ void Workspace::set_hidden(const bool hidden) const {
 // swap the active toplevel geometry with other toplevel geometry
 void Workspace::swap(Toplevel *other) const {
     // get the geometry of both toplevels
-    const wlr_fbox active = active_toplevel->get_geometry();
-    const wlr_fbox swapped = other->get_geometry();
+    const wlr_box active = active_toplevel->get_geometry();
+    const wlr_box swapped = other->get_geometry();
 
     // swap the geometry
     active_toplevel->set_position_size(swapped);
@@ -129,7 +129,7 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
         return nullptr;
 
     // get the geometry of the active toplevel
-    const wlr_fbox active_geometry = active_toplevel->get_geometry();
+    const wlr_box active_geometry = active_toplevel->get_geometry();
 
     // define a target
     Toplevel *curr, *tmp;
@@ -153,24 +153,32 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
     // - find the smallest absolute difference in the other axis
     switch (direction) {
     case WLR_DIRECTION_UP:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link)
-            validate(active_geometry.y - curr->get_geometry().y,
-                     std::abs(active_geometry.x - curr->get_geometry().x));
+        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
+            const wlr_box curr_geometry = curr->get_geometry();
+            validate(active_geometry.y - curr_geometry.y,
+                     std::abs(active_geometry.x - curr_geometry.x));
+        }
         break;
     case WLR_DIRECTION_DOWN:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link)
-            validate(curr->get_geometry().y - active_geometry.y,
-                     std::abs(active_geometry.x - curr->get_geometry().x));
+        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
+            const wlr_box curr_geometry = curr->get_geometry();
+            validate(curr_geometry.y - active_geometry.y,
+                     std::abs(active_geometry.x - curr_geometry.x));
+        }
         break;
     case WLR_DIRECTION_LEFT:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link)
-            validate(active_geometry.x - curr->get_geometry().x,
-                     std::abs(active_geometry.y - curr->get_geometry().y));
+        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
+            const wlr_box curr_geometry = curr->get_geometry();
+            validate(active_geometry.x - curr_geometry.x,
+                     std::abs(active_geometry.y - curr_geometry.y));
+        }
         break;
     case WLR_DIRECTION_RIGHT:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link)
-            validate(curr->get_geometry().x - active_geometry.x,
-                     std::abs(active_geometry.y - curr->get_geometry().y));
+        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
+            const wlr_box curr_geometry = curr->get_geometry();
+            validate(curr_geometry.x - active_geometry.x,
+                     std::abs(active_geometry.y - curr_geometry.y));
+        }
         break;
     default:
         break;

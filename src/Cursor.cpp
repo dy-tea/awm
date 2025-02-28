@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "xdg-shell-protocol.h"
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
@@ -274,7 +273,7 @@ void Cursor::process_resize() {
     )
         return;
 
-    // tinywl resize
+    // amalgamation of tinywl and dwl code
     double border_x = cursor->x - grab_x;
     double border_y = cursor->y - grab_y;
     int new_left = grab_geobox.x;
@@ -304,6 +303,8 @@ void Cursor::process_resize() {
             new_right = new_left + 1;
     }
 
+    // NOTE: this is only subtracted for xdg toplevels because it breaks on
+    // xwayland surfaces
 #ifdef XWAYLAND
     if (toplevel->xdg_toplevel) {
 #endif
@@ -419,6 +420,7 @@ void Cursor::set_config(wlr_pointer *pointer) {
         pointers.push_back(pointer);
 }
 
+// reconfigure all pointers
 void Cursor::reconfigure_all() {
     for (wlr_pointer *pointer : pointers)
         set_config(pointer);

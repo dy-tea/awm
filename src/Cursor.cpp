@@ -303,30 +303,9 @@ void Cursor::process_resize() {
             new_right = new_left + 1;
     }
 
-    // calculate new geometry
-    wlr_box geo_box = toplevel->get_geometry();
-    geo_box.x = new_left - geo_box.x;
-    geo_box.y = new_top - geo_box.y;
-    geo_box.width = new_right - new_left;
-    geo_box.height = new_bottom - new_top;
-
-    // set position in scene
-    wlr_scene_node_set_position(&toplevel->scene_tree->node, geo_box.x,
-                                geo_box.y);
-
-#ifdef XWAYLAND
-    if (toplevel->xdg_toplevel)
-#endif
-        // set xdg toplevel size
-        wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, geo_box.width,
-                                  geo_box.height);
-#ifdef XWAYLAND
-    else
-        // set xwayland surface size
-        wlr_xwayland_surface_configure(toplevel->xwayland_surface, geo_box.x,
-                                       geo_box.y, geo_box.width,
-                                       geo_box.height);
-#endif
+    // set new geometry
+    toplevel->set_position_size(new_left, new_top, new_right - new_left,
+                                new_bottom - new_top);
 }
 
 // constrain the cursor to a given pointer constraint

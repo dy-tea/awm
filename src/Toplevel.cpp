@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 void Toplevel::map_notify(wl_listener *listener, void *data) {
     // on map or display
@@ -497,8 +498,8 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         // unmanaged
         if (toplevel->xwayland_surface->override_redirect) {
             // set scene node position
-            wlr_scene_node_set_position(&toplevel->scene_tree->node, event->x,
-                                        event->y);
+            wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
+                                        event->x, event->y);
 
             // set position and size
             toplevel->set_position_size(event->x, event->y, event->width,
@@ -710,11 +711,12 @@ void Toplevel::set_position_size(const double x, const double y,
         // save current geometry
         save_geometry();
 
-    wlr_scene_node_set_position(&scene_tree->node, x, y);
-
 #ifdef XWAYLAND
     if (xdg_toplevel) {
 #endif
+        // set new position
+        wlr_scene_node_set_position(&scene_tree->node, x, y);
+
         // get output scale
         const float scale = wlr_output->scale;
 
@@ -724,10 +726,15 @@ void Toplevel::set_position_size(const double x, const double y,
         // schedule configure
         wlr_xdg_surface_schedule_configure(xdg_toplevel->base);
 #ifdef XWAYLAND
-    } else
+    } else {
+        // set scene node position
+        wlr_scene_node_set_position(&scene_surface->buffer->node, x, y);
+
         // schedule configure
         wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
+    }
 #endif
+    wlr_log(WLR_INFO, "set_position_size: %f, %f ; %dx%d", x, y, width, height);
 }
 
 void Toplevel::set_position_size(const wlr_box &geometry) {

@@ -4,14 +4,13 @@
 # or specify a config path with the -c flag
 
 [startup]
-exec = ["xwayland-satellite", "hyprpaper"] # list of commands to run on startup
-renderer = "auto"                          # "gles2", "pixman", "vulkan"
+exec = ["hyprpaper"] # list of commands to run on startup
+renderer = "auto"    # "gles2", "pixman", "vulkan"
 
 # env variables to set on startup
 [[startup.env]]
-DISPLAY = ":0"
-MOZ_ENABLE_WAYLAND = 1
-ELECTRON_OZONE_PLATFORM_HINT = "wayland"
+MOZ_ENABLE_WAYLAND = 1                   # enable wayland for firefox
+ELECTRON_OZONE_PLATFORM_HINT = "wayland" # set electron apps to use wayland
 
 [exit]
 exec = ["echo \"exiting awm\""] # list of commands to run on exit
@@ -27,16 +26,16 @@ repeat_delay = 600
 [pointer]
 tap_to_click = true
 tap_and_drag = true
-drag_lock = "none"           # none, timeout, enabled, sticky
-tap_button_map = "lrm"       # lrm, lmr
+drag_lock = "none"           # "none", "timeout", "enabled", "sticky"
+tap_button_map = "lrm"       # "lrm", "lmr"
 natural_scroll = true
 disable_while_typing = true
 left_handed = 0
 middle_emulation = true
-scroll_method = "2fg"        # none, 2fg, edge, button
-click_method = "buttonareas" # none, buttonareas, clickfinger
-event_mode = "enabled"       # enabled, disabled, mousedisabled
-profile = "adaptive"         # none, flat, adaptive, custom
+scroll_method = "2fg"        # "none", "2fg", "edge", "button"
+click_method = "buttonareas" # "none", "buttonareas", "clickfinger"
+event_mode = "enabled"       # "enabled", "disabled", "mousedisabled"
+profile = "adaptive"         # "none", "flat", "adaptive", "custom"
 accel_speed = 0.0            # range from -1.0 to 1.0
 
 [binds] # default binds which can be overwitten in your config

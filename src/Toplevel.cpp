@@ -691,10 +691,17 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 }
 
 // set the position and size of a toplevel, send a configure
-void Toplevel::set_position_size(const double x, const double y,
-                                 const int width, const int height) {
-    // get output layout at cursor
+void Toplevel::set_position_size(const double x, const double y, int width,
+                                 int height) {
+    // get output at cursor
     const wlr_output *wlr_output = server->focused_output()->wlr_output;
+
+    // get output scale
+    const float scale = wlr_output->scale;
+
+    // enforce minimum size
+    width = std::max(width, 50);
+    height = std::max(height, 50);
 
     // toggle maximized if maximized
     if (maximized()) {
@@ -710,14 +717,12 @@ void Toplevel::set_position_size(const double x, const double y,
         // save current geometry
         save_geometry();
 
+    // update geometry
 #ifdef XWAYLAND
     if (xdg_toplevel) {
 #endif
         // set new position
         wlr_scene_node_set_position(&scene_tree->node, x, y);
-
-        // get output scale
-        const float scale = wlr_output->scale;
 
         // set position and size
         wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);

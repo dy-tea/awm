@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "xdg-shell-protocol.h"
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
@@ -302,6 +303,15 @@ void Cursor::process_resize() {
         if (new_right <= new_left)
             new_right = new_left + 1;
     }
+
+#ifdef XWAYLAND
+    if (toplevel->xdg_toplevel) {
+#endif
+        new_left -= toplevel->geometry.x;
+        new_top -= toplevel->geometry.y;
+#ifdef XWAYLAND
+    }
+#endif
 
     // set new geometry
     toplevel->set_position_size(new_left, new_top, new_right - new_left,

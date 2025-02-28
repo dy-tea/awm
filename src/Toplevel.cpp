@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 void Toplevel::map_notify(wl_listener *listener, void *data) {
     // on map or display
@@ -734,7 +733,6 @@ void Toplevel::set_position_size(const double x, const double y,
         wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
     }
 #endif
-    wlr_log(WLR_INFO, "set_position_size: %f, %f ; %dx%d", x, y, width, height);
 }
 
 void Toplevel::set_position_size(const wlr_box &geometry) {

@@ -94,6 +94,7 @@ executable(
     'src/OutputManager.cpp',
     'src/PointerConstraint.cpp',
     'src/SessionLock.cpp',
+    'src/IPC.cpp',
     protocol_sources,
     protocol_code,
   ],

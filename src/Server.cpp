@@ -1,6 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
-#include <thread>
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -539,14 +537,16 @@ Server::Server(Config *config) : config(config) {
         wlr_log(WLR_ERROR, "failed to start Xwayland");
 #endif
 
+    // start IPC
+    ipc = new IPC(this);
+
     // set up signal handler
-    struct sigaction sa{};
-    sa.sa_handler = [](const int sig) {
+    sa.sa_handler = [](int sig) {
         if (sig == SIGCHLD)
             while (waitpid(-1, nullptr, WNOHANG) > 0)
                 ;
         else if (sig == SIGINT || sig == SIGTERM)
-            Server::get().exit();
+            Server::get()->exit();
     };
     sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
@@ -571,8 +571,8 @@ Server::Server(Config *config) : config(config) {
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 
     // run thread for config updater
-    std::thread config_thread([&]() {
-        while (true) {
+    config_thread = std::thread([&]() {
+        while (running) {
             // update config
             config->update(this);
 
@@ -580,7 +580,6 @@ Server::Server(Config *config) : config(config) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     });
-    config_thread.detach();
 
     // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
@@ -595,17 +594,22 @@ void Server::exit() const {
     for (const std::string &command : config->exit_commands)
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
+
+    // stop IPC
+    ipc->stop();
 }
 
 Server::~Server() {
     wl_display_destroy_clients(display);
 
+    running = false;
+    if (config_thread.joinable())
+        config_thread.join();
+
     delete output_manager;
 
     wl_list_remove(&new_xdg_toplevel.link);
     wl_list_remove(&new_xdg_popup.link);
-
-    delete cursor;
 
     wl_list_remove(&new_input.link);
     wl_list_remove(&request_cursor.link);
@@ -628,6 +632,9 @@ Server::~Server() {
 #endif
 
     wlr_scene_node_destroy(&scene->tree.node);
+
+    delete cursor;
+
     wlr_allocator_destroy(allocator);
     wlr_renderer_destroy(renderer);
     wlr_backend_destroy(backend);

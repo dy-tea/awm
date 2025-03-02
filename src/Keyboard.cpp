@@ -183,10 +183,8 @@ uint32_t Keyboard::keysyms_translated(const xkb_keycode_t keycode,
     return xkb_state_key_get_syms(wlr_keyboard->xkb_state, keycode, keysyms);
 }
 
-Keyboard::Keyboard(Server *server, wlr_input_device *device) {
-    this->server = server;
-    this->wlr_keyboard = wlr_keyboard_from_input_device(device);
-
+Keyboard::Keyboard(Server *server, wlr_input_device *device)
+    : server(server), wlr_keyboard(wlr_keyboard_from_input_device(device)) {
     // set data
     wlr_keyboard->data = this;
 

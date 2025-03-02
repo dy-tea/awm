@@ -1,6 +1,7 @@
 #include "Server.h"
-
 #include <wordexp.h>
+
+Server *Server::instance = nullptr;
 
 int main(const int argc, char *argv[]) {
     // start logger
@@ -79,7 +80,7 @@ int main(const int argc, char *argv[]) {
         config->startup_commands.push_back(startup_cmd);
 
     // start server
-    Server *server = new Server(config);
+    Server *server = Server::get(config);
     delete server;
     delete config;
 }

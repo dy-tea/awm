@@ -1,8 +1,11 @@
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <sys/wait.h>
+#include <thread>
 #include <unistd.h>
 
+#include "IPC.h"
 #include "Keyboard.h"
 #include "LayerSurface.h"
 #include "Output.h"
@@ -14,11 +17,16 @@
 #include "Workspace.h"
 
 struct Server {
-    // get singleton instance
-    static Server &get() {
-        static Server server;
-        return server;
-    };
+    // singleton
+    static Server *instance;
+    static Server *get(Config *config) {
+        if (!instance)
+            instance = new Server(config);
+        return instance;
+    }
+    static Server *get() { return instance; }
+    Server() = default;
+    Server(const Server &other) = delete;
 
     Config *config;
 
@@ -100,7 +108,12 @@ struct Server {
     wl_listener new_xwayland_surface;
 #endif
 
-    Server() = default;
+    struct sigaction sa{};
+    std::thread config_thread;
+    std::atomic<bool> running{true};
+
+    IPC *ipc;
+
     Server(Config *config);
     ~Server();
 

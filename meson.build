@@ -3,6 +3,9 @@ project(
   'cpp',
   'c',
   default_options: [
+    'warning_level=2',
+    'optimization=3',
+    'buildtype=release',
     'cpp_std=c++17',
   ],
 )
@@ -105,3 +108,5 @@ executable(
 )
 
 install_data('awm.desktop', install_dir: '//usr/share/wayland-sessions')
+
+subdir('awmsg')

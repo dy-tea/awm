@@ -716,7 +716,8 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     if (xdg_toplevel) {
 #endif
         // set new position
-        wlr_scene_node_set_position(&scene_tree->node, x, y);
+        wlr_box geo_box = get_geometry();
+        wlr_scene_node_set_position(&scene_tree->node, x - geo_box.x, y - geo_box.y);
 
         // set position and size
         wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);

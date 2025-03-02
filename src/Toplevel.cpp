@@ -700,8 +700,8 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     const float scale = wlr_output->scale;
 
     // enforce minimum size
-    width = std::max(width, 50);
-    height = std::max(height, 50);
+    width = std::max(width, 1);
+    height = std::max(height, 1);
 
     // toggle maximized if maximized
     if (maximized()) {

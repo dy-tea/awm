@@ -116,5 +116,17 @@ int main(int argc, char **argv) {
         return 3;
     }
 
+    // read response from ipc socket
+    char buffer[1024];
+    int len = read(fd, buffer, sizeof(buffer));
+    if (len == -1) {
+        print_err("Failed to read from IPC socket");
+        return 4;
+    }
+
+    // print response
+    std::cout << std::string(buffer, len) << std::endl;
+
+    // close connection
     close(fd);
 }

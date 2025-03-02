@@ -15,5 +15,6 @@ struct IPC {
 
     IPC(Server *server);
 
+    std::string run(std::string command);
     void stop();
 };

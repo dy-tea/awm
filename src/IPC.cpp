@@ -43,19 +43,92 @@ IPC::IPC(Server *server) : server(server) {
             }
 
             // read from client
-            char buffer[256];
-            ssize_t n = read(client_fd, buffer, sizeof(buffer));
-            if (n == -1)
+            char buffer[1024];
+            int len = read(client_fd, buffer, sizeof(buffer));
+            if (len == -1) {
                 wlr_log(WLR_ERROR,
                         "failed to read from client with fd `%d` on path `%s`",
                         client_fd, path.c_str());
+                close(client_fd);
+                continue;
+            }
 
-            wlr_log(WLR_INFO, "Received: %s", buffer);
+            // run command
+            std::string response = run(std::string(buffer, len));
+
+            // write response to client
+            if (write(client_fd, response.c_str(), strlen(response.c_str())) ==
+                -1)
+                wlr_log(WLR_ERROR,
+                        "failed to write to client with fd `%d` on path `%s`",
+                        client_fd, path.c_str());
 
             // close connection
             close(client_fd);
         }
     });
+}
+
+// run a received command
+std::string IPC::run(std::string command) {
+    std::string response = "";
+    std::string token;
+    std::stringstream ss(command);
+
+    if (std::getline(ss, token, ' ')) {
+        if (token[0] == 'e') // exit
+            server->exit();
+        else if (token[0] == 'o') { // output
+            if (std::getline(ss, token, ' ')) {
+                if (token[0] == 'l') { // output list
+                    Output *output, *tmp;
+                    wl_list_for_each_safe(
+                        output, tmp, &server->output_manager->outputs, link) {
+                        response += output->wlr_output->name;
+                        response += "\n";
+                    }
+                }
+            }
+        } else if (token[0] == 'w') // workspace
+            if (std::getline(ss, token, ' ')) {
+                if (token[0] == 'l') { // workspace list
+                    Output *output = server->focused_output();
+                    Workspace *workspace, *tmp;
+                    wl_list_for_each_safe(workspace, tmp, &output->workspaces,
+                                          link) {
+                        response += workspace->num;
+                        response += "\n";
+                    }
+                } else if (token[0] == 't') { // workspace toplevels
+                    Workspace *workspace =
+                        server->focused_output()->get_active();
+                    Toplevel *toplevel, *tmp;
+                    wl_list_for_each_safe(toplevel, tmp, &workspace->toplevels,
+                                          link) {
+                        response += toplevel->xdg_toplevel->title;
+                        response += "\n";
+                    }
+                }
+            }
+    } else if (token[0] == 't') { // toplevel
+        if (std::getline(ss, token, ' ')) {
+            if (token[0] == 'l') { // toplevel list
+                Output *o, *t0;
+                Workspace *w, *t1;
+                Toplevel *t, *t2;
+                wl_list_for_each_safe(o, t0, &server->output_manager->outputs,
+                                      link)
+                    wl_list_for_each_safe(w, t1, &o->workspaces, link)
+                        wl_list_for_each_safe(t, t2, &w->toplevels, link) {
+                    response += t->xdg_toplevel->title;
+                    response += "\n";
+                }
+            }
+        }
+    } else
+        notify_send("unknown command `%s`", token.c_str());
+
+    return response;
 }
 
 void IPC::stop() {

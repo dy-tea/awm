@@ -76,6 +76,9 @@ std::string IPC::run(std::string command) {
     std::string response = "";
     std::string token;
     std::stringstream ss(command);
+    json j;
+
+    wlr_log(WLR_INFO, "received command `%s`", command.c_str());
 
     if (std::getline(ss, token, ' ')) {
         if (token[0] == 'e') // exit
@@ -83,8 +86,6 @@ std::string IPC::run(std::string command) {
         else if (token[0] == 'o') { // output
             if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // output list
-                    json j;
-
                     Output *output, *tmp;
                     wl_list_for_each_safe(
                         output, tmp, &server->output_manager->outputs, link) {
@@ -101,26 +102,9 @@ std::string IPC::run(std::string command) {
                     }
 
                     response = j.dump();
-                } else if (token[0] == 'w') { // output workspaces
-                    Output *output = server->focused_output();
-
-                    json j;
-
-                    if (output) {
-                        Workspace *workspace, *tmp;
-                        wl_list_for_each_safe(workspace, tmp,
-                                              &output->workspaces, link) {
-                            j[workspace->num] = {
-                                {"num", workspace->num},
-                                {"focused", workspace == output->get_active()},
-                            };
-                        }
-                    }
-
-                    response = j.dump();
                 }
             }
-        } else if (token[0] == 'w') // workspace
+        } else if (token[0] == 'w') { // workspace
             if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // workspace list
                     Output *output = server->focused_output();
@@ -139,7 +123,7 @@ std::string IPC::run(std::string command) {
                         wl_list_for_each_safe(toplevel, tmp1,
                                               &workspace->toplevels, link) {
                             std::string i = string_format("%p", toplevel);
-                            j[workspace->num][i] = {
+                            j[workspace->num]["toplevels"][i] = {
                                 {"title", toplevel->title()},
                                 {"x", toplevel->geometry.x},
                                 {"y", toplevel->geometry.y},
@@ -154,32 +138,36 @@ std::string IPC::run(std::string command) {
                     response = j.dump();
                 }
             }
-    } else if (token[0] == 't') { // toplevel
-        if (std::getline(ss, token, ' ')) {
-            if (token[0] == 'l') { // toplevel list
-                Output *o, *t0;
-                Workspace *w, *t1;
-                Toplevel *t, *t2;
-                json j;
+        } else if (token[0] == 't') { // toplevel
+            if (std::getline(ss, token, ' ')) {
+                if (token[0] == 'l') { // toplevel list
+                    Output *o, *t0;
+                    Workspace *w, *t1;
+                    Toplevel *t, *t2;
+                    json j;
 
-                wl_list_for_each_safe(o, t0, &server->output_manager->outputs,
-                                      link)
-                    wl_list_for_each_safe(w, t1, &o->workspaces, link)
+                    wl_list_for_each_safe(
+                        o, t0, &server->output_manager->outputs, link)
+                        wl_list_for_each_safe(w, t1, &o->workspaces, link) {
                         wl_list_for_each_safe(t, t2, &w->toplevels, link) {
-                    j[w->num][t->title()] = {
-                        {"x", t->geometry.x},
-                        {"y", t->geometry.y},
-                        {"width", t->geometry.width},
-                        {"height", t->geometry.height},
-                        {"focused", t == w->active_toplevel},
-                    };
-                }
+                            std::string i = string_format("%p", t);
+                            j[i] = {
+                                {"title", t->title()},
+                                {"x", t->geometry.x},
+                                {"y", t->geometry.y},
+                                {"width", t->geometry.width},
+                                {"height", t->geometry.height},
+                                {"focused", t == w->active_toplevel},
+                            };
+                        }
+                    }
 
-                response = j.dump();
+                    response = j.dump();
+                }
             }
-        }
-    } else
-        notify_send("unknown command `%s`", token.c_str());
+        } else
+            notify_send("unknown command `%s`", token.c_str());
+    }
 
     return response;
 }

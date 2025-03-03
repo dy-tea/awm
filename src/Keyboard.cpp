@@ -192,7 +192,7 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device)
     update_config();
 
     // handle_modifiers
-    modifiers.notify = [](wl_listener *listener, void *data) {
+    modifiers.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Keyboard *keyboard = wl_container_of(listener, keyboard, modifiers);
 
         // set seat keyboard
@@ -251,7 +251,7 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device)
     wl_signal_add(&wlr_keyboard->events.key, &key);
 
     // handle_destroy
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
         delete keyboard;
     };

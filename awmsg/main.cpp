@@ -21,7 +21,6 @@ void print_usage() {
               << tab << "[e]xit" << std::endl
               << tab << "[o]utput" << std::endl
               << tab << tab << "- [l]ist" << std::endl
-              << tab << tab << "- [w]orkspaces" << std::endl
               << tab << "[w]orkspace" << std::endl
               << tab << tab << "- [l]ist" << std::endl
               << tab << "[t]oplevel" << std::endl
@@ -58,8 +57,6 @@ int main(int argc, char **argv) {
 
         if (argv[2][0] == 'l')
             message = "output list";
-        else if (argv[2][0] == 'w')
-            message = "output workspaces";
     }
 
     // group workspace
@@ -119,15 +116,19 @@ int main(int argc, char **argv) {
     }
 
     // read response from ipc socket
+    std::string response = "";
     char buffer[1024];
-    int len = read(fd, buffer, sizeof(buffer));
+    int len;
+    while ((len = read(fd, buffer, sizeof(buffer))) > 0)
+        response.append(buffer, len);
+
     if (len == -1) {
         print_err("Failed to read from IPC socket");
         return 4;
     }
 
-    std::string response = std::string(buffer, len);
-    if (response != "" && len > 0) {
+    if (!response.empty()) {
+        // parse response json
         json response_json = json::parse(response);
 
         // print response

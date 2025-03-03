@@ -50,12 +50,6 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
             // set the position
             wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
 
-            // saving geometry
-            toplevel->saved_geometry.width = width;
-            toplevel->saved_geometry.height = height;
-            toplevel->saved_geometry.x = x;
-            toplevel->saved_geometry.y = y;
-
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel, true);
         }
@@ -700,8 +694,8 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     const float scale = wlr_output->scale;
 
     // enforce minimum size
-    width = std::max(width, 50);
-    height = std::max(height, 50);
+    width = std::max(width, 1);
+    height = std::max(height, 1);
 
     // toggle maximized if maximized
     if (maximized()) {
@@ -722,7 +716,8 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     if (xdg_toplevel) {
 #endif
         // set new position
-        wlr_scene_node_set_position(&scene_tree->node, x, y);
+        wlr_box geo_box = get_geometry();
+        wlr_scene_node_set_position(&scene_tree->node, x - geo_box.x, y - geo_box.y);
 
         // set position and size
         wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);

@@ -119,7 +119,7 @@ Cursor::Cursor(Server *server) : server(server) {
     wl_signal_add(&cursor->events.axis, &axis);
 
     // frame
-    frame.notify = [](wl_listener *listener, void *data) {
+    frame.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Cursor *cursor = wl_container_of(listener, cursor, frame);
 
         // forward to seat

@@ -12,6 +12,10 @@ IPC::IPC(Server *server) : server(server) {
 
     wlr_log(WLR_INFO, "starting IPC on socket %d", fd);
 
+    // unlink old socket if present
+    if (!unlink(path.c_str()))
+        wlr_log(WLR_INFO, "removed old socket at path `%s`", path.c_str());
+
     // set socket address
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
@@ -183,7 +187,7 @@ void IPC::stop() {
     close(fd);
 
     // unlink
-    if (unlink(path.c_str()) == 1)
+    if (unlink(path.c_str()))
         wlr_log(WLR_ERROR, "failed to unlink IPC socket at path `%s`",
                 path.c_str());
 

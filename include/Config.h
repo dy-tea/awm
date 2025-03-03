@@ -56,6 +56,7 @@ struct Config {
     std::vector<std::string> exit_commands;
     std::vector<std::pair<std::string, std::string>> startup_env;
     std::vector<std::pair<Bind, std::string>> commands;
+    bool ipc{true};
 
     // keyboard
     std::string keyboard_layout{"us"};

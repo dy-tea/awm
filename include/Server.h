@@ -112,7 +112,7 @@ struct Server {
     std::thread config_thread;
     std::atomic<bool> running{true};
 
-    IPC *ipc;
+    IPC *ipc{nullptr};
 
     Server(Config *config);
     ~Server();

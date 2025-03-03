@@ -144,6 +144,9 @@ bool Config::load() {
                     }
                 }
         }
+
+        // ipc
+        connect(startup->getBool("ipc"), &ipc);
     } else {
         wlr_log(WLR_INFO, "No startup configuration found, ingoring");
     }

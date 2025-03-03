@@ -6,6 +6,7 @@
 [startup]
 exec = ["hyprpaper"] # list of commands to run on startup
 renderer = "auto"    # "gles2", "pixman", "vulkan"
+ipc = true           # enable ipc server, controllable with awmsg, enabled by default
 
 # env variables to set on startup
 [[startup.env]]

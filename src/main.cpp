@@ -33,7 +33,7 @@ int main(const int argc, char *argv[]) {
     }
 
     if (config_path.empty()) {
-        wordexp_t p = {.we_wordc = 0};
+        wordexp_t p = {.we_wordc = 0, .we_wordv = nullptr, .we_offs = 0};
 
         // no command line path passed, find in default paths
         std::string paths[] = {"$HOME/.config/awm/awm.toml",

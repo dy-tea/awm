@@ -540,7 +540,8 @@ Server::Server(Config *config) : config(config) {
 #endif
 
     // start IPC
-    ipc = new IPC(this);
+    if (config->ipc)
+        ipc = new IPC(this);
 
     // set up signal handler
     sa.sa_handler = [](int sig) {
@@ -598,7 +599,8 @@ void Server::exit() const {
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 
     // stop IPC
-    ipc->stop();
+    if (ipc)
+        ipc->stop();
 }
 
 Server::~Server() {

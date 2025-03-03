@@ -1,4 +1,6 @@
 #include "Server.h"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 IPC::IPC(Server *server) : server(server) {
     // create file descriptor
@@ -81,33 +83,75 @@ std::string IPC::run(std::string command) {
         else if (token[0] == 'o') { // output
             if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // output list
+                    json j;
+
                     Output *output, *tmp;
                     wl_list_for_each_safe(
                         output, tmp, &server->output_manager->outputs, link) {
-                        response += output->wlr_output->name;
-                        response += "\n";
+                        j[output->wlr_output->name] = {
+                            {"x", output->layout_geometry.x},
+                            {"y", output->layout_geometry.y},
+                            {"width", output->layout_geometry.width},
+                            {"height", output->layout_geometry.height},
+                            {"scale", output->wlr_output->scale},
+                            {"transform", output->wlr_output->transform},
+                            {"enabled", output->wlr_output->enabled},
+                            {"focused", output == server->focused_output()},
+                        };
                     }
+
+                    response = j.dump();
+                } else if (token[0] == 'w') { // output workspaces
+                    Output *output = server->focused_output();
+
+                    json j;
+
+                    if (output) {
+                        Workspace *workspace, *tmp;
+                        wl_list_for_each_safe(workspace, tmp,
+                                              &output->workspaces, link) {
+                            j[workspace->num] = {
+                                {"num", workspace->num},
+                                {"focused", workspace == output->get_active()},
+                            };
+                        }
+                    }
+
+                    response = j.dump();
                 }
             }
         } else if (token[0] == 'w') // workspace
             if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // workspace list
                     Output *output = server->focused_output();
+                    json j;
+
                     Workspace *workspace, *tmp;
                     wl_list_for_each_safe(workspace, tmp, &output->workspaces,
                                           link) {
-                        response += workspace->num;
-                        response += "\n";
+                        Toplevel *toplevel, *tmp1;
+
+                        j[workspace->num] = {
+                            {"num", workspace->num},
+                            {"focused", workspace == output->get_active()},
+                        };
+
+                        wl_list_for_each_safe(toplevel, tmp1,
+                                              &workspace->toplevels, link) {
+                            std::string i = string_format("%p", toplevel);
+                            j[workspace->num][i] = {
+                                {"title", toplevel->title()},
+                                {"x", toplevel->geometry.x},
+                                {"y", toplevel->geometry.y},
+                                {"width", toplevel->geometry.width},
+                                {"height", toplevel->geometry.height},
+                                {"focused",
+                                 toplevel == workspace->active_toplevel},
+                            };
+                        }
                     }
-                } else if (token[0] == 't') { // workspace toplevels
-                    Workspace *workspace =
-                        server->focused_output()->get_active();
-                    Toplevel *toplevel, *tmp;
-                    wl_list_for_each_safe(toplevel, tmp, &workspace->toplevels,
-                                          link) {
-                        response += toplevel->xdg_toplevel->title;
-                        response += "\n";
-                    }
+
+                    response = j.dump();
                 }
             }
     } else if (token[0] == 't') { // toplevel
@@ -116,13 +160,22 @@ std::string IPC::run(std::string command) {
                 Output *o, *t0;
                 Workspace *w, *t1;
                 Toplevel *t, *t2;
+                json j;
+
                 wl_list_for_each_safe(o, t0, &server->output_manager->outputs,
                                       link)
                     wl_list_for_each_safe(w, t1, &o->workspaces, link)
                         wl_list_for_each_safe(t, t2, &w->toplevels, link) {
-                    response += t->xdg_toplevel->title;
-                    response += "\n";
+                    j[w->num][t->title()] = {
+                        {"x", t->geometry.x},
+                        {"y", t->geometry.y},
+                        {"width", t->geometry.width},
+                        {"height", t->geometry.height},
+                        {"focused", t == w->active_toplevel},
+                    };
                 }
+
+                response = j.dump();
             }
         }
     } else

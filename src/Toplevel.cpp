@@ -717,7 +717,8 @@ void Toplevel::set_position_size(const double x, const double y, int width,
 #endif
         // set new position
         wlr_box geo_box = get_geometry();
-        wlr_scene_node_set_position(&scene_tree->node, x - geo_box.x, y - geo_box.y);
+        wlr_scene_node_set_position(&scene_tree->node, x - geo_box.x,
+                                    y - geo_box.y);
 
         // set position and size
         wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
@@ -911,6 +912,16 @@ void Toplevel::save_geometry() {
         saved_geometry.height = geometry.height;
 #endif
     }
+}
+
+std::string Toplevel::title() const {
+#ifdef XWAYLAND
+    if (xdg_toplevel)
+        return xdg_toplevel->title ? xdg_toplevel->title : "";
+    else if (xwayland_surface)
+        return xwayland_surface->title ? xwayland_surface->title : "";
+#endif
+    return xdg_toplevel->title ? xdg_toplevel->title : "";
 }
 
 // tell the toplevel to close

@@ -64,6 +64,7 @@ struct Toplevel {
 
     void create_handle();
 
+    std::string title() const;
     void focus() const;
     void begin_interactive(CursorMode mode, uint32_t edges);
     void set_position_size(double x, double y, int width, int height);

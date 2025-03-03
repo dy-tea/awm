@@ -10,20 +10,24 @@ project(
   ],
 )
 
+# optional xwayland support
 xwayland = dependency('xwayland', required: get_option('XWAYLAND'))
-
 if xwayland.found()
   add_project_arguments('-DXWAYLAND', language: 'cpp')
 endif
 
+# programs
 wayland_scanner = find_program('wayland-scanner')
 pkg_config = find_program('pkg-config')
+
+# wayland dirs
+wl_protocols_dir = run_command(pkg_config, '--variable=pkgdatadir', 'wayland-protocols').stdout().replace('\n', '')
+include_dir = run_command(pkg_config, '--variable=includedir', 'wlroots-0.19').stdout().replace('\n', '')
 
 protocol_sources = []
 protocol_code = []
 
-wl_protocols_dir = run_command(pkg_config, '--variable=pkgdatadir', 'wayland-protocols').stdout().replace('\n', '')
-
+# wayland protocols
 protocols = [
   wl_protocols_dir / 'stable' / 'xdg-shell' / 'xdg-shell.xml',
   wl_protocols_dir / 'stable' / 'tablet' / 'tablet-v2.xml',
@@ -39,6 +43,7 @@ protocols = [
   'protocols' / 'wlr-screencopy-unstable-v1.xml',
 ]
 
+# generate protocol headers and code
 foreach protocol : protocols
   out_h = '@0@-protocol.h'.format(protocol)
   header = custom_target(
@@ -59,17 +64,20 @@ foreach protocol : protocols
   protocol_code += [code]
 endforeach
 
-include_dir = run_command(pkg_config, '--variable=includedir', 'wlroots-0.19').stdout().replace('\n', '')
-
+# dependencies
 tomlcpp_proj = subproject('tomlcpp')
 tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
 
+nlohmann_json = dependency('nlohmann_json')
+
+# includes
 include = include_directories(
   include_dir,
   include_dir / 'wlroots-0.19',
   'include',
 )
 
+# libs
 libs = [
   dependency('wayland-server'),
   dependency('wayland-protocols'),
@@ -79,8 +87,10 @@ libs = [
   dependency('libinput'),
   dependency('xcb'),
   tomlcpp_dep,
+  nlohmann_json
 ]
 
+# main executable
 executable(
   'awm',
   [
@@ -107,6 +117,13 @@ executable(
   install_dir: get_option('bindir'),
 )
 
+# desktop file
 install_data('awm.desktop', install_dir: '//usr/share/wayland-sessions')
 
-subdir('awmsg')
+# ipc client
+executable(
+  'awmsg',
+  'awmsg/main.cpp',
+  dependencies: nlohmann_json,
+  install: true,
+)

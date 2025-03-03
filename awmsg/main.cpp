@@ -1,8 +1,10 @@
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <stdarg.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+using json = nlohmann::json;
 
 void print_err(std::string msg, ...) {
     va_list args;
@@ -19,9 +21,9 @@ void print_usage() {
               << tab << "[e]xit" << std::endl
               << tab << "[o]utput" << std::endl
               << tab << tab << "- [l]ist" << std::endl
+              << tab << tab << "- [w]orkspaces" << std::endl
               << tab << "[w]orkspace" << std::endl
               << tab << tab << "- [l]ist" << std::endl
-              << tab << tab << "- [t]oplevels" << std::endl
               << tab << "[t]oplevel" << std::endl
               << tab << tab << "- [l]ist" << std::endl;
 }
@@ -56,6 +58,8 @@ int main(int argc, char **argv) {
 
         if (argv[2][0] == 'l')
             message = "output list";
+        else if (argv[2][0] == 'w')
+            message = "output workspaces";
     }
 
     // group workspace
@@ -67,8 +71,6 @@ int main(int argc, char **argv) {
 
         if (argv[2][0] == 'l')
             message = "workspace list";
-        else if (argv[2][0] == 't')
-            message = "workspace toplevels";
     }
 
     // group toplevel
@@ -124,8 +126,13 @@ int main(int argc, char **argv) {
         return 4;
     }
 
-    // print response
-    std::cout << std::string(buffer, len) << std::endl;
+    std::string response = std::string(buffer, len);
+    if (response != "" && len > 0) {
+        json response_json = json::parse(response);
+
+        // print response
+        std::cout << response_json.dump(4) << std::endl;
+    }
 
     // close connection
     close(fd);

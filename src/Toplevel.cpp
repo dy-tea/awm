@@ -753,6 +753,11 @@ void Toplevel::set_position_size(const double x, const double y, int width,
         wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
     }
 #endif
+
+    geometry = wlr_box{.x = static_cast<int>(x),
+                       .y = static_cast<int>(y),
+                       .width = width,
+                       .height = height};
 }
 
 void Toplevel::set_position_size(const wlr_box &geometry) {
@@ -768,6 +773,8 @@ wlr_box Toplevel::get_geometry() {
         geometry.y = scene_tree->node.y;
         geometry.width = xdg_toplevel->base->surface->current.width;
         geometry.height = xdg_toplevel->base->surface->current.height;
+
+        return xdg_toplevel->base->geometry;
 #ifdef XWAYLAND
     } else {
         geometry.x = xwayland_surface->x;
@@ -913,24 +920,24 @@ void Toplevel::toggle_fullscreen() { set_fullscreen(!fullscreen()); }
 
 // save the current geometry of the toplevel to saved_geometry
 void Toplevel::save_geometry() {
-    wlr_box geometry = get_geometry();
+    wlr_box geo = get_geometry();
     saved_geometry.x = geometry.x;
     saved_geometry.y = geometry.y;
 
     // current width and height are not set when a toplevel is created, but
     // saved geometry is
-    if (geometry.width && geometry.height) {
+    if (geo.width && geo.height) {
 #ifdef XWAYLAND
         if (xdg_toplevel) {
-            saved_geometry.width = geometry.width;
-            saved_geometry.height = geometry.height;
+            saved_geometry.width = geo.width;
+            saved_geometry.height = geo.height;
         } else {
             saved_geometry.width = xwayland_surface->surface->current.width;
             saved_geometry.height = xwayland_surface->surface->current.height;
         }
 #else
-        saved_geometry.width = geometry.width;
-        saved_geometry.height = geometry.height;
+        saved_geometry.width = geo.width;
+        saved_geometry.height = geo.height;
 #endif
     }
 }

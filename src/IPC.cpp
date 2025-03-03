@@ -146,16 +146,16 @@ std::string IPC::run(std::string command) {
 
                         wl_list_for_each_safe(toplevel, tmp1,
                                               &workspace->toplevels, link) {
-                            std::string i = string_format("%p", toplevel);
-                            j[workspace->num]["toplevels"][i] = {
-                                {"title", toplevel->title()},
-                                {"x", toplevel->geometry.x},
-                                {"y", toplevel->geometry.y},
-                                {"width", toplevel->geometry.width},
-                                {"height", toplevel->geometry.height},
-                                {"focused",
-                                 toplevel == workspace->active_toplevel},
-                            };
+                            j[workspace->num]["toplevels"]
+                             [string_format("%p", toplevel)] = {
+                                 {"title", toplevel->title()},
+                                 {"x", toplevel->geometry.x},
+                                 {"y", toplevel->geometry.y},
+                                 {"width", toplevel->geometry.width},
+                                 {"height", toplevel->geometry.height},
+                                 {"focused",
+                                  toplevel == workspace->active_toplevel},
+                             };
                         }
                     }
 
@@ -174,9 +174,7 @@ std::string IPC::run(std::string command) {
                         o, t0, &server->output_manager->outputs, link)
                         wl_list_for_each_safe(w, t1, &o->workspaces, link) {
                         wl_list_for_each_safe(t, t2, &w->toplevels, link) {
-                            std::string i = string_format("%p", t);
-                            bool xwayland = t->xdg_toplevel ? false : true;
-                            j[i] = {
+                            j[string_format("%p", t)] = {
                                 {"title", t->title()},
                                 {"x", t->geometry.x},
                                 {"y", t->geometry.y},
@@ -184,7 +182,9 @@ std::string IPC::run(std::string command) {
                                 {"height", t->geometry.height},
                                 {"focused", t == w->active_toplevel},
                                 {"hidden", t->hidden},
-                                {"xwayland", xwayland},
+#ifdef XWAYLAND
+                                {"xwayland", !t->xdg_toplevel},
+#endif
                             };
                         }
                     }

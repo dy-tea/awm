@@ -1,6 +1,6 @@
 #include "Server.h"
 
-void Toplevel::map_notify(wl_listener *listener, void *data) {
+void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // on map or display
     Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
@@ -103,13 +103,15 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
 
             // xwayland commit
             toplevel->xwayland_commit.notify = [](wl_listener *listener,
-                                                  void *data) {
+                                                  [[maybe_unused]] void *data) {
                 Toplevel *toplevel =
                     wl_container_of(listener, toplevel, xwayland_commit);
                 const wlr_surface_state *state =
                     &toplevel->xwayland_surface->surface->current;
 
                 wlr_box new_box{
+                    .x = 0,
+                    .y = 0,
                     .width = state->width,
                     .height = state->height,
                 };
@@ -135,7 +137,8 @@ void Toplevel::map_notify(wl_listener *listener, void *data) {
 #endif
 }
 
-void Toplevel::unmap_notify(wl_listener *listener, void *data) {
+void Toplevel::unmap_notify(wl_listener *listener,
+                            [[maybe_unused]] void *data) {
     Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
 
     // deactivate
@@ -192,7 +195,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
 
     // handle_request_minimize
-    handle_request_minimize.notify = [](wl_listener *listener, void *data) {
+    handle_request_minimize.notify = [](wl_listener *listener,
+                                        [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_minimize);
 
@@ -240,7 +244,8 @@ void Toplevel::create_handle() {
                   &handle_request_fullscreen);
 
     // handle_request_activate
-    handle_request_activate.notify = [](wl_listener *listener, void *data) {
+    handle_request_activate.notify = [](wl_listener *listener,
+                                        [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_activate);
 
@@ -251,7 +256,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.request_activate, &handle_request_activate);
 
     // handle_request_close
-    handle_request_close.notify = [](wl_listener *listener, void *data) {
+    handle_request_close.notify = [](wl_listener *listener,
+                                     [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_request_close);
 
@@ -279,7 +285,8 @@ void Toplevel::create_handle() {
     wl_signal_add(&handle->events.set_rectangle, &handle_set_rectangle);
 
     // handle_destroy
-    handle_destroy.notify = [](wl_listener *listener, void *data) {
+    handle_destroy.notify = [](wl_listener *listener,
+                               [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, handle_destroy);
 
@@ -309,7 +316,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &unmap);
 
     // xdg_toplevel_commit
-    commit.notify = [](wl_listener *listener, void *data) {
+    commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         // on surface state change
         Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
 
@@ -321,14 +328,15 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 
     // xdg_toplevel_destroy
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
         delete toplevel;
     };
     wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
 
     // request_move
-    request_move.notify = [](wl_listener *listener, void *data) {
+    request_move.notify = [](wl_listener *listener,
+                             [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, request_move);
 
         // start interactivity
@@ -348,7 +356,8 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     wl_signal_add(&xdg_toplevel->events.request_resize, &request_resize);
 
     // request_maximize
-    request_maximize.notify = [](wl_listener *listener, void *data) {
+    request_maximize.notify = [](wl_listener *listener,
+                                 [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_maximize);
 
@@ -357,7 +366,8 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     wl_signal_add(&xdg_toplevel->events.request_maximize, &request_maximize);
 
     // request_fullscreen
-    request_fullscreen.notify = [](wl_listener *listener, void *data) {
+    request_fullscreen.notify = [](wl_listener *listener,
+                                   [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_fullscreen);
 
@@ -367,7 +377,8 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
                   &request_fullscreen);
 
     // request_minimize
-    request_minimize.notify = [](wl_listener *listener, void *data) {
+    request_minimize.notify = [](wl_listener *listener,
+                                 [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_minimize);
 
@@ -425,14 +436,14 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     create_handle();
 
     // destroy
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
         delete toplevel;
     };
     wl_signal_add(&xwayland_surface->events.destroy, &destroy);
 
     // activate
-    activate.notify = [](wl_listener *listener, void *data) {
+    activate.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, activate);
         const wlr_xwayland_surface *xwayland_surface =
             toplevel->xwayland_surface;
@@ -446,7 +457,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     wl_signal_add(&xwayland_surface->events.request_activate, &activate);
 
     // associate
-    associate.notify = [](wl_listener *listener, void *data) {
+    associate.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, associate);
 
         // map
@@ -462,7 +473,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     wl_signal_add(&xwayland_surface->events.associate, &associate);
 
     // dissociate
-    dissociate.notify = [](wl_listener *listener, void *data) {
+    dissociate.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, dissociate);
 
         // unmap
@@ -516,7 +527,8 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     wl_signal_add(&xwayland_surface->events.request_resize, &xwayland_resize);
 
     // move
-    xwayland_move.notify = [](wl_listener *listener, void *data) {
+    xwayland_move.notify = [](wl_listener *listener,
+                              [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, xwayland_move);
 
         toplevel->begin_interactive(CURSORMODE_MOVE, 0);
@@ -524,7 +536,8 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     wl_signal_add(&xwayland_surface->events.request_move, &xwayland_move);
 
     // maximize
-    xwayland_maximize.notify = [](wl_listener *listener, void *data) {
+    xwayland_maximize.notify = [](wl_listener *listener,
+                                  [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, xwayland_maximize);
 
@@ -534,7 +547,8 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
                   &xwayland_maximize);
 
     // fullscreen
-    xwayland_fullscreen.notify = [](wl_listener *listener, void *data) {
+    xwayland_fullscreen.notify = [](wl_listener *listener,
+                                    [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, xwayland_fullscreen);
 
@@ -544,7 +558,8 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
                   &xwayland_fullscreen);
 
     // close
-    xwayland_close.notify = [](wl_listener *listener, void *data) {
+    xwayland_close.notify = [](wl_listener *listener,
+                               [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, xwayland_close);
 

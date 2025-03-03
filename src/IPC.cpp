@@ -98,11 +98,31 @@ std::string IPC::run(std::string command) {
                             {"y", output->layout_geometry.y},
                             {"width", output->layout_geometry.width},
                             {"height", output->layout_geometry.height},
+                            {"refresh", output->wlr_output->refresh},
                             {"scale", output->wlr_output->scale},
                             {"transform", output->wlr_output->transform},
+                            {"adaptive",
+                             output->wlr_output->adaptive_sync_supported},
                             {"enabled", output->wlr_output->enabled},
                             {"focused", output == server->focused_output()},
                         };
+
+                        // below values may be null
+                        if (output->wlr_output->description)
+                            j[output->wlr_output->name]["description"] =
+                                output->wlr_output->description;
+
+                        if (output->wlr_output->make)
+                            j[output->wlr_output->name]["make"] =
+                                output->wlr_output->make;
+
+                        if (output->wlr_output->model)
+                            j[output->wlr_output->name]["model"] =
+                                output->wlr_output->model;
+
+                        if (output->wlr_output->serial)
+                            j[output->wlr_output->name]["serial"] =
+                                output->wlr_output->serial;
                     }
 
                     response = j.dump();
@@ -162,6 +182,7 @@ std::string IPC::run(std::string command) {
                                 {"width", t->geometry.width},
                                 {"height", t->geometry.height},
                                 {"focused", t == w->active_toplevel},
+                                {"hidden", t->hidden},
                             };
                         }
                     }

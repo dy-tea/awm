@@ -22,6 +22,7 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     // send arrange
     server->output_manager->arrange();
     update_position();
+    usable_area = layout_geometry;
 
     // frame
     frame.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {

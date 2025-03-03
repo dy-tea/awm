@@ -737,9 +737,7 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     if (xdg_toplevel) {
 #endif
         // set new position
-        wlr_box geo_box = get_geometry();
-        wlr_scene_node_set_position(&scene_tree->node, x - geo_box.x,
-                                    y - geo_box.y);
+        wlr_scene_node_set_position(&scene_tree->node, x, y);
 
         // set position and size
         wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
@@ -766,7 +764,10 @@ wlr_box Toplevel::get_geometry() {
 #ifdef XWAYLAND
     if (xdg_toplevel) {
 #endif
-        geometry = xdg_toplevel->base->geometry;
+        geometry.x = scene_tree->node.x;
+        geometry.y = scene_tree->node.y;
+        geometry.width = xdg_toplevel->base->surface->current.width;
+        geometry.height = xdg_toplevel->base->surface->current.height;
 #ifdef XWAYLAND
     } else {
         geometry.x = xwayland_surface->x;
@@ -885,9 +886,8 @@ void Toplevel::set_maximized(const bool maximized) {
         save_geometry();
 
         // set to top left of output, width and height the size of output
-        set_position_size(output_box.x + output->layout_geometry.x,
-                          output_box.y + output->layout_geometry.y,
-                          output_box.width, output_box.height);
+        set_position_size(output_box.x, output_box.y, output_box.width,
+                          output_box.height);
     } else
         // set back to saved geometry
         set_position_size(saved_geometry.x, saved_geometry.y,

@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
@@ -254,6 +255,10 @@ void Cursor::process_move() {
     wlr_scene_node_set_position(&server->grabbed_toplevel->scene_tree->node,
                                 new_x, new_y);
 
+    // update position
+    server->grabbed_toplevel->geometry.x = new_x;
+    server->grabbed_toplevel->geometry.y = new_x;
+
     // move toplevel to different workspace if it's moved into other output
     Workspace *target = server->focused_output()->get_active();
     if (!target->contains(server->grabbed_toplevel) && current)
@@ -303,9 +308,30 @@ void Cursor::process_resize() {
             new_right = new_left + 1;
     }
 
+    wlr_box geo_box = toplevel->get_geometry();
+    int new_x = new_left - geo_box.x;
+    int new_y = new_top - geo_box.y;
+    int new_width = new_right - new_left;
+    int new_height = new_bottom - new_top;
+
     // set new geometry
-    toplevel->set_position_size(new_left, new_top, new_right - new_left,
-                                new_bottom - new_top);
+    wlr_scene_node_set_position(&toplevel->scene_tree->node, new_x, new_y);
+
+#ifdef XWAYLAND
+    if (toplevel->xdg_toplevel)
+#endif
+        wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_width,
+                                  new_height);
+#ifdef XWAYLAND
+    else
+        wlr_xwayland_surface_configure(toplevel->xwayland_surface, new_x, new_y,
+                                       new_width, new_height);
+#endif
+
+    toplevel->geometry.x = new_x;
+    toplevel->geometry.y = new_y;
+    toplevel->geometry.width = new_width;
+    toplevel->geometry.height = new_height;
 }
 
 // constrain the cursor to a given pointer constraint

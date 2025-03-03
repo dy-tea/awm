@@ -774,6 +774,7 @@ wlr_box Toplevel::get_geometry() {
         geometry.width = xdg_toplevel->base->surface->current.width;
         geometry.height = xdg_toplevel->base->surface->current.height;
 
+        // this is called lying
         return xdg_toplevel->base->geometry;
 #ifdef XWAYLAND
     } else {
@@ -781,17 +782,18 @@ wlr_box Toplevel::get_geometry() {
         geometry.y = xwayland_surface->y;
         geometry.width = xwayland_surface->surface->current.width;
         geometry.height = xwayland_surface->surface->current.height;
+        return geometry;
     }
 #endif
-
-    return geometry;
 }
 
 // set the visibility of the toplevel
 void Toplevel::set_hidden(const bool hidden) {
     this->hidden = hidden;
 
+#ifdef XWAYLAND
     if (xdg_toplevel)
+#endif
         wlr_scene_node_set_enabled(&scene_tree->node, !hidden);
 #ifdef XWAYLAND
     else

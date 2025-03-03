@@ -11,8 +11,9 @@ project(
 )
 
 # optional xwayland support
-xwayland = dependency('xwayland', required: get_option('XWAYLAND'))
-if xwayland.found()
+xwayland_option = get_option('XWAYLAND')
+if xwayland_option
+  xwayland = dependency('xwayland', required: xwayland_option)
   add_project_arguments('-DXWAYLAND', language: 'cpp')
 endif
 
@@ -87,8 +88,13 @@ libs = [
   dependency('libinput'),
   dependency('xcb'),
   tomlcpp_dep,
-  nlohmann_json
+  nlohmann_json,
 ]
+
+# xwayland
+if xwayland_option
+  libs += [xwayland]
+endif
 
 # main executable
 executable(

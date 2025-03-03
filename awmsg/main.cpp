@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    std::string message = "";
+    std::string message;
 
     // group exit
     if (group[0] == 'e')
@@ -104,7 +104,8 @@ int main(int argc, char **argv) {
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, "/tmp/awm.sock", sizeof(addr.sun_path) - 1);
 
-    if (connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un))) {
+    if (connect(fd, reinterpret_cast<struct sockaddr *>(&addr),
+        sizeof(struct sockaddr_un))) {
         print_err("Failed to connect to IPC socket (is awm ipc running?)");
         return 2;
     }
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
     }
 
     // read response from ipc socket
-    std::string response = "";
+    std::string response;
     char buffer[1024];
     int len;
     while ((len = read(fd, buffer, sizeof(buffer))) > 0)

@@ -126,4 +126,5 @@ executable(
   'awmsg/main.cpp',
   dependencies: nlohmann_json,
   install: true,
+  install_dir: get_option('bindir'),
 )

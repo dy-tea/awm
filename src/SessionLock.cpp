@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
     : server(server), session_lock(session_lock) {
@@ -24,7 +23,7 @@ SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
 
         // set up destructor for surface
         output->destroy_lock_surface.notify = [](wl_listener *listener,
-                                                 void *data) {
+                                                 [[maybe_unused]] void *data) {
             Output *output =
                 wl_container_of(listener, output, destroy_lock_surface);
             Server *server = output->server;
@@ -66,7 +65,7 @@ SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
     };
     wl_signal_add(&session_lock->events.new_surface, &new_surface);
 
-    unlock.notify = [](wl_listener *listener, void *data) {
+    unlock.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         SessionLock *lock = wl_container_of(listener, lock, unlock);
         Server *server = lock->server;
 
@@ -88,7 +87,7 @@ SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
     };
     wl_signal_add(&session_lock->events.unlock, &unlock);
 
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         SessionLock *lock = wl_container_of(listener, lock, destroy);
         delete lock;
     };

@@ -35,7 +35,7 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server)
         wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
 
     // xdg_popup_commit
-    commit.notify = [](wl_listener *listener, void *data) {
+    commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Popup *popup = wl_container_of(listener, popup, commit);
 
         if (!popup->xdg_popup->base->initial_commit)
@@ -43,13 +43,13 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server)
 
         if (Output *output = popup->server->focused_output()) {
             wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup,
-                &output->layout_geometry);
+                                               &output->layout_geometry);
         }
     };
     wl_signal_add(&xdg_popup->base->surface->events.commit, &commit);
 
     // xdg_popup_destroy
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Popup *popup = wl_container_of(listener, popup, destroy);
         delete popup;
     };

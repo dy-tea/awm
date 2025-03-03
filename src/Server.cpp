@@ -241,7 +241,8 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_layer_shell->events.new_surface, &new_shell_surface);
 
     // renderer_lost
-    renderer_lost.notify = [](wl_listener *listener, void *data) {
+    renderer_lost.notify = [](wl_listener *listener,
+                              [[maybe_unused]] void *data) {
         // renderer recovery (thanks sway)
         Server *server = wl_container_of(listener, server, renderer_lost);
 
@@ -502,7 +503,8 @@ Server::Server(Config *config) : config(config) {
     // init xwayland
     if ((xwayland = wlr_xwayland_create(display, compositor, true))) {
         // xwayland_ready
-        xwayland_ready.notify = [](wl_listener *listener, void *data) {
+        xwayland_ready.notify = [](wl_listener *listener,
+                                   [[maybe_unused]] void *data) {
             Server *server = wl_container_of(listener, server, xwayland_ready);
 
             wlr_xwayland_set_seat(server->xwayland, server->seat);

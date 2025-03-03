@@ -24,7 +24,7 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     update_position();
 
     // frame
-    frame.notify = [](wl_listener *listener, void *data) {
+    frame.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         // called once per frame
         Output *output = wl_container_of(listener, output, frame);
         wlr_scene *scene = output->server->scene;
@@ -56,7 +56,7 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     wl_signal_add(&wlr_output->events.request_state, &request_state);
 
     // destroy
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Output *output = wl_container_of(listener, output, destroy);
         delete output;
     };
@@ -75,7 +75,7 @@ Output::~Output() {
 
 // arrange all layers
 void Output::arrange_layers() {
-    wlr_box usable = {0};
+    wlr_box usable = {};
     wlr_output_effective_resolution(wlr_output, &usable.width, &usable.height);
     const wlr_box full_area = usable;
 

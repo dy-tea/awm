@@ -28,7 +28,7 @@ OutputManager::OutputManager(Server *server) : server(server) {
     wl_signal_add(&wlr_output_manager->events.test, &test);
 
     // destroy
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         OutputManager *manager = wl_container_of(listener, manager, destroy);
         delete manager;
     };
@@ -99,7 +99,7 @@ OutputManager::OutputManager(Server *server) : server(server) {
     wl_signal_add(&server->backend->events.new_output, &new_output);
 
     // change
-    change.notify = [](wl_listener *listener, void *data) {
+    change.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         wlr_output_configuration_v1 *config =
             wlr_output_configuration_v1_create();
         OutputManager *manager = wl_container_of(listener, manager, change);

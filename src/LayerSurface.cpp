@@ -22,7 +22,7 @@ LayerSurface::LayerSurface(Output *output,
     output->arrange_layers();
 
     // map surface
-    map.notify = [](wl_listener *listener, void *data) {
+    map.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         // get seat and pointer focus on map
         LayerSurface *surface = wl_container_of(listener, surface, map);
         const wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
@@ -38,7 +38,7 @@ LayerSurface::LayerSurface(Output *output,
     wl_signal_add(&wlr_layer_surface->surface->events.map, &map);
 
     // unmap surface
-    unmap.notify = [](wl_listener *listener, void *data) {
+    unmap.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, unmap);
 
         wlr_layer_surface_v1_configure(
@@ -52,7 +52,7 @@ LayerSurface::LayerSurface(Output *output,
     wl_signal_add(&wlr_layer_surface->surface->events.unmap, &unmap);
 
     // commit surface
-    commit.notify = [](wl_listener *listener, void *data) {
+    commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         // on display
         LayerSurface *surface = wl_container_of(listener, surface, commit);
         wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
@@ -100,7 +100,7 @@ LayerSurface::LayerSurface(Output *output,
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 
     // destroy
-    destroy.notify = [](wl_listener *listener, void *data) {
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, destroy);
         delete surface;
     };

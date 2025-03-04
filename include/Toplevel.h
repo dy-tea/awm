@@ -11,6 +11,7 @@ struct Toplevel {
     wl_listener map;
     wl_listener unmap;
     wl_listener commit;
+    wl_listener new_xdg_popup;
     wl_listener destroy;
     wl_listener request_move;
     wl_listener request_resize;

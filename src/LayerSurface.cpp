@@ -27,8 +27,9 @@ LayerSurface::LayerSurface(Output *output,
         LayerSurface *surface = wl_container_of(listener, surface, map);
         const wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
-        // rearrange
+        // rearrange layers and outputs
         surface->output->arrange_layers();
+        surface->output->server->output_manager->arrange();
 
         // handle focus
         if (surface->wlr_layer_surface->current.keyboard_interactive &&
@@ -64,9 +65,6 @@ LayerSurface::LayerSurface(Output *output,
         Output *output = surface->output;
 
         bool needs_arrange = false;
-        // hack:
-        // TODO: figure out when to call this - tempfix
-        output->server->output_manager->arrange();
 
         if (surface->wlr_layer_surface->current.committed &
             WLR_LAYER_SURFACE_V1_STATE_LAYER) {
@@ -93,9 +91,8 @@ LayerSurface::LayerSurface(Output *output,
         LayerSurface *layer_surface =
             wl_container_of(listener, layer_surface, new_popup);
 
-        if (data) [[maybe_unused]]
-            Popup *popup = new Popup(static_cast<wlr_xdg_popup *>(data),
-                                     layer_surface->output->server);
+        new Popup(static_cast<wlr_xdg_popup *>(data), layer_surface->scene_tree,
+            layer_surface->output->server);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 

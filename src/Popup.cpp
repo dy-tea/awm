@@ -1,50 +1,33 @@
 #include "Server.h"
 
-Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server)
-    : server(server), xdg_popup(xdg_popup) {
-    // we need a parent to ascertain the type
-    if (!xdg_popup->parent)
-        return;
-
-    // get parent scene tree
-    wlr_scene_tree *parent_tree = nullptr;
-
-    // check if parent is layer surface
-    const wlr_layer_surface_v1 *layer =
-        wlr_layer_surface_v1_try_from_wlr_surface(xdg_popup->parent);
-
-    if (layer) {
-        // parent tree is layer surface
-        const LayerSurface *layer_surface =
-            static_cast<LayerSurface *>(layer->data);
-        parent_tree = layer_surface->scene_layer_surface->tree;
-    } else {
-        // parent tree is xdg surface
-        const wlr_xdg_surface *parent =
-            wlr_xdg_surface_try_from_wlr_surface(xdg_popup->parent);
-        if (parent)
-            parent_tree = static_cast<wlr_scene_tree *>(parent->data);
-        else {
-            wlr_log(WLR_ERROR, "failed to get parent tree");
-            return;
-        }
-    }
-
-    // create scene node for popup
-    xdg_popup->base->data =
-        wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
+Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree* parent_tree, Server *server)
+        : server(server),
+        xdg_popup(xdg_popup),
+        parent_tree(wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base)){
+        xdg_popup->base->data = parent_tree;
 
     // xdg_popup_commit
     commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Popup *popup = wl_container_of(listener, popup, commit);
+        Output *output = popup->server->focused_output();
 
-        if (!popup->xdg_popup->base->initial_commit)
+        if (!output)
             return;
 
-        if (Output *output = popup->server->focused_output()) {
-            wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup,
-                                               &output->usable_area);
-        }
+        int lx, ly;
+        wlr_scene_node_coords(&popup->parent_tree->node.parent->node, &lx, &ly);
+
+        wlr_box box = {
+            .x = output->layout_geometry.x - lx,
+            .y = output->layout_geometry.y - ly,
+            .width = output->layout_geometry.width,
+            .height = output->layout_geometry.height,
+        };
+
+        wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup, &box);
+
+        if(popup->xdg_popup->base->initial_commit)
+            wlr_xdg_surface_schedule_configure(popup->xdg_popup->base);
     };
     wl_signal_add(&xdg_popup->base->surface->events.commit, &commit);
 

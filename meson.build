@@ -121,7 +121,7 @@ executable(
 )
 
 # desktop file
-install_data('awm.desktop', install_dir: '//usr/share/wayland-sessions')
+install_data('awm.desktop', install_dir: '/usr/share/wayland-sessions')
 
 # ipc client
 executable(

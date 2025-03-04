@@ -4,6 +4,8 @@ struct Popup {
     Server *server;
     wl_list link;
     wlr_xdg_popup *xdg_popup;
+    wlr_scene_tree *parent_tree;
+
     wl_listener commit;
     wl_listener destroy;
 

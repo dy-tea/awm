@@ -7,7 +7,7 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server)
         return;
 
     // get parent scene tree
-    wlr_scene_tree *parent_tree = nullptr;
+    parent_tree = nullptr;
 
     // check if parent is layer surface
     const wlr_layer_surface_v1 *layer =

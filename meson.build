@@ -23,7 +23,8 @@ wayland_scanner = find_program('wayland-scanner')
 pkg_config = find_program('pkg-config')
 
 # wayland dirs
-wl_protocols_dir = run_command(pkg_config, '--variable=pkgdatadir', 'wayland-protocols').stdout().replace('\n', '')
+wl_protocols_dep = dependency('wayland-protocols')
+wl_protocols_dir = wl_protocols_dep.get_variable(pkgconfig: 'pkgdatadir')
 include_dir = run_command(pkg_config, '--variable=includedir', 'wlroots-0.19').stdout().replace('\n', '')
 
 protocol_sources = []
@@ -82,7 +83,6 @@ include = include_directories(
 # libs
 libs = [
   dependency('wayland-server'),
-  dependency('wayland-protocols'),
   dependency('wlroots-0.19'),
   dependency('pixman-1'),
   dependency('xkbcommon'),

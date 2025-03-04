@@ -37,6 +37,16 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree* parent_tree, Server *serv
         delete popup;
     };
     wl_signal_add(&xdg_popup->events.destroy, &destroy);
+
+    // xdg_popup_popup
+    new_popup.notify = [](wl_listener *listener, void *data) {
+        Popup *popup = wl_container_of(listener, popup, new_popup);
+        auto* xdg_popup = static_cast<wlr_xdg_popup*>(data);
+
+        new Popup(xdg_popup, popup->parent_tree, popup->server);
+    };
+    wl_signal_add(&xdg_popup->base->events.new_popup, &new_popup);
+
 }
 
 Popup::~Popup() {

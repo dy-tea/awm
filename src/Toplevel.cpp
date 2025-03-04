@@ -337,8 +337,8 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
         Toplevel *toplevel = wl_container_of(listener, toplevel, new_xdg_popup);
 
         // popups do not need to be tracked
-        [[maybe_unused]] Popup *popup =
-            new Popup(static_cast<wlr_xdg_popup *>(data), toplevel->server);
+        new Popup(static_cast<wlr_xdg_popup *>(data), toplevel->scene_tree,
+            toplevel->server);
     };
     wl_signal_add(&xdg_toplevel->base->events.new_popup, &new_xdg_popup);
 

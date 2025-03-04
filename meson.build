@@ -20,7 +20,6 @@ endif
 
 # programs
 wayland_scanner = find_program('wayland-scanner')
-pkg_config = find_program('pkg-config')
 
 # wayland dirs
 wl_protocols_dep = dependency('wayland-protocols')

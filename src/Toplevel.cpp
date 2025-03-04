@@ -326,10 +326,9 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
         // on surface state change
         Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
 
-        if (wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel;
-            xdg_toplevel->base->initial_commit)
+        if (toplevel->xdg_toplevel->base->initial_commit)
             // let client pick dimensions
-            wlr_xdg_toplevel_set_size(xdg_toplevel, 0, 0);
+            wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, 0, 0);
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 

@@ -188,16 +188,6 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 
-    // new_xdg_popup
-    new_xdg_popup.notify = [](wl_listener *listener, void *data) {
-        Server *server = wl_container_of(listener, server, new_xdg_popup);
-
-        // popups do not need to be tracked
-        [[maybe_unused]] Popup *popup =
-            new Popup(static_cast<wlr_xdg_popup *>(data), server);
-    };
-    wl_signal_add(&xdg_shell->events.new_popup, &new_xdg_popup);
-
     // layers
     layers.background = wlr_scene_tree_create(&scene->tree);
     layers.bottom = wlr_scene_tree_create(&scene->tree);
@@ -613,7 +603,6 @@ Server::~Server() {
     delete output_manager;
 
     wl_list_remove(&new_xdg_toplevel.link);
-    wl_list_remove(&new_xdg_popup.link);
 
     wl_list_remove(&new_input.link);
     wl_list_remove(&request_cursor.link);

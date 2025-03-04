@@ -47,7 +47,7 @@ struct Server {
 
     wlr_xdg_shell *xdg_shell;
     wl_listener new_xdg_toplevel;
-    wl_listener new_xdg_popup;
+
 
     wlr_relative_pointer_manager_v1 *wlr_relative_pointer_manager;
 

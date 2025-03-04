@@ -332,6 +332,16 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 
+    // new_xdg_popup
+    new_xdg_popup.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, new_xdg_popup);
+
+        // popups do not need to be tracked
+        [[maybe_unused]] Popup *popup =
+            new Popup(static_cast<wlr_xdg_popup *>(data), toplevel->server);
+    };
+    wl_signal_add(&xdg_toplevel->base->events.new_popup, &new_xdg_popup);
+
     // xdg_toplevel_destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
@@ -414,6 +424,7 @@ Toplevel::~Toplevel() {
         wl_list_remove(&map.link);
         wl_list_remove(&unmap.link);
         wl_list_remove(&commit.link);
+        wl_list_remove(&new_xdg_popup.link);
         wl_list_remove(&request_move.link);
         wl_list_remove(&request_resize.link);
         wl_list_remove(&request_maximize.link);

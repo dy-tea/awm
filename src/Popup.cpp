@@ -18,10 +18,10 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree* parent_tree, Server *serv
         wlr_scene_node_coords(&popup->parent_tree->node.parent->node, &lx, &ly);
 
         wlr_box box = {
-            .x = output->usable_area.x - lx,
-            .y = output->usable_area.y - ly,
-            .width = output->usable_area.width,
-            .height = output->usable_area.height,
+            .x = output->layout_geometry.x - lx,
+            .y = output->layout_geometry.y - ly,
+            .width = output->layout_geometry.width,
+            .height = output->layout_geometry.height,
         };
 
         wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup, &box);

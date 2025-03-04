@@ -257,7 +257,7 @@ void Cursor::process_move() {
 
     // update position
     server->grabbed_toplevel->geometry.x = new_x;
-    server->grabbed_toplevel->geometry.y = new_x;
+    server->grabbed_toplevel->geometry.y = new_y;
 
     // move toplevel to different workspace if it's moved into other output
     Workspace *target = server->focused_output()->get_active();

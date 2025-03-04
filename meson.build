@@ -20,11 +20,10 @@ endif
 
 # programs
 wayland_scanner = find_program('wayland-scanner')
-pkg_config = find_program('pkg-config')
 
 # wayland dirs
-wl_protocols_dir = run_command(pkg_config, '--variable=pkgdatadir', 'wayland-protocols').stdout().replace('\n', '')
-include_dir = run_command(pkg_config, '--variable=includedir', 'wlroots-0.19').stdout().replace('\n', '')
+wl_protocols_dep = dependency('wayland-protocols')
+wl_protocols_dir = wl_protocols_dep.get_variable(pkgconfig: 'pkgdatadir')
 
 protocol_sources = []
 protocol_code = []
@@ -74,15 +73,12 @@ nlohmann_json = dependency('nlohmann_json')
 
 # includes
 include = include_directories(
-  include_dir,
-  include_dir / 'wlroots-0.19',
   'include',
 )
 
 # libs
 libs = [
   dependency('wayland-server'),
-  dependency('wayland-protocols'),
   dependency('wlroots-0.19'),
   dependency('pixman-1'),
   dependency('xkbcommon'),
@@ -125,7 +121,7 @@ executable(
 )
 
 # desktop file
-install_data('awm.desktop', install_dir: '//usr/share/wayland-sessions')
+install_data('awm.desktop', install_dir: '/usr/share/wayland-sessions')
 
 # ipc client
 executable(

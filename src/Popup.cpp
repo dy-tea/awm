@@ -43,7 +43,7 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, Server *server)
 
         if (Output *output = popup->server->focused_output()) {
             wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup,
-                                               &output->layout_geometry);
+                                               &output->usable_area);
         }
     };
     wl_signal_add(&xdg_popup->base->surface->events.commit, &commit);

@@ -8,6 +8,7 @@ project(
     'buildtype=release',
     'cpp_std=c++17',
   ],
+  meson_version: '>= 1.1',
 )
 
 # optional xwayland support

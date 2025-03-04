@@ -166,6 +166,8 @@ void OutputManager::apply_config(wlr_output_configuration_v1 *cfg,
         wlr_output_configuration_v1_send_succeeded(cfg);
     else
         wlr_output_configuration_v1_send_failed(cfg);
+
+    arrange();
 }
 
 // get output by wlr_output

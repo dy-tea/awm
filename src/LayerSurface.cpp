@@ -27,8 +27,9 @@ LayerSurface::LayerSurface(Output *output,
         LayerSurface *surface = wl_container_of(listener, surface, map);
         const wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
-        // rearrange
+        // rearrange layers and outputs
         surface->output->arrange_layers();
+        surface->output->server->output_manager->arrange();
 
         // handle focus
         if (surface->wlr_layer_surface->current.keyboard_interactive &&
@@ -64,9 +65,6 @@ LayerSurface::LayerSurface(Output *output,
         Output *output = surface->output;
 
         bool needs_arrange = false;
-        // hack:
-        // TODO: figure out when to call this - tempfix
-        output->server->output_manager->arrange();
 
         if (surface->wlr_layer_surface->current.committed &
             WLR_LAYER_SURFACE_V1_STATE_LAYER) {

@@ -52,4 +52,5 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree* parent_tree, Server *serv
 Popup::~Popup() {
     wl_list_remove(&commit.link);
     wl_list_remove(&destroy.link);
+    wl_list_remove(&new_popup.link);
 }

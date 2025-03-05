@@ -1,0 +1,6 @@
+# complgen aot --bash-script awmsg.bash --fish-script awmsg.fish --zsh-script awmsg.zsh ./awmsg.usage
+
+awmsg <GROUPS> <COMMANDS>
+
+<GROUPS> ::= (help) | (exit) | (output) | (workspace) | (toplevel);
+<COMMANDS> ::= (list);

@@ -131,3 +131,24 @@ executable(
   install: true,
   install_dir: get_option('bindir'),
 )
+
+# completion scripts
+install_data(
+  'awmsg/awmsg.bash',
+  install_dir: get_option('datadir') / 'bash-completion' / 'completions',
+  install_tag: 'runtine',
+  rename: 'awmsg',
+)
+
+install_data(
+  'awmsg/awmsg.fish',
+  install_dir: get_option('datadir') / 'fish' / 'vendor_completions.d',
+  install_tag: 'runtine',
+)
+
+install_data(
+  'awmsg/awmsg.zsh',
+  install_dir: get_option('datadir') / 'zsh' / 'site-functions',
+  install_tag: 'runtime',
+  rename: '_awmsg',
+)

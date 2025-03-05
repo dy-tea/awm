@@ -128,11 +128,11 @@ void Keyboard::update_config() const {
 
     // create rule names from config
     const xkb_rule_names names{
-        .rules = nullptr,
-        .model = config->keyboard_model.data(),
-        .layout = config->keyboard_layout.data(),
-        .variant = config->keyboard_variant.data(),
-        .options = config->keyboard_options.data(),
+        nullptr,
+        config->keyboard_model.data(),
+        config->keyboard_layout.data(),
+        config->keyboard_variant.data(),
+        config->keyboard_options.data(),
     };
 
     // keymap

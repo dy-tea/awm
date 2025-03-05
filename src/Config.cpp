@@ -147,9 +147,8 @@ bool Config::load() {
 
         // ipc
         connect(startup->getBool("ipc"), &ipc);
-    } else {
-        wlr_log(WLR_INFO, "No startup configuration found, ingoring");
-    }
+    } else
+        wlr_log(WLR_INFO, "%s", "No startup configuration found, ingoring");
 
     // exit
     std::unique_ptr<toml::Table> exit_table =
@@ -191,7 +190,8 @@ bool Config::load() {
         connect(keyboard->getInt("repeat_delay"), &repeat_delay);
     } else
         // no keyboard config
-        wlr_log(WLR_INFO, "no keyboard configuration found, using us layout");
+        wlr_log(WLR_INFO, "%s",
+                "no keyboard configuration found, using us layout");
 
     // get pointer config
     std::unique_ptr<toml::Table> pointer =
@@ -388,9 +388,8 @@ bool Config::load() {
             // workspace_window_to bind
             set_bind("window_to", workspace_bind.get(), &workspace_window_to);
         }
-    } else {
-        wlr_log(WLR_INFO, "No binds set, using defaults");
-    }
+    } else
+        wlr_log(WLR_INFO, "%s", "No binds set, using defaults");
 
     // Get user-defined commands
     std::unique_ptr<toml::Array> command_tables =
@@ -412,10 +411,8 @@ bool Config::load() {
                         delete parsed;
                     }
             }
-
-    } else {
-        wlr_log(WLR_INFO, "No user-defined commands set, ignoring");
-    }
+    } else
+        wlr_log(WLR_INFO, "%s", "No user-defined commands set, ignoring");
 
     // monitor configs
     std::unique_ptr<toml::Array> monitor_tables =

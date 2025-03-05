@@ -6,7 +6,7 @@ IPC::IPC(Server *server) : server(server) {
     // create file descriptor
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd == -1) {
-        wlr_log(WLR_ERROR, "failed to create IPC socket");
+        wlr_log(WLR_ERROR, "%s", "failed to create IPC socket");
         return;
     }
 
@@ -22,7 +22,7 @@ IPC::IPC(Server *server) : server(server) {
 
     // bind socket
     if (bind(fd, reinterpret_cast<struct sockaddr *>(&addr),
-        sizeof(struct sockaddr_un)) == -1) {
+             sizeof(struct sockaddr_un)) == -1) {
         wlr_log(WLR_ERROR, "failed to bind socket with fd `%d` on path `%s`",
                 fd, path.c_str());
         return;

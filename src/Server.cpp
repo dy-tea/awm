@@ -125,14 +125,14 @@ Server::Server(Config *config) : config(config) {
     backend =
         wlr_backend_autocreate(wl_display_get_event_loop(display), &session);
     if (!backend) {
-        wlr_log(WLR_ERROR, "failed to create wlr_backend");
+        wlr_log(WLR_ERROR, "%s", "failed to create wlr_backend");
         ::exit(1);
     }
 
     // renderer
     renderer = wlr_renderer_autocreate(backend);
     if (!renderer) {
-        wlr_log(WLR_ERROR, "failed to create wlr_renderer");
+        wlr_log(WLR_ERROR, "%s", "failed to create wlr_renderer");
         ::exit(1);
     }
 
@@ -154,7 +154,7 @@ Server::Server(Config *config) : config(config) {
     // render allocator
     allocator = wlr_allocator_autocreate(backend, renderer);
     if (!allocator) {
-        wlr_log(WLR_ERROR, "failed to create wlr_allocator");
+        wlr_log(WLR_ERROR, "%s", "failed to create wlr_allocator");
         ::exit(1);
     }
 
@@ -218,7 +218,8 @@ Server::Server(Config *config) : config(config) {
             if (output)
                 surface->output = output->wlr_output;
             else {
-                wlr_log(WLR_ERROR, "no available output for layer surface");
+                wlr_log(WLR_ERROR, "%s",
+                        "no available output for layer surface");
                 wlr_layer_surface_v1_destroy(surface);
                 return;
             }
@@ -236,12 +237,12 @@ Server::Server(Config *config) : config(config) {
         // renderer recovery (thanks sway)
         Server *server = wl_container_of(listener, server, renderer_lost);
 
-        wlr_log(WLR_INFO, "Re-creating renderer after GPU reset");
+        wlr_log(WLR_INFO, "%s", "Re-creating renderer after GPU reset");
 
         // create new renderer
         wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
         if (!renderer) {
-            wlr_log(WLR_ERROR, "Unable to create renderer");
+            wlr_log(WLR_ERROR, "%s", "Unable to create renderer");
             return;
         }
 
@@ -249,7 +250,7 @@ Server::Server(Config *config) : config(config) {
         wlr_allocator *allocator =
             wlr_allocator_autocreate(server->backend, renderer);
         if (!allocator) {
-            wlr_log(WLR_ERROR, "Unable to create allocator");
+            wlr_log(WLR_ERROR, "%s", "Unable to create allocator");
             wlr_renderer_destroy(renderer);
             return;
         }
@@ -474,7 +475,7 @@ Server::Server(Config *config) : config(config) {
     }
 
     if (socket.empty()) {
-        wlr_log(WLR_DEBUG, "Unable to open wayland socket");
+        wlr_log(WLR_DEBUG, "%s", "Unable to open wayland socket");
         wlr_backend_destroy(backend);
         return;
     }
@@ -487,9 +488,6 @@ Server::Server(Config *config) : config(config) {
     }
 
 #ifdef XWAYLAND
-    // don't connect to parent X11 server
-    unsetenv("DISPLAY");
-
     // init xwayland
     if ((xwayland = wlr_xwayland_create(display, compositor, true))) {
         // xwayland_ready
@@ -522,11 +520,15 @@ Server::Server(Config *config) : config(config) {
         };
         wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
 
+        // don't connect to parent X11 server
+        unsetenv("DISPLAY");
+
+        // set new display
         setenv("DISPLAY", xwayland->display_name, 1);
         wlr_log(WLR_INFO, "started xwayland on $DISPLAY=%s",
                 xwayland->display_name);
     } else
-        wlr_log(WLR_ERROR, "failed to start Xwayland");
+        wlr_log(WLR_ERROR, "%s", "failed to start xwayland");
 #endif
 
     // start IPC

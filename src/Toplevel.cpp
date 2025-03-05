@@ -116,10 +116,10 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
                     &toplevel->xwayland_surface->surface->current;
 
                 wlr_box new_box{
-                    .x = 0,
-                    .y = 0,
-                    .width = state->width,
-                    .height = state->height,
+                    0,
+                    0,
+                    state->width,
+                    state->height,
                 };
 
                 if (new_box.width != toplevel->saved_geometry.width ||
@@ -765,10 +765,7 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     }
 #endif
 
-    geometry = wlr_box{.x = static_cast<int>(x),
-                       .y = static_cast<int>(y),
-                       .width = width,
-                       .height = height};
+    geometry = wlr_box{static_cast<int>(x), static_cast<int>(y), width, height};
 }
 
 void Toplevel::set_position_size(const wlr_box &geometry) {

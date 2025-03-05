@@ -179,7 +179,8 @@ Output *OutputManager::get_output(const wlr_output *wlr_output) {
                                     wlr_output) return output;
 
     // no output found
-    wlr_log(WLR_ERROR, "could not find output");
+    wlr_log(WLR_ERROR, "could not find output of pointer %p",
+            (void *)wlr_output);
     return nullptr;
 }
 

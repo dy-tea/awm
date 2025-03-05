@@ -99,7 +99,7 @@ std::string IPC::run(std::string command) {
                             {"y", output->layout_geometry.y},
                             {"width", output->layout_geometry.width},
                             {"height", output->layout_geometry.height},
-                            {"refresh", output->wlr_output->refresh},
+                            {"refresh", output->wlr_output->refresh / 1000.0},
                             {"scale", output->wlr_output->scale},
                             {"transform", output->wlr_output->transform},
                             {"adaptive",

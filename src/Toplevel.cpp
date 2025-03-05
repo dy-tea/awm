@@ -827,10 +827,12 @@ bool Toplevel::fullscreen() const {
 #ifdef XWAYLAND
     if (xdg_toplevel)
 #endif
-        return xdg_toplevel->current.fullscreen;
+        return xdg_toplevel->current.fullscreen ||
+               handle->state & WLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN;
 #ifdef XWAYLAND
     else
-        return xwayland_surface->fullscreen;
+        return xwayland_surface->fullscreen ||
+               handle->state & WLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN;
 #endif
 };
 
@@ -885,7 +887,8 @@ void Toplevel::set_maximized(const bool maximized) {
     const Output *output = server->focused_output();
 
     // get usable output area
-    wlr_box output_box = output->usable_area;
+    wlr_box usable_area = output->usable_area;
+    wlr_box output_box = output->layout_geometry;
 
     // set toplevel window mode to maximized
 #ifdef XWAYLAND
@@ -903,8 +906,9 @@ void Toplevel::set_maximized(const bool maximized) {
         save_geometry();
 
         // set to top left of output, width and height the size of output
-        set_position_size(output_box.x, output_box.y, output_box.width,
-                          output_box.height);
+        set_position_size(usable_area.x + output_box.x,
+                          usable_area.y + output_box.y, usable_area.width,
+                          usable_area.width);
     } else
         // set back to saved geometry
         set_position_size(saved_geometry.x, saved_geometry.y,

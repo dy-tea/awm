@@ -122,8 +122,7 @@ void Output::arrange_layers() {
 }
 
 // arrange a surface layer
-void Output::arrange_layer_surface(const wlr_box *full_area,
-                                   wlr_box *usable_area,
+void Output::arrange_layer_surface(const wlr_box *full, wlr_box *usable,
                                    const wlr_scene_tree *tree,
                                    const bool exclusive) {
     wlr_scene_node *node;
@@ -136,8 +135,8 @@ void Output::arrange_layer_surface(const wlr_box *full_area,
             exclusive)
             continue;
 
-        wlr_scene_layer_surface_v1_configure(surface->scene_layer_surface,
-                                             full_area, usable_area);
+        wlr_scene_layer_surface_v1_configure(surface->scene_layer_surface, full,
+                                             usable);
     }
 }
 

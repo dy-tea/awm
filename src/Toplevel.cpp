@@ -214,6 +214,7 @@ void Toplevel::create_handle() {
         //  toplevel
 
         notify_send(
+            "%s",
             "Minimizing foreign toplevels is not supported, expect issues");
         wlr_scene_node_lower_to_bottom(&toplevel->scene_tree->node);
 
@@ -338,7 +339,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
 
         // popups do not need to be tracked
         new Popup(static_cast<wlr_xdg_popup *>(data), toplevel->scene_tree,
-            toplevel->server);
+                  toplevel->server);
     };
     wl_signal_add(&xdg_toplevel->base->events.new_popup, &new_xdg_popup);
 

@@ -468,7 +468,8 @@ bool Config::load() {
                 // add to output configs if enough values are set
                 if (oc->name.empty() || !oc->width || !oc->height ||
                     oc->refresh <= 0.0) {
-                    notify_send("monitor config is missing one of the required "
+                    notify_send("%s",
+                                "monitor config is missing one of the required "
                                 "fields: name, width, height, refresh");
                     delete oc;
                 } else {
@@ -509,5 +510,5 @@ void Config::update(const Server *server) {
     server->cursor->reconfigure_all();
 
     // notify user of reload
-    notify_send("config reload complete");
+    notify_send("%s", "config reload complete");
 }

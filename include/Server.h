@@ -48,7 +48,6 @@ struct Server {
     wlr_xdg_shell *xdg_shell;
     wl_listener new_xdg_toplevel;
 
-
     wlr_relative_pointer_manager_v1 *wlr_relative_pointer_manager;
 
     Cursor *cursor;
@@ -57,6 +56,9 @@ struct Server {
     wl_listener new_input;
     wl_listener request_cursor;
     wl_listener request_set_selection;
+    wl_listener request_start_drag;
+    wl_listener start_drag;
+    wl_listener destroy_drag_icon;
 
     wl_list keyboards;
 
@@ -71,6 +73,7 @@ struct Server {
         wlr_scene_tree *fullscreen;
         wlr_scene_tree *top;
         wlr_scene_tree *overlay;
+        wlr_scene_tree *drag_icon;
         wlr_scene_tree *lock;
     } layers;
 

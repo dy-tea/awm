@@ -195,6 +195,7 @@ Server::Server(Config *config) : config(config) {
     layers.top = wlr_scene_tree_create(&scene->tree);
     layers.fullscreen = wlr_scene_tree_create(&scene->tree);
     layers.overlay = wlr_scene_tree_create(&scene->tree);
+    layers.drag_icon = wlr_scene_tree_create(&scene->tree);
     layers.lock = wlr_scene_tree_create(&scene->tree);
 
     // layer shell
@@ -385,6 +386,44 @@ Server::Server(Config *config) : config(config) {
         wlr_seat_set_selection(server->seat, event->source, event->serial);
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
+
+    // request_start_drag (seat)
+    request_start_drag.notify = [](wl_listener *listener, void *data) {
+        // start drag
+        Server *server = wl_container_of(listener, server, request_start_drag);
+
+        const auto *event =
+            static_cast<wlr_seat_request_start_drag_event *>(data);
+
+        if (wlr_seat_validate_pointer_grab_serial(server->seat, event->origin,
+                                                  event->serial))
+            wlr_seat_start_pointer_drag(server->seat, event->drag,
+                                        event->serial);
+        else
+            wlr_data_source_destroy(event->drag->source);
+    };
+    wl_signal_add(&seat->events.request_start_drag, &request_start_drag);
+
+    // start_drag (seat)
+    start_drag.notify = [](wl_listener *listener, void *data) {
+        // start drag
+        Server *server = wl_container_of(listener, server, start_drag);
+
+        const auto *drag = static_cast<wlr_drag *>(data);
+        if (!drag->icon)
+            return;
+
+        drag->icon->data =
+            &wlr_scene_drag_icon_create(server->layers.drag_icon, drag->icon)
+                 ->node;
+        server->destroy_drag_icon.notify = [](wl_listener *listener,
+                                              [[maybe_unused]] void *data) {
+            Server *server =
+                wl_container_of(listener, server, destroy_drag_icon);
+            wl_list_remove(&server->destroy_drag_icon.link);
+        };
+    };
+    wl_signal_add(&seat->events.start_drag, &start_drag);
 
     // virtual pointer manager
     virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(display);
@@ -612,6 +651,8 @@ Server::~Server() {
     wl_list_remove(&new_input.link);
     wl_list_remove(&request_cursor.link);
     wl_list_remove(&request_set_selection.link);
+    wl_list_remove(&request_start_drag.link);
+    wl_list_remove(&start_drag.link);
 
     wl_list_remove(&renderer_lost.link);
 

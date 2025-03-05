@@ -191,6 +191,10 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
         }
     }
 
+    // update drag icon position
+    wlr_scene_node_set_position(&server->layers.drag_icon->node, cursor->x,
+                                cursor->y);
+
     // move cursor
     wlr_cursor_move(cursor, device, dx, dy);
 

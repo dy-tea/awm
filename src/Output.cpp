@@ -1,4 +1,5 @@
 #include "Server.h"
+#include <stdexcept>
 
 Output::Output(Server *server, struct wlr_output *wlr_output)
     : server(server), wlr_output(wlr_output) {
@@ -153,7 +154,7 @@ Output::shell_layer(const enum zwlr_layer_shell_v1_layer layer) const {
     case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
         return layers.overlay;
     default:
-        wlr_log(WLR_ERROR, "unreachable");
+        throw std::runtime_error("unreachable: invalid layer");
         return nullptr;
     }
 }

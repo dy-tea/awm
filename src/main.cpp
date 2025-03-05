@@ -33,7 +33,7 @@ int main(const int argc, char *argv[]) {
     }
 
     if (config_path.empty()) {
-        wordexp_t p = {.we_wordc = 0, .we_wordv = nullptr, .we_offs = 0};
+        wordexp_t p = {0, nullptr, 0};
 
         // no command line path passed, find in default paths
         std::string paths[] = {"$XDG_CONFIG_HOME/awm/awm.toml",
@@ -67,7 +67,7 @@ int main(const int argc, char *argv[]) {
     Config *config;
 
     if (config_path.empty()) {
-        wlr_log(WLR_INFO, "No config found, loading defaults");
+        wlr_log(WLR_INFO, "%s", "No config found, loading defaults");
         config = new Config();
     } else if (access(config_path.c_str(), F_OK) == 0) {
         wlr_log(WLR_INFO, "Loading config at '%s'", config_path.c_str());

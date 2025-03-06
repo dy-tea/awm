@@ -137,7 +137,7 @@ std::string IPC::run(std::string command) {
                         wl_list_for_each_safe(
                             mode, tmp1, &output->wlr_output->modes, link) {
                             j[output->wlr_output->name][i++] = {
-                                {"refresh", mode->refresh},
+                                {"refresh", mode->refresh / 1000.0},
                                 {"width", mode->width},
                                 {"height", mode->height},
                                 {"preferred", mode->preferred},

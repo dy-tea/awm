@@ -14,18 +14,17 @@ void print_err(std::string msg, ...) {
 }
 
 void print_usage() {
-    const std::string tab = "    ";
-    std::cout << "Usage: awmsg [group] [commands]" << std::endl
-              << "Groups:" << std::endl
-              << tab << "[h]elp" << std::endl
-              << tab << "[e]xit" << std::endl
-              << tab << "[o]utput" << std::endl
-              << tab << tab << "- [l]ist" << std::endl
-              << tab << tab << "- [m]odes" << std::endl
-              << tab << "[w]orkspace" << std::endl
-              << tab << tab << "- [l]ist" << std::endl
-              << tab << "[t]oplevel" << std::endl
-              << tab << tab << "- [l]ist" << std::endl;
+    printf("%s", "Usage: awmsg [group] [commands]\n"
+                 "Groups:\n"
+                 "\t[h]elp\n"
+                 "\t[e]xit\n"
+                 "\t[o]utput\n"
+                 "\t\t- [l]ist\n"
+                 "\t\t- [m]odes\n"
+                 "\t[w]orkspace\n"
+                 "\t\t- [l]ist\n"
+                 "\t[t]oplevel\n"
+                 "\t\t- [l]ist\n");
 }
 
 int main(int argc, char **argv) {

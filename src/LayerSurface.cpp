@@ -79,7 +79,9 @@ LayerSurface::LayerSurface(Output *output,
         if (needs_arrange || layer_surface->initial_commit ||
             layer_surface->current.committed ||
             layer_surface->surface->mapped != surface->mapped) {
-            wlr_layer_surface_v1_configure(layer_surface, 0, 0);
+            wlr_layer_surface_v1_configure(layer_surface,
+                                           output->wlr_output->width,
+                                           output->wlr_output->height);
             surface->mapped = layer_surface->surface->mapped;
             output->arrange_layers();
         }
@@ -92,7 +94,7 @@ LayerSurface::LayerSurface(Output *output,
             wl_container_of(listener, layer_surface, new_popup);
 
         new Popup(static_cast<wlr_xdg_popup *>(data), layer_surface->scene_tree,
-            layer_surface->output->server);
+                  layer_surface->output->server);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 

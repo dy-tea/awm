@@ -21,6 +21,7 @@ void print_usage() {
               << tab << "[e]xit" << std::endl
               << tab << "[o]utput" << std::endl
               << tab << tab << "- [l]ist" << std::endl
+              << tab << tab << "- [m]odes" << std::endl
               << tab << "[w]orkspace" << std::endl
               << tab << tab << "- [l]ist" << std::endl
               << tab << "[t]oplevel" << std::endl
@@ -56,7 +57,9 @@ int main(int argc, char **argv) {
         }
 
         if (argv[2][0] == 'l')
-            message = "output list";
+            message = "o l";
+        else if (argv[2][0] == 'm')
+            message = "o m";
     }
 
     // group workspace
@@ -67,7 +70,7 @@ int main(int argc, char **argv) {
         }
 
         if (argv[2][0] == 'l')
-            message = "workspace list";
+            message = "w l";
     }
 
     // group toplevel
@@ -78,7 +81,7 @@ int main(int argc, char **argv) {
         }
 
         if (argv[2][0] == 'l')
-            message = "toplevel list";
+            message = "t l";
     }
 
     // invalid group or command
@@ -105,7 +108,7 @@ int main(int argc, char **argv) {
     strncpy(addr.sun_path, "/tmp/awm.sock", sizeof(addr.sun_path) - 1);
 
     if (connect(fd, reinterpret_cast<struct sockaddr *>(&addr),
-        sizeof(struct sockaddr_un))) {
+                sizeof(struct sockaddr_un))) {
         print_err("Failed to connect to IPC socket (is awm ipc running?)");
         return 2;
     }

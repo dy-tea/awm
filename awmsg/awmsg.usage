@@ -3,4 +3,4 @@
 awmsg <GROUPS> <COMMANDS>
 
 <GROUPS> ::= (help) | (exit) | (output) | (workspace) | (toplevel);
-<COMMANDS> ::= (list);
+<COMMANDS> ::= (list) | (modes);

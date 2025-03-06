@@ -67,18 +67,18 @@ function _awmsg
         set COMP_CWORD (count $COMP_WORDS)
     end
 
-    set literals list ::= help exit output workspace toplevel
+    set literals list modes ::= help exit output workspace toplevel
 
     set descriptions
 
     set literal_transitions_inputs
-    set literal_transitions_inputs[1] "4 5 6 7"
+    set literal_transitions_inputs[1] "5 6 7 8"
     set literal_transitions_tos[1] "3 3 3 3"
-    set literal_transitions_inputs[2] 1
-    set literal_transitions_tos[2] 4
-    set literal_transitions_inputs[5] 2
+    set literal_transitions_inputs[2] "1 2"
+    set literal_transitions_tos[2] "4 4"
+    set literal_transitions_inputs[5] 3
     set literal_transitions_tos[5] 6
-    set literal_transitions_inputs[6] 3
+    set literal_transitions_inputs[6] 4
     set literal_transitions_tos[6] 3
 
     set match_anything_transitions_from 1 4
@@ -113,7 +113,7 @@ function _awmsg
     end
 
     set literal_froms_level_0 6 5 1 2
-    set literal_inputs_level_0 "3|2|4 5 6 7|1"
+    set literal_inputs_level_0 "4|3|5 6 7 8|1 2"
 
     set max_fallback_level 0
     for fallback_level in (seq 0 0)

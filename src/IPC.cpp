@@ -1,5 +1,6 @@
 #include "Server.h"
 #include <nlohmann/json.hpp>
+#include <wayland-util.h>
 using json = nlohmann::json;
 
 IPC::IPC(Server *server) : server(server) {
@@ -124,6 +125,26 @@ std::string IPC::run(std::string command) {
                         if (output->wlr_output->serial)
                             j[output->wlr_output->name]["serial"] =
                                 output->wlr_output->serial;
+                    }
+
+                    response = j.dump();
+                } else if (token[0] == 'm') { // output modes
+                    Output *output, *tmp;
+                    wl_list_for_each_safe(
+                        output, tmp, &server->output_manager->outputs, link) {
+                        wlr_output_mode *mode, *tmp1;
+                        int i = 0;
+                        wl_list_for_each_safe(
+                            mode, tmp1, &output->wlr_output->modes, link) {
+                            j[output->wlr_output->name][i++] = {
+                                {"refresh", mode->refresh},
+                                {"width", mode->width},
+                                {"height", mode->height},
+                                {"preferred", mode->preferred},
+                                {"selected",
+                                 mode == output->wlr_output->current_mode},
+                            };
+                        }
                     }
 
                     response = j.dump();

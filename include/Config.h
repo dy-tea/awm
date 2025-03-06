@@ -92,57 +92,52 @@ struct Config {
     struct Bind exit{WLR_MODIFIER_ALT, XKB_KEY_Escape};
 
     // fullscreen the active toplevel
-    struct Bind window_fullscreen{WLR_MODIFIER_ALT, XKB_KEY_f};
+    struct Bind window_fullscreen{};
 
     // focus the previous toplevel in the active workspace
-    struct Bind window_previous{WLR_MODIFIER_ALT, XKB_KEY_o};
+    struct Bind window_previous{};
 
     // focus the next toplevel in the active workspace
-    struct Bind window_next{WLR_MODIFIER_ALT, XKB_KEY_p};
+    struct Bind window_next{};
 
     // move the active toplevel with the mouse
-    struct Bind window_move{WLR_MODIFIER_ALT, XKB_KEY_m};
+    struct Bind window_move{};
 
     // focus the window above the active one
-    struct Bind window_up{WLR_MODIFIER_ALT, XKB_KEY_k};
+    struct Bind window_up{};
 
     // focus the window below the active one
-    struct Bind window_down{WLR_MODIFIER_ALT, XKB_KEY_j};
+    struct Bind window_down{};
 
     // focus the window left of the active one
-    struct Bind window_left{WLR_MODIFIER_ALT, XKB_KEY_h};
+    struct Bind window_left{};
 
     // focus the window right of the active one
-    struct Bind window_right{WLR_MODIFIER_ALT, XKB_KEY_l};
+    struct Bind window_right{};
 
     // close the active toplevel
-    struct Bind window_close{WLR_MODIFIER_ALT, XKB_KEY_q};
+    struct Bind window_close{};
 
     // swap active and above toplevels
-    struct Bind window_swap_up{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
-                               XKB_KEY_K};
+    struct Bind window_swap_up{};
 
     // swap active and below toplevels
-    struct Bind window_swap_down{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
-                                 XKB_KEY_J};
+    struct Bind window_swap_down{};
 
     // swap active and left toplevels
-    struct Bind window_swap_left{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
-                                 XKB_KEY_H};
+    struct Bind window_swap_left{};
 
     // swap active and above toplevels
-    struct Bind window_swap_right{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
-                                  XKB_KEY_L};
+    struct Bind window_swap_right{};
 
     // set workspace to tile
-    struct Bind workspace_tile{WLR_MODIFIER_ALT, XKB_KEY_t};
+    struct Bind workspace_tile{};
 
     // open workspace n
-    struct Bind workspace_open{WLR_MODIFIER_ALT, XKB_KEY_NoSymbol};
+    struct Bind workspace_open{};
 
     // move active toplevel to workspace n
-    struct Bind workspace_window_to{WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
-                                    XKB_KEY_NoSymbol};
+    struct Bind workspace_window_to{};
 
     std::vector<OutputConfig *> outputs;
 

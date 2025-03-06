@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor

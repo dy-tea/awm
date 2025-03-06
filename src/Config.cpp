@@ -75,7 +75,7 @@ template <typename T> void connect(const std::pair<bool, T> &pair, T *target) {
 Config::Config() {
     path = "";
     last_write_time = std::filesystem::file_time_type::min();
-    load();
+    notify_send("%s", "no config loaded, press Alt+Escape to exit awm");
 }
 
 Config::Config(const std::string &path) {
@@ -483,6 +483,10 @@ bool Config::load() {
 
 // update the config
 void Config::update(const Server *server) {
+    // ignore updates on empty path
+    if (path.empty())
+        return;
+
     // get current write time
     const std::filesystem::file_time_type current_write_time =
         std::filesystem::last_write_time(path);

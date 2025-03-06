@@ -908,7 +908,7 @@ void Toplevel::set_maximized(const bool maximized) {
         // set to top left of output, width and height the size of output
         set_position_size(usable_area.x + output_box.x,
                           usable_area.y + output_box.y, usable_area.width,
-                          usable_area.width);
+                          usable_area.height);
     } else
         // set back to saved geometry
         set_position_size(saved_geometry.x, saved_geometry.y,

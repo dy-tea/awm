@@ -1,3 +1,0 @@
-[submodule "subprojects/tomlcpp"]
-	path = subprojects/tomlcpp
-	url = https://github.com/dy-tea/tomlcpp.git

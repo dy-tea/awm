@@ -44,7 +44,7 @@ You can build and run using:
 
 ```sh
 # clone
-git clone https://github.com/dy-tea/awm.git --recurse-submodules
+git clone https://github.com/dy-tea/awm.git
 
 # build
 meson setup build

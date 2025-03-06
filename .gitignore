@@ -1,6 +1,4 @@
 .cache/
-build
-
-# jetbrains
 .idea/
-buildDir
+build*/
+subprojects/tomlcpp/

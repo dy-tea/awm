@@ -1,12 +1,12 @@
 #compdef awmsg
 
 _awmsg () {
-    local -a literals=("list" "modes" "::=" "help" "exit" "output" "workspace" "toplevel")
+    local -a literals=("list" "modes" "::=" "help" "exit" "output" "workspace" "toplevel" "keyboard")
 
     local -A descriptions
 
     local -A literal_transitions
-    literal_transitions[1]="([5]=3 [6]=3 [7]=3 [8]=3)"
+    literal_transitions[1]="([5]=3 [6]=3 [7]=3 [8]=3 [9]=3)"
     literal_transitions[2]="([1]=4 [2]=4)"
     literal_transitions[5]="([3]=6)"
     literal_transitions[6]="([4]=3)"
@@ -48,7 +48,7 @@ _awmsg () {
 
         return 1
     done
-    declare -A literal_transitions_level_0=([6]="4" [5]="3" [1]="5 6 7 8" [2]="1 2")
+    declare -A literal_transitions_level_0=([6]="4" [5]="3" [1]="5 6 7 8 9" [2]="1 2")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
     declare -A specialized_commands_level_0=()

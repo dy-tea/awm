@@ -31,11 +31,11 @@ _awmsg () {
     local words cword
     _get_comp_words_by_ref -n "$COMP_WORDBREAKS" words cword
 
-    declare -a literals=(list modes ::= help exit output workspace toplevel)
+    declare -a literals=(list modes ::= help exit output workspace toplevel keyboard)
     declare -a regexes=()
     declare -A literal_transitions=()
     declare -A nontail_transitions=()
-    literal_transitions[0]="([4]=2 [5]=2 [6]=2 [7]=2)"
+    literal_transitions[0]="([4]=2 [5]=2 [6]=2 [7]=2 [8]=2)"
     literal_transitions[1]="([0]=3 [1]=3)"
     literal_transitions[4]="([2]=5)"
     literal_transitions[5]="([3]=2)"
@@ -76,7 +76,7 @@ _awmsg () {
         return 1
     done
 
-    declare -A literal_transitions_level_0=([5]="3" [4]="2" [0]="4 5 6 7" [1]="0 1")
+    declare -A literal_transitions_level_0=([5]="3" [4]="2" [0]="4 5 6 7 8" [1]="0 1")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
 

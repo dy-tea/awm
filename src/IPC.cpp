@@ -107,6 +107,7 @@ std::string IPC::run(std::string command) {
                              output->wlr_output->adaptive_sync_supported},
                             {"enabled", output->wlr_output->enabled},
                             {"focused", output == server->focused_output()},
+                            {"workspace", output->get_active()->num},
                         };
 
                         // below values may be null
@@ -161,10 +162,8 @@ std::string IPC::run(std::string command) {
                                           link) {
                         Toplevel *toplevel, *tmp1;
 
-                        j[workspace->num] = {
-                            {"num", workspace->num},
-                            {"focused", workspace == output->get_active()},
-                        };
+                        j[workspace->num]["focused"] =
+                            workspace == output->get_active();
 
                         wl_list_for_each_safe(toplevel, tmp1,
                                               &workspace->toplevels, link) {
@@ -216,10 +215,32 @@ std::string IPC::run(std::string command) {
                     response = j.dump();
                 }
             }
+        } else if (token[0] == 'k') { // keyboard
+            if (std::getline(ss, token, ' ')) {
+                if (token[0] == 'l') { // keyboard list
+                    json j;
+
+                    Keyboard *keyboard, *tmp;
+                    wl_list_for_each_safe(keyboard, tmp, &server->keyboards,
+                                          link) {
+                        j[keyboard->wlr_keyboard->base.name
+                              ? keyboard->wlr_keyboard->base.name
+                              : "default"] = {
+                            {"layout", server->config->keyboard_layout},
+                            {"model", server->config->keyboard_model},
+                            {"variant", server->config->keyboard_variant},
+                            {"options", server->config->keyboard_options},
+                            {"repeat_rate", server->config->repeat_rate},
+                            {"repeat_delay", server->config->repeat_delay},
+                        };
+                    }
+
+                    response = j.dump();
+                }
+            }
         } else
             notify_send("unknown command `%s`", token.c_str());
     }
-
     return response;
 }
 

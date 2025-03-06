@@ -24,6 +24,8 @@ void print_usage() {
                  "\t[w]orkspace\n"
                  "\t\t- [l]ist\n"
                  "\t[t]oplevel\n"
+                 "\t\t- [l]ist\n"
+                 "\t[k]eyboard\n"
                  "\t\t- [l]ist\n");
 }
 
@@ -81,6 +83,17 @@ int main(int argc, char **argv) {
 
         if (argv[2][0] == 'l')
             message = "t l";
+    }
+
+    // group keyboard
+    if (group[0] == 'k') {
+        if (argc == 2) {
+            print_usage();
+            return 1;
+        }
+
+        if (argv[2][0] == 'l')
+            message = "k l";
     }
 
     // invalid group or command

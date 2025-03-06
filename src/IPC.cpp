@@ -183,6 +183,8 @@ std::string IPC::run(std::string command) {
                                 {"height", t->geometry.height},
                                 {"focused", t == w->active_toplevel},
                                 {"hidden", t->hidden},
+                                {"maximized", t->maximized()},
+                                {"fullscreen", t->fullscreen()},
 #ifdef XWAYLAND
                                 {"xwayland", !t->xdg_toplevel},
 #endif

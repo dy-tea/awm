@@ -2,5 +2,5 @@
 
 awmsg <GROUPS> <COMMANDS>
 
-<GROUPS> ::= (help) | (exit) | (output) | (workspace) | (toplevel) | (keyboard);
+<GROUPS> ::= (help) | (exit) | (output) | (workspace) | (toplevel) | (keyboard) | (device);
 <COMMANDS> ::= (list) | (modes);

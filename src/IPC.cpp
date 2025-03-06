@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr/util/log.h"
 #include <nlohmann/json.hpp>
 #include <wayland-util.h>
 using json = nlohmann::json;
@@ -220,18 +221,54 @@ std::string IPC::run(std::string command) {
                 if (token[0] == 'l') { // keyboard list
                     json j;
 
+                    j = {{"layout", server->config->keyboard_layout},
+                         {"model", server->config->keyboard_model},
+                         {"variant", server->config->keyboard_variant},
+                         {"options", server->config->keyboard_options},
+                         {"repeat_rate", server->config->repeat_rate},
+                         {"repeat_delay", server->config->repeat_delay}};
+
+                    response = j.dump();
+                }
+            }
+        } else if (token[0] == 'd') { // device
+            if (std::getline(ss, token, ' ')) {
+                if (token[0] == 'l') { // device list
+                    json j;
+
                     Keyboard *keyboard, *tmp;
+                    int i = 0;
                     wl_list_for_each_safe(keyboard, tmp, &server->keyboards,
                                           link) {
-                        j[keyboard->wlr_keyboard->base.name
-                              ? keyboard->wlr_keyboard->base.name
-                              : "default"] = {
-                            {"layout", server->config->keyboard_layout},
-                            {"model", server->config->keyboard_model},
-                            {"variant", server->config->keyboard_variant},
-                            {"options", server->config->keyboard_options},
-                            {"repeat_rate", server->config->repeat_rate},
-                            {"repeat_delay", server->config->repeat_delay},
+                        // get device type
+                        std::string type = "";
+                        switch (keyboard->wlr_keyboard->base.type) {
+                        case WLR_INPUT_DEVICE_KEYBOARD:
+                            type = "keyboard";
+                            break;
+                        case WLR_INPUT_DEVICE_POINTER:
+                            type = "pointer";
+                            break;
+                        case WLR_INPUT_DEVICE_TOUCH:
+                            type = "touch";
+                            break;
+                        case WLR_INPUT_DEVICE_TABLET:
+                            type = "tablet";
+                            break;
+                        case WLR_INPUT_DEVICE_TABLET_PAD:
+                            type = "tablet_pad";
+                            break;
+                        case WLR_INPUT_DEVICE_SWITCH:
+                            type = "switch";
+                            break;
+                        default:
+                            break;
+                        }
+
+                        // add to list of devices
+                        j[i++] = {
+                            {"name", keyboard->wlr_keyboard->base.name},
+                            {"type", type},
                         };
                     }
 

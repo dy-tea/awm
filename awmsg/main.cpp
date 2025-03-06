@@ -26,6 +26,8 @@ void print_usage() {
                  "\t[t]oplevel\n"
                  "\t\t- [l]ist\n"
                  "\t[k]eyboard\n"
+                 "\t\t- [l]ist\n"
+                 "\t[d]evice\n"
                  "\t\t- [l]ist\n");
 }
 
@@ -94,6 +96,17 @@ int main(int argc, char **argv) {
 
         if (argv[2][0] == 'l')
             message = "k l";
+    }
+
+    // group device
+    if (group[0] == 'd') {
+        if (argc == 2) {
+            print_usage();
+            return 1;
+        }
+
+        if (argv[2][0] == 'l')
+            message = "d l";
     }
 
     // invalid group or command

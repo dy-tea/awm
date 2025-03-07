@@ -95,7 +95,7 @@ bool Keyboard::handle_bind(const Bind bind) {
         const Bind digit_bind = Bind{bind.modifiers, XKB_KEY_NoSymbol};
 
         // 0 is on the right of 9 so it makes more sense this way
-        const int n = XKB_KEY_0 == bind.sym ? 10 : bind.sym - XKB_KEY_0 - 1;
+        const int n = XKB_KEY_0 == bind.sym ? 10 : bind.sym - XKB_KEY_0;
 
         if (digit_bind == config->workspace_open) {
             // set workspace to n

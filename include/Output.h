@@ -22,7 +22,7 @@ struct Output {
     wlr_box layout_geometry;
 
     struct wl_list workspaces;
-    uint32_t max_workspace{0};
+    uint32_t max_workspace{1};
 
     wlr_session_lock_surface_v1 *lock_surface{nullptr};
     wl_listener destroy_lock_surface;

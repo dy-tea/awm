@@ -156,33 +156,20 @@ std::string IPC::run(std::string command) {
             if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // workspace list
                     Output *output = server->focused_output();
-                    json j;
+
+                    j["max"] = output->max_workspace - 1;
+                    int toplevel_count = 0;
 
                     Workspace *workspace, *tmp;
                     wl_list_for_each_safe(workspace, tmp, &output->workspaces,
                                           link) {
-                        Toplevel *toplevel, *tmp1;
+                        if (workspace == output->get_active())
+                            j["active"] = workspace->num;
 
-                        j[workspace->num]["number"] =
-                            workspace->num+1;
-
-                        j[workspace->num]["focused"] =
-                            workspace == output->get_active();
-
-                        wl_list_for_each_safe(toplevel, tmp1,
-                                              &workspace->toplevels, link) {
-                            j[workspace->num]["toplevels"]
-                             [string_format("%p", toplevel)] = {
-                                 {"title", toplevel->title()},
-                                 {"x", toplevel->geometry.x},
-                                 {"y", toplevel->geometry.y},
-                                 {"width", toplevel->geometry.width},
-                                 {"height", toplevel->geometry.height},
-                                 {"focused",
-                                  toplevel == workspace->active_toplevel},
-                             };
-                        }
+                        toplevel_count += wl_list_length(&workspace->toplevels);
                     }
+
+                    j["toplevels"] = toplevel_count;
 
                     response = j.dump();
                 }
@@ -193,7 +180,6 @@ std::string IPC::run(std::string command) {
                     Output *o, *t0;
                     Workspace *w, *t1;
                     Toplevel *t, *t2;
-                    json j;
 
                     wl_list_for_each_safe(
                         o, t0, &server->output_manager->outputs, link)
@@ -222,8 +208,6 @@ std::string IPC::run(std::string command) {
         } else if (token[0] == 'k') { // keyboard
             if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // keyboard list
-                    json j;
-
                     j = {{"layout", server->config->keyboard_layout},
                          {"model", server->config->keyboard_model},
                          {"variant", server->config->keyboard_variant},
@@ -237,8 +221,6 @@ std::string IPC::run(std::string command) {
         } else if (token[0] == 'd') { // device
             if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // device list
-                    json j;
-
                     Keyboard *keyboard, *tmp;
                     int i = 0;
                     wl_list_for_each_safe(keyboard, tmp, &server->keyboards,
@@ -276,22 +258,34 @@ std::string IPC::run(std::string command) {
                     }
 
                     response = j.dump();
-                } else if (token[0] == 'c') {
-                    json j;
-
+                } else if (token[0] == 'c') { // device current
                     Keyboard *keyboard, *tmp;
-                    wl_list_for_each_safe(keyboard, tmp, &server->keyboards,link) {
+                    wl_list_for_each_safe(keyboard, tmp, &server->keyboards,
+                                          link) {
                         xkb_keymap *keymap = keyboard->wlr_keyboard->keymap;
                         xkb_state *state = keyboard->wlr_keyboard->xkb_state;
-                        xkb_layout_index_t num_layouts = keymap ? xkb_keymap_num_layouts(keymap) : 0;
-                        for (xkb_layout_index_t layout_idx = 0; layout_idx < num_layouts; layout_idx++) {
-                            std::string layout_name = xkb_keymap_layout_get_name(keymap, layout_idx);
-                            int layout_enabled = xkb_state_layout_index_is_active(state, layout_idx, XKB_STATE_LAYOUT_EFFECTIVE);
-                            j[keyboard->wlr_keyboard->base.name ? keyboard->wlr_keyboard->base.name : "default"][layout_idx] = {
-                                {"is_enabled", layout_enabled},
+                        xkb_layout_index_t num_layouts =
+                            keymap ? xkb_keymap_num_layouts(keymap) : 0;
+
+                        for (xkb_layout_index_t layout_idx = 0;
+                             layout_idx < num_layouts; layout_idx++) {
+
+                            // this long name is nicer for clients
+                            std::string layout_name =
+                                xkb_keymap_layout_get_name(keymap, layout_idx);
+
+                            // can be -1 if invalid
+                            int layout_enabled =
+                                xkb_state_layout_index_is_active(
+                                    state, layout_idx,
+                                    XKB_STATE_LAYOUT_EFFECTIVE);
+
+                            j[keyboard->wlr_keyboard->base.name
+                                  ? keyboard->wlr_keyboard->base.name
+                                  : "default"][layout_idx] = {
+                                {"enabled", layout_enabled},
                                 {"layout", layout_name},
                             };
-
                         }
                     }
 

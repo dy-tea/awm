@@ -13,9 +13,9 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     layers.overlay = wlr_scene_tree_create(server->layers.overlay);
 
     // create workspaces
-    for (int i = 0; i != 9; ++i)
+    for (int i = 0; i != 10; ++i)
         new_workspace();
-    set_workspace(0);
+    set_workspace(1);
 
     // point output data to this
     this->wlr_output->data = this;

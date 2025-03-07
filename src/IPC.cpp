@@ -163,6 +163,9 @@ std::string IPC::run(std::string command) {
                                           link) {
                         Toplevel *toplevel, *tmp1;
 
+                        j[workspace->num]["number"] =
+                            workspace->num+1;
+
                         j[workspace->num]["focused"] =
                             workspace == output->get_active();
 

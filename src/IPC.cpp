@@ -172,6 +172,20 @@ std::string IPC::run(std::string command) {
                     j["toplevels"] = toplevel_count;
 
                     response = j.dump();
+                } else if (token[0] == 's') { // workspace set
+                    if (std::getline(ss, token, ' ')) {
+                        try {
+                            const uint32_t n = std::stoi(token);
+                            if (n > server->focused_output()->max_workspace)
+                                throw std::invalid_argument("out of range");
+
+                            server->focused_output()->set_workspace(n);
+                        } catch (std::invalid_argument &e) {
+                            notify_send("invalid workspace number `%s`",
+                                        token.c_str());
+                            return "";
+                        }
+                    }
                 }
             }
         } else if (token[0] == 't') { // toplevel

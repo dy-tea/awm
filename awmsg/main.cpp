@@ -13,6 +13,14 @@ void print_err(std::string msg, ...) {
     va_end(args);
 }
 
+// stolen from https://stackoverflow.com/a/4654718
+bool is_number(const std::string &s) {
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it))
+        ++it;
+    return !s.empty() && it == s.end();
+}
+
 void print_usage() {
     printf("%s", "Usage: awmsg [group] [commands]\n"
                  "Groups:\n"
@@ -23,6 +31,7 @@ void print_usage() {
                  "\t\t- [m]odes\n"
                  "\t[w]orkspace\n"
                  "\t\t- [l]ist\n"
+                 "\t\t- [s]et <num>\n"
                  "\t[t]oplevel\n"
                  "\t\t- [l]ist\n"
                  "\t[k]eyboard\n"
@@ -75,6 +84,20 @@ int main(int argc, char **argv) {
 
         if (argv[2][0] == 'l')
             message = "w l";
+        else if (argv[2][0] == 's') {
+            if (argc == 3) {
+                print_usage();
+                return 1;
+            }
+
+            if (!is_number(argv[3])) {
+                print_err("Argument '%s' is not a number", argv[3]);
+                print_usage();
+                return 1;
+            }
+
+            message = "w s " + std::string(argv[3]);
+        }
     }
 
     // group toplevel

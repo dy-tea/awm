@@ -28,7 +28,8 @@ void print_usage() {
                  "\t[k]eyboard\n"
                  "\t\t- [l]ist\n"
                  "\t[d]evice\n"
-                 "\t\t- [l]ist\n");
+                 "\t\t- [l]ist\n"
+                 "\t\t- [c]urrent\n");
 }
 
 int main(int argc, char **argv) {
@@ -107,6 +108,8 @@ int main(int argc, char **argv) {
 
         if (argv[2][0] == 'l')
             message = "d l";
+        else if (argv[2][0] == 'c')
+            message = "d c";
     }
 
     // invalid group or command

@@ -1,6 +1,24 @@
 # complgen aot --bash-script awmsg.bash --fish-script awmsg.fish --zsh-script awmsg.zsh ./awmsg.usage
 
-awmsg <GROUPS> <COMMANDS>
+awmsg (help | h);
+awmsg (exit | e);
+awmsg [<FLAGS>]... (output | o) <OUTPUT-OPTION>;
+awmsg [<FLAGS>]... (workspace | w) <WORKSPACE-OPTION>;
+awmsg [<FLAGS>]... (toplevel | t) <TOPLEVEL-OPTION>;
+awmsg [<FLAGS>]... (keyboard | k) <KEYBOARD-OPTION>;
+awmsg [<FLAGS>]... (device | d) <DEVICE-OPTION>;
 
-<GROUPS> ::= (help) | (exit) | (output) | (workspace) | (toplevel) | (keyboard) | (device);
-<COMMANDS> ::= (list) | (modes);
+<FLAGS> ::= (-c | --continuous) "keep reading events until cancelled";
+
+<OUTPUT-OPTION> ::= (list | l) "list outputs"
+                  | (modes | m) "list output modes";
+
+<WORKSPACE-OPTION> ::= (list | l) "list workspaces"
+                     | (set <NUM> | s <NUM>) "set current workspace to num";
+
+<TOPLEVEL-OPTION> ::= (list | l) "list toplevels";
+
+<KEYBOARD-OPTION> ::= (list | l) "list keyboards";
+
+<DEVICE-OPTION> ::= (list | l) "list devices"
+                  | (current | c) "show current device";

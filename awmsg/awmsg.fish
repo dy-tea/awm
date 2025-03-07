@@ -67,22 +67,46 @@ function _awmsg
         set COMP_CWORD (count $COMP_WORDS)
     end
 
-    set literals list modes ::= help exit output workspace toplevel keyboard device
+    set literals help h exit e -c --continuous output o list l modes m workspace w list l set s toplevel t list l keyboard k list l device d list l current c
 
     set descriptions
+    set descriptions[5] "keep reading events until cancelled"
+    set descriptions[6] "keep reading events until cancelled"
+    set descriptions[9] "list outputs"
+    set descriptions[10] "list outputs"
+    set descriptions[11] "list output modes"
+    set descriptions[12] "list output modes"
+    set descriptions[15] "list workspaces"
+    set descriptions[16] "list workspaces"
+    set descriptions[17] "set current workspace to num"
+    set descriptions[18] "set current workspace to num"
+    set descriptions[21] "list toplevels"
+    set descriptions[22] "list toplevels"
+    set descriptions[25] "list keyboards"
+    set descriptions[26] "list keyboards"
+    set descriptions[29] "list devices"
+    set descriptions[30] "list devices"
+    set descriptions[31] "show current device"
+    set descriptions[32] "show current device"
 
     set literal_transitions_inputs
-    set literal_transitions_inputs[1] "5 6 7 8 9 10"
-    set literal_transitions_tos[1] "3 3 3 3 3 3"
-    set literal_transitions_inputs[2] "1 2"
-    set literal_transitions_tos[2] "4 4"
-    set literal_transitions_inputs[5] 3
-    set literal_transitions_tos[5] 6
-    set literal_transitions_inputs[6] 4
-    set literal_transitions_tos[6] 3
+    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 13 14 19 20 23 24 27 28"
+    set literal_transitions_tos[1] "2 2 2 2 3 3 4 4 5 5 6 6 7 7 8 8"
+    set literal_transitions_inputs[3] "5 6 7 8 13 14 19 20 23 24 27 28"
+    set literal_transitions_tos[3] "3 3 4 4 5 5 6 6 7 7 8 8"
+    set literal_transitions_inputs[4] "9 10 11 12"
+    set literal_transitions_tos[4] "2 2 2 2"
+    set literal_transitions_inputs[5] "15 16 17 18"
+    set literal_transitions_tos[5] "2 2 9 9"
+    set literal_transitions_inputs[6] "21 22"
+    set literal_transitions_tos[6] "2 2"
+    set literal_transitions_inputs[7] "25 26"
+    set literal_transitions_tos[7] "2 2"
+    set literal_transitions_inputs[8] "29 30 31 32"
+    set literal_transitions_tos[8] "2 2 2 2"
 
-    set match_anything_transitions_from 1 4
-    set match_anything_transitions_to 2 5
+    set match_anything_transitions_from 9
+    set match_anything_transitions_to 2
 
     set state 1
     set word_index 2
@@ -112,8 +136,8 @@ function _awmsg
         return 1
     end
 
-    set literal_froms_level_0 6 5 1 2
-    set literal_inputs_level_0 "4|3|5 6 7 8 9 10|1 2"
+    set literal_froms_level_0 7 5 8 1 4 3 6
+    set literal_inputs_level_0 "25 26|15 16 17 18|29 30 31 32|1 2 3 4 5 6 7 8 13 14 19 20 23 24 27 28|9 10 11 12|5 6 7 8 13 14 19 20 23 24 27 28|21 22"
 
     set max_fallback_level 0
     for fallback_level in (seq 0 0)

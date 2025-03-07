@@ -1,18 +1,39 @@
 #compdef awmsg
 
 _awmsg () {
-    local -a literals=("list" "modes" "::=" "help" "exit" "output" "workspace" "toplevel" "keyboard" "device")
+    local -a literals=("help" "h" "exit" "e" "-c" "--continuous" "output" "o" "list" "l" "modes" "m" "workspace" "w" "list" "l" "set" "s" "toplevel" "t" "list" "l" "keyboard" "k" "list" "l" "device" "d" "list" "l" "current" "c")
 
     local -A descriptions
+    descriptions[5]="keep reading events until cancelled"
+    descriptions[6]="keep reading events until cancelled"
+    descriptions[9]="list outputs"
+    descriptions[10]="list outputs"
+    descriptions[11]="list output modes"
+    descriptions[12]="list output modes"
+    descriptions[15]="list workspaces"
+    descriptions[16]="list workspaces"
+    descriptions[17]="set current workspace to num"
+    descriptions[18]="set current workspace to num"
+    descriptions[21]="list toplevels"
+    descriptions[22]="list toplevels"
+    descriptions[25]="list keyboards"
+    descriptions[26]="list keyboards"
+    descriptions[29]="list devices"
+    descriptions[30]="list devices"
+    descriptions[31]="show current device"
+    descriptions[32]="show current device"
 
     local -A literal_transitions
-    literal_transitions[1]="([5]=3 [6]=3 [7]=3 [8]=3 [9]=3 [10]=3)"
-    literal_transitions[2]="([1]=4 [2]=4)"
-    literal_transitions[5]="([3]=6)"
-    literal_transitions[6]="([4]=3)"
+    literal_transitions[1]="([1]=2 [2]=2 [3]=2 [4]=2 [5]=3 [6]=3 [7]=4 [8]=4 [13]=5 [14]=5 [19]=6 [20]=6 [23]=7 [24]=7 [27]=8 [28]=8)"
+    literal_transitions[3]="([5]=3 [6]=3 [7]=4 [8]=4 [13]=5 [14]=5 [19]=6 [20]=6 [23]=7 [24]=7 [27]=8 [28]=8)"
+    literal_transitions[4]="([9]=2 [10]=2 [11]=2 [12]=2)"
+    literal_transitions[5]="([15]=2 [16]=2 [17]=9 [18]=9)"
+    literal_transitions[6]="([21]=2 [22]=2)"
+    literal_transitions[7]="([25]=2 [26]=2)"
+    literal_transitions[8]="([29]=2 [30]=2 [31]=2 [32]=2)"
 
     local -A match_anything_transitions
-    match_anything_transitions=([1]=2 [4]=5)
+    match_anything_transitions=([9]=2)
 
     declare -A subword_transitions
 
@@ -48,7 +69,7 @@ _awmsg () {
 
         return 1
     done
-    declare -A literal_transitions_level_0=([6]="4" [5]="3" [1]="5 6 7 8 9 10" [2]="1 2")
+    declare -A literal_transitions_level_0=([7]="25 26" [5]="15 16 17 18" [8]="29 30 31 32" [1]="1 2 3 4 5 6 7 8 13 14 19 20 23 24 27 28" [4]="9 10 11 12" [3]="5 6 7 8 13 14 19 20 23 24 27 28" [6]="21 22")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
     declare -A specialized_commands_level_0=()

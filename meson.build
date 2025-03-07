@@ -68,7 +68,6 @@ endforeach
 # dependencies
 tomlcpp_proj = subproject('tomlcpp')
 tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
-
 nlohmann_json = dependency('nlohmann_json')
 
 # includes

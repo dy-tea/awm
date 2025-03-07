@@ -309,6 +309,7 @@ std::string IPC::run(std::string command) {
         } else
             notify_send("unknown command `%s`", token.c_str());
     }
+
     return response;
 }
 

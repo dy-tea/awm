@@ -31,15 +31,18 @@ _awmsg () {
     local words cword
     _get_comp_words_by_ref -n "$COMP_WORDBREAKS" words cword
 
-    declare -a literals=(list modes ::= help exit output workspace toplevel keyboard device)
+    declare -a literals=(help h exit e -c --continuous output o list l modes m workspace w list l set s toplevel t list l keyboard k list l device d list l current c)
     declare -a regexes=()
     declare -A literal_transitions=()
     declare -A nontail_transitions=()
-    literal_transitions[0]="([4]=2 [5]=2 [6]=2 [7]=2 [8]=2 [9]=2)"
-    literal_transitions[1]="([0]=3 [1]=3)"
-    literal_transitions[4]="([2]=5)"
-    literal_transitions[5]="([3]=2)"
-    declare -A match_anything_transitions=([0]=1 [3]=4)
+    literal_transitions[0]="([0]=1 [1]=1 [2]=1 [3]=1 [4]=2 [5]=2 [6]=3 [7]=3 [12]=4 [13]=4 [18]=5 [19]=5 [22]=6 [23]=6 [26]=7 [27]=7)"
+    literal_transitions[2]="([4]=2 [5]=2 [6]=3 [7]=3 [12]=4 [13]=4 [18]=5 [19]=5 [22]=6 [23]=6 [26]=7 [27]=7)"
+    literal_transitions[3]="([8]=1 [9]=1 [10]=1 [11]=1)"
+    literal_transitions[4]="([14]=1 [15]=1 [16]=8 [17]=8)"
+    literal_transitions[5]="([20]=1 [21]=1)"
+    literal_transitions[6]="([24]=1 [25]=1)"
+    literal_transitions[7]="([28]=1 [29]=1 [30]=1 [31]=1)"
+    declare -A match_anything_transitions=([8]=1)
     declare -A subword_transitions
 
     local state=0
@@ -76,7 +79,7 @@ _awmsg () {
         return 1
     done
 
-    declare -A literal_transitions_level_0=([5]="3" [4]="2" [0]="4 5 6 7 8 9" [1]="0 1")
+    declare -A literal_transitions_level_0=([6]="24 25" [4]="14 15 16 17" [7]="28 29 30 31" [0]="0 1 2 3 4 5 6 7 12 13 18 19 22 23 26 27" [3]="8 9 10 11" [2]="4 5 6 7 12 13 18 19 22 23 26 27" [5]="20 21")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
 

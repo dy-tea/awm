@@ -276,6 +276,26 @@ std::string IPC::run(std::string command) {
                     }
 
                     response = j.dump();
+                } else if (token[0] == 'c') {
+                    json j;
+
+                    Keyboard *keyboard, *tmp;
+                    wl_list_for_each_safe(keyboard, tmp, &server->keyboards,link) {
+                        xkb_keymap *keymap = keyboard->wlr_keyboard->keymap;
+                        xkb_state *state = keyboard->wlr_keyboard->xkb_state;
+                        xkb_layout_index_t num_layouts = keymap ? xkb_keymap_num_layouts(keymap) : 0;
+                        for (xkb_layout_index_t layout_idx = 0; layout_idx < num_layouts; layout_idx++) {
+                            std::string layout_name = xkb_keymap_layout_get_name(keymap, layout_idx);
+                            int layout_enabled = xkb_state_layout_index_is_active(state, layout_idx, XKB_STATE_LAYOUT_EFFECTIVE);
+                            j[keyboard->wlr_keyboard->base.name ? keyboard->wlr_keyboard->base.name : "default"][layout_idx] = {
+                                {"is_enabled", layout_enabled},
+                                {"layout", layout_name},
+                            };
+
+                        }
+                    }
+
+                    response = j.dump();
                 }
             }
         } else

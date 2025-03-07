@@ -77,9 +77,7 @@ LayerSurface::LayerSurface(Output *output,
         }
 
         // rearrange if needed
-        if (needs_arrange || layer_surface->initial_commit ||
-            layer_surface->current.committed ||
-            layer_surface->surface->mapped != surface->mapped) {
+        if (needs_arrange || layer_surface->initial_commit) {
             wlr_layer_surface_v1_configure(layer_surface,
                                            output->wlr_output->width,
                                            output->wlr_output->height);

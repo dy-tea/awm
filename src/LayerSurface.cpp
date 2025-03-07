@@ -21,6 +21,9 @@ LayerSurface::LayerSurface(Output *output,
     wlr_layer_surface->data = this;
     output->arrange_layers();
 
+    // send enter
+    wlr_surface_send_enter(wlr_layer_surface->surface, output->wlr_output);
+
     // map surface
     map.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         // get seat and pointer focus on map
@@ -32,7 +35,7 @@ LayerSurface::LayerSurface(Output *output,
         surface->output->server->output_manager->arrange();
 
         // handle focus
-        if (surface->wlr_layer_surface->current.keyboard_interactive &&
+        if (layer_surface->current.keyboard_interactive &&
             layer_surface->current.layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP)
             surface->handle_focus();
     };
@@ -42,10 +45,8 @@ LayerSurface::LayerSurface(Output *output,
     unmap.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         LayerSurface *surface = wl_container_of(listener, surface, unmap);
 
-        wlr_layer_surface_v1_configure(
-            surface->wlr_layer_surface,
-            surface->wlr_layer_surface->pending.desired_width,
-            surface->wlr_layer_surface->pending.desired_height);
+        // disable surface
+        wlr_scene_node_set_enabled(&surface->scene_tree->node, false);
 
         // arrange layers
         surface->output->arrange_layers();
@@ -69,7 +70,7 @@ LayerSurface::LayerSurface(Output *output,
         if (surface->wlr_layer_surface->current.committed &
             WLR_LAYER_SURFACE_V1_STATE_LAYER) {
             wlr_scene_tree *new_tree =
-                output->shell_layer(surface->wlr_layer_surface->current.layer);
+                output->shell_layer(layer_surface->current.layer);
             wlr_scene_node_reparent(&surface->scene_layer_surface->tree->node,
                                     new_tree);
             needs_arrange = true;

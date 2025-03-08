@@ -167,6 +167,10 @@ void OutputManager::apply_config(wlr_output_configuration_v1 *cfg,
     else
         wlr_output_configuration_v1_send_failed(cfg);
 
+    // notify ipc
+    if (server->ipc)
+        server->ipc->notify_clients(IPC_OUTPUT_MODES);
+
     arrange();
 }
 

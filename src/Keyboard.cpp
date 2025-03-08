@@ -156,6 +156,12 @@ void Keyboard::update_config() const {
     // repeat info
     wlr_keyboard_set_repeat_info(wlr_keyboard, server->config->repeat_rate,
                                  server->config->repeat_delay);
+
+    // notify clients
+    if (server->ipc) {
+        server->ipc->notify_clients(IPC_KEYBOARD_LIST);
+        server->ipc->notify_clients(IPC_DEVICE_CURRENT);
+    }
 }
 
 // get keysyms without modifiers applied
@@ -259,8 +265,15 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device)
 }
 
 Keyboard::~Keyboard() {
+    wl_list_remove(&link);
     wl_list_remove(&modifiers.link);
     wl_list_remove(&key.link);
     wl_list_remove(&destroy.link);
-    wl_list_remove(&link);
+
+    // notify clients
+    if (IPC *ipc = server->ipc) {
+        ipc->notify_clients(IPC_KEYBOARD_LIST);
+        ipc->notify_clients(IPC_DEVICE_LIST);
+        ipc->notify_clients(IPC_DEVICE_CURRENT);
+    }
 }

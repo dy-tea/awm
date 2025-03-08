@@ -141,22 +141,36 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         }
     }
 #endif
+
+    // notify clients
+    if (toplevel->server->ipc) {
+        toplevel->server->ipc->notify_clients(IPC_TOPLEVEL_LIST);
+        toplevel->server->ipc->notify_clients(IPC_WORKSPACE_LIST);
+    }
 }
 
 void Toplevel::unmap_notify(wl_listener *listener,
                             [[maybe_unused]] void *data) {
     Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
 
+    Server *server = toplevel->server;
+
     // deactivate
-    if (toplevel == toplevel->server->grabbed_toplevel)
-        toplevel->server->cursor->reset_mode();
+    if (toplevel == server->grabbed_toplevel)
+        server->cursor->reset_mode();
 
     // remove from workspace
-    if (Workspace *workspace = toplevel->server->get_workspace(toplevel))
+    if (Workspace *workspace = server->get_workspace(toplevel))
         workspace->close(toplevel);
 
     // remove link
     wl_list_remove(&toplevel->link);
+
+    // notify clients
+    if (IPC *ipc = server->ipc) {
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
+        ipc->notify_clients(IPC_WORKSPACE_LIST);
+    }
 }
 
 // create a foreign toplevel handle
@@ -658,6 +672,10 @@ void Toplevel::focus() const {
                                            keyboard->num_keycodes,
                                            &keyboard->modifiers);
     }
+
+    // notify clients
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
 }
 
 // move or resize toplevel
@@ -714,6 +732,10 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
         // set edges
         cursor->resize_edges = edges;
     }
+
+    // notify clients
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
 }
 
 // set the position and size of a toplevel, send a configure
@@ -766,6 +788,12 @@ void Toplevel::set_position_size(const double x, const double y, int width,
 #endif
 
     geometry = wlr_box{static_cast<int>(x), static_cast<int>(y), width, height};
+
+    // notify clients
+    if (IPC *ipc = server->ipc) {
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
+        ipc->notify_clients(IPC_WORKSPACE_LIST);
+    }
 }
 
 void Toplevel::set_position_size(const wlr_box &geometry) {
@@ -807,6 +835,9 @@ void Toplevel::set_hidden(const bool hidden) {
     else
         wlr_scene_node_set_enabled(&scene_surface->buffer->node, !hidden);
 #endif
+
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
 }
 
 // returns true if the toplevel is maximized

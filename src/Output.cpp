@@ -161,8 +161,13 @@ Output::shell_layer(const enum zwlr_layer_shell_v1_layer layer) const {
 // create a new workspace for this output
 Workspace *Output::new_workspace() {
     Workspace *workspace = new Workspace(this, max_workspace++);
-
     wl_list_insert(&workspaces, &workspace->link);
+
+    if (server->ipc) {
+        server->ipc->notify_clients(IPC_OUTPUT_LIST);
+        server->ipc->notify_clients(IPC_WORKSPACE_LIST);
+    }
+
     return workspace;
 }
 
@@ -187,6 +192,12 @@ Workspace *Output::get_active() const {
 // change the focused workspace to workspace n
 bool Output::set_workspace(const uint32_t n) {
     Workspace *requested = get_workspace(n);
+
+    // notify clients
+    if (server->ipc) {
+        server->ipc->notify_clients(IPC_OUTPUT_LIST);
+        server->ipc->notify_clients(IPC_WORKSPACE_LIST);
+    }
 
     // workspace does not exist
     if (requested == nullptr)

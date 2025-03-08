@@ -96,6 +96,12 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
                 active_toplevel = nullptr;
         }
 
+        // notify clients
+        if (IPC *ipc = toplevel->server->ipc) {
+            ipc->notify_clients(IPC_TOPLEVEL_LIST);
+            ipc->notify_clients(IPC_WORKSPACE_LIST);
+        }
+
         return true;
     }
 
@@ -194,15 +200,17 @@ void Workspace::focus() {
 
     // ensure there is a toplevel to focus
     if (!wl_list_empty(&toplevels)) {
-        if (active_toplevel)
-            // focus the active toplevel if available
-            active_toplevel->focus();
-        else {
-            // focus the first toplevel and set is as active
-            Toplevel *toplevel =
-                wl_container_of(toplevels.prev, toplevel, link);
-            toplevel->focus();
-        }
+        // focus the active toplevel if available,
+        // otherwise focus the first toplevel and set is as active
+        Toplevel *toplevel =
+            active_toplevel ? active_toplevel
+                            : wl_container_of(toplevels.prev, toplevel, link);
+        active_toplevel = toplevel;
+        toplevel->focus();
+
+        // notify clients
+        if (IPC *ipc = active_toplevel->server->ipc)
+            ipc->notify_clients(IPC_WORKSPACE_LIST);
     }
 }
 

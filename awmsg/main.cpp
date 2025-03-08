@@ -1,16 +1,16 @@
+#include <fcntl.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <stdarg.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <thread>
 #include <unistd.h>
 using json = nlohmann::json;
 
 void print_err(std::string msg, ...) {
     va_list args;
     va_start(args, msg);
-    vfprintf(stdout, ("ERROR: " + msg + "\n").c_str(), args);
+    vfprintf(stderr, ("ERROR: " + msg + "\n").c_str(), args);
     va_end(args);
 }
 
@@ -148,58 +148,81 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    while (true) {
-        // create socket
-        int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-        if (fd == -1) {
-            print_err("Failed to create socket");
-            return 1;
-        }
+    // add continuous flag if present
+    if (continuous)
+        message = "c " + message;
 
-        // set socket address
-        sockaddr_un addr{};
-        addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, "/tmp/awm.sock", sizeof(addr.sun_path) - 1);
-
-        // connect to ipc socket
-        if (connect(fd, reinterpret_cast<struct sockaddr *>(&addr),
-                    sizeof(struct sockaddr_un))) {
-            print_err("Failed to connect to IPC socket (is awm ipc running?)");
-            return 2;
-        }
-
-        // write to ipc socket
-        if (write(fd, message.c_str(), strlen(message.c_str())) == -1) {
-            print_err("Failed to write to IPC socket");
-            return 3;
-        }
-
-        // read response from ipc socket
-        std::string response = "";
-        char buffer[1024];
-        int len = 0;
-        while ((len = read(fd, buffer, sizeof(buffer))) > 0)
-            response.append(buffer, len);
-
-        if (len == -1) {
-            print_err("Failed to read from IPC socket");
-            return 4;
-        }
-
-        if (!response.empty()) {
-            // parse response json
-            json response_json = json::parse(response);
-
-            // print response
-            std::cout << response_json.dump(4) << std::endl;
-        }
-
-        // close connection
-        close(fd);
-
-        if (!continuous)
-            break;
-
-        sleep(1);
+    // create socket
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd == -1) {
+        print_err("Failed to create socket");
+        return 1;
     }
+
+    // set socket address
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, "/tmp/awm.sock", sizeof(addr.sun_path) - 1);
+
+    // connect to ipc socket
+    if (connect(fd, reinterpret_cast<struct sockaddr *>(&addr),
+                sizeof(struct sockaddr_un))) {
+        print_err("Failed to connect to IPC socket (is awm ipc running?)");
+        return 2;
+    }
+
+    // write to ipc socket
+    if (write(fd, message.c_str(), strlen(message.c_str())) == -1) {
+        print_err("Failed to write to IPC socket");
+        return 3;
+    }
+
+    // set non blocking mode
+    fcntl(fd, F_SETFL, O_NONBLOCK);
+
+    do {
+        // set read fds
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(fd, &read_fds);
+
+        // set timeout
+        struct timeval timeout;
+        timeout.tv_sec = 1; // 1s timeout
+        timeout.tv_usec = 0;
+
+        // wait for response
+        int ret = select(fd + 1, &read_fds, nullptr, nullptr, &timeout);
+        if (ret == -1) {
+            print_err("select() failed");
+            break;
+        } else if (!ret)
+            continue;
+
+        std::string response = "";
+        if (FD_ISSET(fd, &read_fds)) {
+            // read response from ipc socket
+            char buffer[1024];
+            int len = 0;
+            while ((len = read(fd, buffer, sizeof(buffer))) > 0)
+                response.append(buffer, len);
+
+            if (!response.empty()) {
+                try {
+                    // parse response json
+                    json response_json = json::parse(response);
+
+                    // print response
+                    std::cout << response_json.dump(4) << std::endl;
+
+                    // clear response
+                    response.clear();
+                } catch (json::parse_error &e) {
+                } // ignore parse errors
+            }
+        }
+    } while (continuous);
+
+    // close connection
+    close(fd);
 }

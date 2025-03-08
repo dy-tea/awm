@@ -78,9 +78,6 @@ LayerSurface::LayerSurface(Output *output,
 
         // rearrange if needed
         if (needs_arrange || layer_surface->initial_commit) {
-            wlr_layer_surface_v1_configure(layer_surface,
-                                           output->wlr_output->width,
-                                           output->wlr_output->height);
             surface->mapped = layer_surface->surface->mapped;
             output->arrange_layers();
         }

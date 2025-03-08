@@ -1,24 +1,23 @@
 # complgen aot --bash-script awmsg.bash --fish-script awmsg.fish --zsh-script awmsg.zsh ./awmsg.usage
 
-awmsg (help | h);
-awmsg (exit | e);
-awmsg [<FLAGS>]... (output | o) <OUTPUT-OPTION>;
-awmsg [<FLAGS>]... (workspace | w) <WORKSPACE-OPTION>;
-awmsg [<FLAGS>]... (toplevel | t) <TOPLEVEL-OPTION>;
-awmsg [<FLAGS>]... (keyboard | k) <KEYBOARD-OPTION>;
-awmsg [<FLAGS>]... (device | d) <DEVICE-OPTION>;
+awmsg (help | exit);
+awmsg [<FLAGS>]... (output) <OUTPUT-OPTION>;
+awmsg [<FLAGS>]... (workspace) <WORKSPACE-OPTION>;
+awmsg [<FLAGS>]... (toplevel) <TOPLEVEL-OPTION>;
+awmsg [<FLAGS>]... (keyboard) <KEYBOARD-OPTION>;
+awmsg [<FLAGS>]... (device) <DEVICE-OPTION>;
 
 <FLAGS> ::= (-c | --continuous) "keep reading events until cancelled";
 
-<OUTPUT-OPTION> ::= (list | l) "list outputs"
-                  | (modes | m) "list output modes";
+<OUTPUT-OPTION> ::= (list) "list outputs"
+                  | (modes) "list output modes";
 
-<WORKSPACE-OPTION> ::= (list | l) "list workspaces"
-                     | (set <NUM> | s <NUM>) "set current workspace to num";
+<WORKSPACE-OPTION> ::= (list) "list workspaces"
+                     | (set <NUM>) "set current workspace to num";
 
-<TOPLEVEL-OPTION> ::= (list | l) "list toplevels";
+<TOPLEVEL-OPTION> ::= (list) "list toplevels";
 
-<KEYBOARD-OPTION> ::= (list | l) "list keyboards";
+<KEYBOARD-OPTION> ::= (list) "list keyboards";
 
-<DEVICE-OPTION> ::= (list | l) "list devices"
-                  | (current | c) "show current device";
+<DEVICE-OPTION> ::= (list) "list devices"
+                  | (current) "show current device";

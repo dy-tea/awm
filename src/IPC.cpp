@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "wlr/util/log.h"
+#include <sys/socket.h>
 #include <wayland-util.h>
 using json = nlohmann::json;
 
@@ -359,11 +360,12 @@ void IPC::notify_clients(const IPCMessage message) {
     std::lock_guard<std::mutex> lock(subscriptions_mutex);
 
     // iterate through each subscribed client
-    for (const auto &subscription : subscriptions) {
-        int client_fd = subscription.first;
-        const auto &messages = subscription.second;
+    for (auto it = subscriptions.begin(); it != subscriptions.end();) {
+        int client_fd = it->first;
+        const auto &messages = it->second;
 
         // write to client if subscribed to message
+        bool disconnected = false;
         for (const auto &m : messages) {
             if (m.first == message) {
                 // get new data
@@ -371,7 +373,8 @@ void IPC::notify_clients(const IPCMessage message) {
                 std::string data = j.dump();
 
                 // write to client
-                if (write(client_fd, data.c_str(), data.size()) == -1) {
+                if (send(client_fd, data.c_str(), data.size(), MSG_NOSIGNAL) ==
+                    -1) {
                     // close connection and remove subscription if write failed
                     wlr_log(
                         WLR_ERROR,
@@ -379,13 +382,20 @@ void IPC::notify_clients(const IPCMessage message) {
                         "closing connection",
                         client_fd, path.c_str());
                     close(client_fd);
-                    subscriptions.erase(client_fd);
+                    disconnected = true;
+                    break;
                 }
 
                 // a client should not receive the same message twice
                 break;
             }
         }
+
+        // remove client if disconnected
+        if (disconnected)
+            it = subscriptions.erase(it);
+        else
+            ++it;
     }
 }
 

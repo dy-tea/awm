@@ -238,13 +238,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
 // move a toplevel
 void Cursor::process_move() {
     // do not move fullscreen toplevel
-    if ((server->grabbed_toplevel->xdg_toplevel &&
-         server->grabbed_toplevel->xdg_toplevel->current.fullscreen)
-#ifdef XWAYLAND
-        || (server->grabbed_toplevel->xwayland_surface &&
-            server->grabbed_toplevel->xwayland_surface->fullscreen)
-#endif
-    )
+    if (server->grabbed_toplevel->fullscreen())
         return;
 
     // get the output of the current workspace
@@ -273,12 +267,7 @@ void Cursor::process_resize() {
     Toplevel *toplevel = server->grabbed_toplevel;
 
     // do not resize fullscreen toplevel
-    if ((toplevel->xdg_toplevel && toplevel->xdg_toplevel->current.fullscreen)
-#ifdef XWAYLAND
-        ||
-        (toplevel->xwayland_surface && toplevel->xwayland_surface->fullscreen)
-#endif
-    )
+    if (toplevel->fullscreen())
         return;
 
     // amalgamation of tinywl and dwl code
@@ -332,10 +321,7 @@ void Cursor::process_resize() {
                                        new_width, new_height);
 #endif
 
-    toplevel->geometry.x = new_x;
-    toplevel->geometry.y = new_y;
-    toplevel->geometry.width = new_width;
-    toplevel->geometry.height = new_height;
+    toplevel->geometry = {new_x, new_y, new_width, new_height};
 }
 
 // constrain the cursor to a given pointer constraint

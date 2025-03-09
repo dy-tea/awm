@@ -401,7 +401,10 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_fullscreen);
 
-        toplevel->set_fullscreen(toplevel->xdg_toplevel->requested.fullscreen);
+        bool fullscreen = toplevel->xdg_toplevel->requested.fullscreen;
+
+        if (toplevel->fullscreen() != fullscreen)
+            toplevel->set_fullscreen(fullscreen);
     };
     wl_signal_add(&xdg_toplevel->events.request_fullscreen,
                   &request_fullscreen);

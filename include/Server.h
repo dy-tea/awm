@@ -104,6 +104,7 @@ struct Server {
     wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager;
     wlr_alpha_modifier_v1 *wlr_alpha_modifier;
     wlr_single_pixel_buffer_manager_v1 *wlr_single_pixel_buffer_manager;
+    wlr_idle_notifier_v1 *wlr_idle_notifier;
 
 #ifdef XWAYLAND
     wlr_xwayland *xwayland;

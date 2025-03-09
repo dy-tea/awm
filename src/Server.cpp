@@ -500,6 +500,9 @@ Server::Server(Config *config) : config(config) {
     wlr_single_pixel_buffer_manager =
         wlr_single_pixel_buffer_manager_v1_create(display);
 
+    // idle notifier
+    wlr_idle_notifier = wlr_idle_notifier_v1_create(display);
+
     // avoid using "wayland-0" as display socket
     std::string socket;
     for (unsigned int i = 1; i <= 32; i++) {

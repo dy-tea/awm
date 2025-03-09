@@ -70,10 +70,15 @@ Cursor::Cursor(Server *server) : server(server) {
     // button
     button.notify = [](wl_listener *listener, void *data) {
         Cursor *cursor = wl_container_of(listener, cursor, button);
+        Server *server = cursor->server;
         const auto *event = static_cast<wlr_pointer_button_event *>(data);
 
+        // notify activity
+        wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier,
+                                             server->seat);
+
         // forward to seat
-        wlr_seat_pointer_notify_button(cursor->server->seat, event->time_msec,
+        wlr_seat_pointer_notify_button(server->seat, event->time_msec,
                                        event->button, event->state);
 
         if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
@@ -107,14 +112,18 @@ Cursor::Cursor(Server *server) : server(server) {
     axis.notify = [](wl_listener *listener, void *data) {
         // scroll wheel etc
         Cursor *cursor = wl_container_of(listener, cursor, axis);
+        Server *server = cursor->server;
 
         const auto *event = static_cast<wlr_pointer_axis_event *>(data);
 
+        // notify activity
+        wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier,
+                                             server->seat);
+
         // forward to seat
-        wlr_seat_pointer_notify_axis(cursor->server->seat, event->time_msec,
-                                     event->orientation, event->delta,
-                                     event->delta_discrete, event->source,
-                                     event->relative_direction);
+        wlr_seat_pointer_notify_axis(
+            server->seat, event->time_msec, event->orientation, event->delta,
+            event->delta_discrete, event->source, event->relative_direction);
     };
     wl_signal_add(&cursor->events.axis, &axis);
 
@@ -196,6 +205,10 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
 
     // move cursor
     wlr_cursor_move(cursor, device, dx, dy);
+
+    // notify activity
+    wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier,
+                                         server->seat);
 
     // move or resize toplevel
     if (cursor_mode == CURSORMODE_MOVE) {

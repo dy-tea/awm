@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 // execute either a wm bind or command bind, returns true if
 // bind is valid, false otherwise
@@ -217,6 +218,9 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device)
         const Server *server = keyboard->server;
         const auto *event = static_cast<wlr_keyboard_key_event *>(data);
         wlr_seat *seat = server->seat;
+
+        // notify activity
+        wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier, seat);
 
         // libinput keycode -> xkbcommon
         const uint32_t keycode = event->keycode + 8;

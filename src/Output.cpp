@@ -54,6 +54,7 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
 
         wlr_output_commit_state(output->wlr_output, event->state);
         output->arrange_layers();
+        output->update_position();
     };
     wl_signal_add(&wlr_output->events.request_state, &request_state);
 

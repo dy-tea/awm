@@ -90,13 +90,12 @@ IPC::IPC(Server *server) : server(server) {
     });
 }
 
-// run a received command
+// parse a command and return the response
 std::string IPC::parse_command(const std::string &command, const int client_fd,
                                const bool continuous) {
-    std::string response;
     std::string token;
-    IPCMessage message{IPC_NONE};
     std::string data;
+    IPCMessage message{IPC_NONE};
 
     std::stringstream ss(command);
 
@@ -148,9 +147,11 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
         subscriptions[client_fd].push_back({message, data});
     }
 
+    // return parsed command
     return handle_command(message, data).dump();
 }
 
+// handle an IPC message, return the response json
 json IPC::handle_command(const IPCMessage message, const std::string &data) {
     json j;
 
@@ -162,6 +163,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         Output *output, *tmp;
         wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
                               link) {
+            // outputs are distinguished by name
             j[output->wlr_output->name] = {
                 {"x", output->layout_geometry.x},
                 {"y", output->layout_geometry.y},
@@ -176,7 +178,8 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"workspace", output->get_active()->num},
             };
 
-            // below values may be null
+            // below values may be null (e.g. virtual outputs)
+            // they are generally set on physical displays though
             if (output->wlr_output->description)
                 j[output->wlr_output->name]["description"] =
                     output->wlr_output->description;
@@ -202,6 +205,8 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             int i = 0;
             wl_list_for_each_safe(mode, tmp1, &output->wlr_output->modes,
                                   link) {
+                // output modes are defined as a size, refresh rate and
+                // preferred status - the selected mode is the current mode
                 j[output->wlr_output->name][i++] = {
                     {"refresh", mode->refresh / 1000.0},
                     {"width", mode->width},
@@ -217,9 +222,11 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     case IPC_WORKSPACE_LIST: {
         Output *output = server->focused_output();
 
+        // max output post-increments so we subtract 1
         j["max"] = output->max_workspace - 1;
-        int toplevel_count = 0;
 
+        // find the active workspace and count toplevels
+        int toplevel_count = 0;
         Workspace *workspace, *tmp;
         wl_list_for_each_safe(workspace, tmp, &output->workspaces, link) {
             if (workspace == output->get_active())
@@ -233,18 +240,26 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     }
     case IPC_WORKSPACE_SET: {
         try {
+            // try parsing an integer
             const uint32_t n = std::stoi(data);
+
+            // integer should be below max workspace, since it is always
+            // workspace count + 1
             if (n > server->focused_output()->max_workspace)
                 throw std::invalid_argument("out of range");
 
+            // set workspace
             server->focused_output()->set_workspace(n);
         } catch (std::invalid_argument &e) {
+            // if your script is incorrect it is better to notify the user
             notify_send("invalid workspace number `%s`", data.c_str());
         }
 
+        // we do not set any json
         break;
     }
     case IPC_TOPLEVEL_LIST: {
+        // list all toplevels regardless of workspace
         Output *o, *t0;
         Workspace *w, *t1;
         Toplevel *t, *t2;
@@ -252,6 +267,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         wl_list_for_each_safe(o, t0, &server->output_manager->outputs, link)
             wl_list_for_each_safe(w, t1, &o->workspaces, link) {
             wl_list_for_each_safe(t, t2, &w->toplevels, link) {
+                // toplevels are indexed by their pointer as title is non-unique
                 j[string_format("%p", t)] = {
                     {"title", t->title()},
                     {"x", t->geometry.x},
@@ -271,6 +287,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     }
     case IPC_KEYBOARD_LIST: {
+        // just return the keyboard config
         j = {{"layout", server->config->keyboard_layout},
              {"model", server->config->keyboard_model},
              {"variant", server->config->keyboard_variant},
@@ -318,8 +335,10 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     }
     case IPC_DEVICE_CURRENT: {
+        // get the current device layout
         Keyboard *keyboard, *tmp;
         wl_list_for_each_safe(keyboard, tmp, &server->keyboards, link) {
+            // keyboards can have multiple layouts
             xkb_keymap *keymap = keyboard->wlr_keyboard->keymap;
             xkb_state *state = keyboard->wlr_keyboard->xkb_state;
             xkb_layout_index_t num_layouts =
@@ -349,7 +368,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     }
     case IPC_NONE:
     default:
-        return {};
+        break;
     }
 
     return j;

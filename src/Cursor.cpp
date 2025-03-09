@@ -260,6 +260,10 @@ void Cursor::process_move() {
     Workspace *target = server->focused_output()->get_active();
     if (!target->contains(server->grabbed_toplevel) && current)
         current->move_to(server->grabbed_toplevel, target);
+
+    // notify clients
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
 }
 
 // resize a toplevel

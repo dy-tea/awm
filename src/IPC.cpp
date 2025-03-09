@@ -1,7 +1,5 @@
 #include "Server.h"
-#include "wlr/util/log.h"
 #include <sys/socket.h>
-#include <wayland-util.h>
 using json = nlohmann::json;
 
 IPC::IPC(Server *server) : server(server) {

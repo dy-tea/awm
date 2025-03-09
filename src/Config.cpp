@@ -197,131 +197,183 @@ bool Config::load() {
     std::unique_ptr<toml::Table> pointer =
         config_file.table->getTable("pointer");
     if (pointer) {
-        // tap to click
-        auto tap_to_click = pointer->getBool("tap_to_click");
-        if (tap_to_click.first)
-            cursor.tap_to_click =
-                static_cast<libinput_config_tap_state>(tap_to_click.second);
+        // used for both mouse and touchpad
+        auto pointer_profile = [&](toml::Table *table,
+                                   libinput_config_accel_profile *dest,
+                                   std::string name) {
+            if (auto [fst, snd] = table->getString("profile"); fst) {
+                if (snd == "none")
+                    *dest = LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
+                else if (snd == "flat")
+                    *dest = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
+                else if (snd == "adaptive")
+                    *dest = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+                else
+                    notify_send("No such option in pointer.%s.profile ['none', "
+                                "'flat', 'adaptive']: %s",
+                                name.c_str(), snd.c_str());
+            }
+        };
 
-        // tap and drag
-        auto tap_and_drag = pointer->getBool("tap_and_drag");
-        if (tap_and_drag.first)
-            cursor.tap_and_drag =
-                static_cast<libinput_config_drag_state>(tap_and_drag.second);
+        // mouse
+        std::unique_ptr<toml::Table> mouse = pointer->getTable("mouse");
+        if (mouse) {
+            // natural scroll
+            connect(mouse->getBool("natural_scroll"),
+                    &cursor.mouse.natural_scroll);
 
-        // drag lock
-        auto drag_lock = pointer->getString("drag_lock");
-        if (drag_lock.first) {
-            if (drag_lock.second == "none")
-                cursor.drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_DISABLED;
-            else if (drag_lock.second == "timeout")
-                cursor.drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_TIMEOUT;
-            else if (drag_lock.second == "enabled")
-                cursor.drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_ENABLED;
-            else if (drag_lock.second == "sticky")
-                cursor.drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY;
-            else
-                notify_send("No such option in pointer.drag_lock ['none', "
-                            "'timeout', 'enabled', 'sticky']: %s",
-                            drag_lock.second.c_str());
+            // left-handed
+            connect(mouse->getInt("left_handed"), &cursor.mouse.left_handed);
+
+            // profile
+            pointer_profile(mouse.get(), &cursor.mouse.profile, "mouse");
+
+            // accel speed
+            connect(mouse->getDouble("accel_speed"), &cursor.mouse.accel_speed);
         }
 
-        // tap button map
-        auto tap_button_map = pointer->getString("tap_button_map");
-        if (tap_button_map.first) {
-            if (tap_button_map.second == "lrm")
-                cursor.tap_button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
-            else if (tap_button_map.second == "lmr")
-                cursor.tap_button_map = LIBINPUT_CONFIG_TAP_MAP_LMR;
-            else
-                notify_send("No such option in pointer.tap_button_map ['lrm', "
-                            "'lmr']: %s",
-                            tap_button_map.second.c_str());
+        // touchpad
+        std::unique_ptr<toml::Table> touchpad = pointer->getTable("touchpad");
+        if (touchpad) {
+            // tap to click
+            auto tap_to_click = touchpad->getBool("tap_to_click");
+            if (tap_to_click.first)
+                cursor.touchpad.tap_to_click =
+                    static_cast<libinput_config_tap_state>(tap_to_click.second);
+
+            // tap and drag
+            auto tap_and_drag = touchpad->getBool("tap_and_drag");
+            if (tap_and_drag.first)
+                cursor.touchpad.tap_and_drag =
+                    static_cast<libinput_config_drag_state>(
+                        tap_and_drag.second);
+
+            // drag lock
+            auto drag_lock = touchpad->getString("drag_lock");
+            if (drag_lock.first) {
+                if (drag_lock.second == "none")
+                    cursor.touchpad.drag_lock =
+                        LIBINPUT_CONFIG_DRAG_LOCK_DISABLED;
+                else if (drag_lock.second == "timeout")
+                    cursor.touchpad.drag_lock =
+                        LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_TIMEOUT;
+                else if (drag_lock.second == "enabled")
+                    cursor.touchpad.drag_lock =
+                        LIBINPUT_CONFIG_DRAG_LOCK_ENABLED;
+                else if (drag_lock.second == "sticky")
+                    cursor.touchpad.drag_lock =
+                        LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY;
+                else
+                    notify_send(
+                        "No such option in pointer.touchpad.drag_lock ['none', "
+                        "'timeout', 'enabled', 'sticky']: %s",
+                        drag_lock.second.c_str());
+            }
+
+            // tap button map
+            auto tap_button_map = touchpad->getString("tap_button_map");
+            if (tap_button_map.first) {
+                if (tap_button_map.second == "lrm")
+                    cursor.touchpad.tap_button_map =
+                        LIBINPUT_CONFIG_TAP_MAP_LRM;
+                else if (tap_button_map.second == "lmr")
+                    cursor.touchpad.tap_button_map =
+                        LIBINPUT_CONFIG_TAP_MAP_LMR;
+                else
+                    notify_send(
+                        "No such option in pointer.tap_button_map ['lrm', "
+                        "'lmr']: %s",
+                        tap_button_map.second.c_str());
+            }
+
+            // natural scroll
+            connect(touchpad->getBool("natural_scroll"),
+                    &cursor.touchpad.natural_scroll);
+
+            // disable while typing
+            auto disable_while_typing =
+                touchpad->getBool("disable_while_typing");
+            if (disable_while_typing.first)
+                cursor.touchpad.disable_while_typing =
+                    static_cast<libinput_config_dwt_state>(
+                        disable_while_typing.second);
+
+            // left-handed
+            connect(touchpad->getInt("left_handed"),
+                    &cursor.touchpad.left_handed);
+
+            // middle emulation
+            auto middle_emulation = touchpad->getBool("middle_emulation");
+            if (middle_emulation.first)
+                cursor.touchpad.middle_emulation =
+                    static_cast<libinput_config_middle_emulation_state>(
+                        middle_emulation.second);
+
+            // scroll method
+            auto scroll_method = touchpad->getString("scroll_method");
+            if (scroll_method.first) {
+                if (scroll_method.second == "none")
+                    cursor.touchpad.scroll_method =
+                        LIBINPUT_CONFIG_SCROLL_NO_SCROLL;
+                else if (scroll_method.second == "2fg")
+                    cursor.touchpad.scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
+                else if (scroll_method.second == "edge")
+                    cursor.touchpad.scroll_method = LIBINPUT_CONFIG_SCROLL_EDGE;
+                else if (scroll_method.second == "button")
+                    cursor.touchpad.scroll_method =
+                        LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
+                else
+                    notify_send("No such option in "
+                                "pointer.touchpad.scroll_method ['none', "
+                                "'2fg', 'edge', 'button']: %s",
+                                scroll_method.second.c_str());
+            }
+
+            // click method
+            auto click_method = touchpad->getString("click_method");
+            if (click_method.first) {
+                if (click_method.second == "none")
+                    cursor.touchpad.click_method =
+                        LIBINPUT_CONFIG_CLICK_METHOD_NONE;
+                else if (click_method.second == "buttonareas")
+                    cursor.touchpad.click_method =
+                        LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
+                else if (click_method.second == "clickfinger")
+                    cursor.touchpad.click_method =
+                        LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER;
+                else
+                    notify_send("No such option in "
+                                "pointer.touchpad.click_method ['none', "
+                                "'buttonareas', 'clickfinger']: %s",
+                                click_method.second.c_str());
+            }
+
+            // event mode
+            if (auto [fst, snd] = touchpad->getString("event_mode"); fst) {
+                if (snd == "enabled")
+                    cursor.touchpad.event_mode =
+                        LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
+                else if (snd == "disabled")
+                    cursor.touchpad.event_mode =
+                        LIBINPUT_CONFIG_SEND_EVENTS_DISABLED;
+                else if (snd == "mousedisabled")
+                    cursor.touchpad.event_mode =
+                        LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
+                else
+                    notify_send("No such option in pointer.touchpad.event_mode "
+                                "['enabled', "
+                                "'disabled', 'mousedisabled']: %s",
+                                snd.c_str());
+            }
+
+            // profile
+            pointer_profile(touchpad.get(), &cursor.touchpad.profile,
+                            "touchpad");
+
+            // accel speed
+            connect(touchpad->getDouble("accel_speed"),
+                    &cursor.touchpad.accel_speed);
         }
-
-        // natural scroll
-        connect(pointer->getBool("natural_scroll"), &cursor.natural_scroll);
-
-        // disable while typing
-        auto disable_while_typing = pointer->getBool("disable_while_typing");
-        if (disable_while_typing.first)
-            cursor.disable_while_typing =
-                static_cast<libinput_config_dwt_state>(
-                    disable_while_typing.second);
-
-        // left-handed
-        connect(pointer->getInt("left_handed"), &cursor.left_handed);
-
-        // middle emulation
-        auto middle_emulation = pointer->getBool("middle_emulation");
-        if (middle_emulation.first)
-            cursor.middle_emulation =
-                static_cast<libinput_config_middle_emulation_state>(
-                    middle_emulation.second);
-
-        // scroll method
-        auto scroll_method = pointer->getString("scroll_method");
-        if (scroll_method.first) {
-            if (scroll_method.second == "none")
-                cursor.scroll_method = LIBINPUT_CONFIG_SCROLL_NO_SCROLL;
-            else if (scroll_method.second == "2fg")
-                cursor.scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
-            else if (scroll_method.second == "edge")
-                cursor.scroll_method = LIBINPUT_CONFIG_SCROLL_EDGE;
-            else if (scroll_method.second == "button")
-                cursor.scroll_method = LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
-            else
-                notify_send("No such option in pointer.scroll_method ['none', "
-                            "'2fg', 'edge', 'button']: %s",
-                            scroll_method.second.c_str());
-        }
-
-        // click method
-        auto click_method = pointer->getString("click_method");
-        if (click_method.first) {
-            if (click_method.second == "none")
-                cursor.click_method = LIBINPUT_CONFIG_CLICK_METHOD_NONE;
-            else if (click_method.second == "buttonareas")
-                cursor.click_method = LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
-            else if (click_method.second == "clickfinger")
-                cursor.click_method = LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER;
-            else
-                notify_send("No such option in pointer.click_method ['none', "
-                            "'buttonareas', 'clickfinger']: %s",
-                            click_method.second.c_str());
-        }
-
-        // event mode
-        if (auto [fst, snd] = pointer->getString("event_mode"); fst) {
-            if (snd == "enabled")
-                cursor.event_mode = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
-            else if (snd == "disabled")
-                cursor.event_mode = LIBINPUT_CONFIG_SEND_EVENTS_DISABLED;
-            else if (snd == "mousedisabled")
-                cursor.event_mode =
-                    LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
-            else
-                notify_send("No such option in pointer.event_mode ['enabled', "
-                            "'disabled', 'mousedisabled']: %s",
-                            snd.c_str());
-        }
-
-        // profile
-        if (auto [fst, snd] = pointer->getString("profile"); fst) {
-            if (snd == "none")
-                cursor.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
-            else if (snd == "flat")
-                cursor.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
-            else if (snd == "adaptive")
-                cursor.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
-            else
-                notify_send("No such option in pointer.profile ['none', "
-                            "'flat', 'adaptive']: %s",
-                            snd.c_str());
-        }
-
-        // accel speed
-        connect(pointer->getDouble("accel_speed"), &cursor.accel_speed);
     }
 
     // get awm binds

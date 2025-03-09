@@ -67,25 +67,37 @@ struct Config {
 
     // cursor
     struct {
-        libinput_config_tap_state tap_to_click{LIBINPUT_CONFIG_TAP_ENABLED};
-        libinput_config_drag_state tap_and_drag{LIBINPUT_CONFIG_DRAG_ENABLED};
-        libinput_config_drag_lock_state drag_lock{
-            LIBINPUT_CONFIG_DRAG_LOCK_DISABLED};
-        libinput_config_tap_button_map tap_button_map{
-            LIBINPUT_CONFIG_TAP_MAP_LRM};
-        bool natural_scroll{true};
-        libinput_config_dwt_state disable_while_typing{
-            LIBINPUT_CONFIG_DWT_ENABLED};
-        int64_t left_handed{0};
-        libinput_config_middle_emulation_state middle_emulation{
-            LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED};
-        libinput_config_scroll_method scroll_method{LIBINPUT_CONFIG_SCROLL_2FG};
-        libinput_config_click_method click_method{
-            LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS};
-        int event_mode{LIBINPUT_CONFIG_SEND_EVENTS_ENABLED};
-        libinput_config_accel_profile profile{
-            LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE};
-        double accel_speed{0.0};
+        struct {
+            libinput_config_accel_profile profile{
+                LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE};
+            double accel_speed{0.0};
+            bool natural_scroll{true};
+            int64_t left_handed{0};
+        } mouse;
+
+        struct {
+            libinput_config_tap_state tap_to_click{LIBINPUT_CONFIG_TAP_ENABLED};
+            libinput_config_drag_state tap_and_drag{
+                LIBINPUT_CONFIG_DRAG_ENABLED};
+            libinput_config_drag_lock_state drag_lock{
+                LIBINPUT_CONFIG_DRAG_LOCK_DISABLED};
+            libinput_config_tap_button_map tap_button_map{
+                LIBINPUT_CONFIG_TAP_MAP_LRM};
+            bool natural_scroll{true};
+            libinput_config_dwt_state disable_while_typing{
+                LIBINPUT_CONFIG_DWT_ENABLED};
+            int64_t left_handed{0};
+            libinput_config_middle_emulation_state middle_emulation{
+                LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED};
+            libinput_config_scroll_method scroll_method{
+                LIBINPUT_CONFIG_SCROLL_2FG};
+            libinput_config_click_method click_method{
+                LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS};
+            int event_mode{LIBINPUT_CONFIG_SEND_EVENTS_ENABLED};
+            libinput_config_accel_profile profile{
+                LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE};
+            double accel_speed{0.0};
+        } touchpad;
     } cursor;
 
     // exit compositor

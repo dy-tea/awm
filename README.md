@@ -46,6 +46,7 @@ You can build and run using:
 ```sh
 # clone
 git clone https://github.com/dy-tea/awm.git
+cd awm
 
 # build
 meson setup build

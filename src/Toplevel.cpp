@@ -901,9 +901,15 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
         // move scene tree node to toplevel tree
         wlr_scene_node_reparent(&scene_tree->node, server->layers.floating);
 
-        // set back to saved geometry
-        set_position_size(saved_geometry.x, saved_geometry.y,
-                          saved_geometry.width, saved_geometry.height);
+        // handles edge case where toplevel starts fullscreened
+        if (saved_geometry.width && saved_geometry.height)
+            // set back to saved geometry
+            set_position_size(saved_geometry.x, saved_geometry.y,
+                              saved_geometry.width, saved_geometry.height);
+        else
+            // use half of output geometry
+            set_position_size(output_box.x, output_box.y, output_box.width / 2,
+                              output_box.height / 2);
     }
 }
 
@@ -950,9 +956,15 @@ void Toplevel::set_maximized(const bool maximized) {
                           usable_area.y + output_box.y, usable_area.width,
                           usable_area.height);
     } else
-        // set back to saved geometry
-        set_position_size(saved_geometry.x, saved_geometry.y,
-                          saved_geometry.width, saved_geometry.height);
+        // handles edge case where toplevel starts maximized
+        if (saved_geometry.width && saved_geometry.height)
+            // set back to saved geometry
+            set_position_size(saved_geometry.x, saved_geometry.y,
+                              saved_geometry.width, saved_geometry.height);
+        else
+            // use half of output geometry
+            set_position_size(output_box.x, output_box.y, output_box.width / 2,
+                              output_box.height / 2);
 }
 
 // update foreign toplevel on window state change

@@ -1,6 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
-#include "wlr/types/wlr_output_power_management_v1.h"
 #include <map>
 
 OutputManager::OutputManager(Server *server) : server(server) {

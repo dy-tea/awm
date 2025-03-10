@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <sys/wait.h>

@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 // execute either a wm bind or command bind, returns true if
 // bind is valid, false otherwise

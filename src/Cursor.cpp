@@ -350,6 +350,10 @@ void Cursor::process_resize() {
 #endif
 
     toplevel->geometry = {new_x, new_y, new_width, new_height};
+
+    // notify clients
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
 }
 
 // constrain the cursor to a given pointer constraint

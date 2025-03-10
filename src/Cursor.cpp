@@ -1,4 +1,6 @@
 #include "Server.h"
+#include "pixman.h"
+#include <wayland-util.h>
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
@@ -135,6 +137,9 @@ Cursor::Cursor(Server *server) : server(server) {
         wlr_seat_pointer_notify_frame(cursor->server->seat);
     };
     wl_signal_add(&cursor->events.frame, &frame);
+
+    // constraint
+    wl_list_init(&constraint_commit.link);
 }
 
 Cursor::~Cursor() {
@@ -347,13 +352,93 @@ void Cursor::constrain(wlr_pointer_constraint_v1 *constraint) {
     if (active_constraint == constraint)
         return;
 
-    // deactivate current constraint
-    if (active_constraint)
+    wl_list_remove(&constraint_commit.link);
+    if (active_constraint) {
+        if (!constraint)
+            warp_to_constraint_hint();
+
+        // deactivate current constraint
         wlr_pointer_constraint_v1_send_deactivated(active_constraint);
+    }
 
     // set the new constraint
     active_constraint = constraint;
+
+    if (!constraint) {
+        wl_list_init(&constraint->link);
+        return;
+    }
+
+    requires_warp = true;
+
+    // sussy sway code
+    if (pixman_region32_not_empty(&constraint->current.region))
+        pixman_region32_intersect(&constraint->region,
+                                  &constraint->surface->input_region,
+                                  &constraint->current.region);
+    else
+        pixman_region32_copy(&constraint->region,
+                             &constraint->surface->input_region);
+
+    check_constraint_region();
+
     wlr_pointer_constraint_v1_send_activated(constraint);
+
+    constraint_commit.notify = [](wl_listener *listener,
+                                  [[maybe_unused]] void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, constraint_commit);
+        cursor->check_constraint_region();
+    };
+    wl_signal_add(&constraint->surface->events.commit, &constraint_commit);
+}
+
+// le sway code
+void Cursor::check_constraint_region() {
+    wlr_pointer_constraint_v1 *constraint = active_constraint;
+    pixman_region32_t *region = &constraint->region;
+    Toplevel *toplevel = server->get_toplevel(constraint->surface);
+    if (requires_warp && toplevel) {
+        requires_warp = false;
+
+        double sx = cursor->x + toplevel->geometry.x;
+        double sy = cursor->y + toplevel->geometry.y;
+
+        if (!pixman_region32_contains_point(region, floor(sx), floor(sy),
+                                            NULL)) {
+            int count;
+            pixman_box32_t *boxes = pixman_region32_rectangles(region, &count);
+            if (count > 0) {
+                sx = (boxes[0].x1 + boxes[0].x2) / 2.0;
+                sy = (boxes[0].y1 + boxes[0].y2) / 2.0;
+
+                wlr_cursor_warp_closest(cursor, NULL, sx + toplevel->geometry.x,
+                                        sy + toplevel->geometry.y);
+            }
+        }
+    }
+
+    // empty region if locked
+    if (constraint->type == WLR_POINTER_CONSTRAINT_V1_CONFINED)
+        pixman_region32_copy(&confine, region);
+    else
+        pixman_region32_clear(&confine);
+}
+
+void Cursor::warp_to_constraint_hint() {
+    if (active_constraint->current.cursor_hint.enabled) {
+        double sx = active_constraint->current.cursor_hint.x;
+        double sy = active_constraint->current.cursor_hint.y;
+
+        Toplevel *toplevel = server->get_toplevel(active_constraint->surface);
+        if (!toplevel)
+            return;
+
+        double lx = sx - toplevel->geometry.x;
+        double ly = sy - toplevel->geometry.y;
+
+        wlr_cursor_warp(cursor, NULL, lx, ly);
+        wlr_seat_pointer_warp(active_constraint->seat, sx, sy);
+    }
 }
 
 // returns true if the cursor is a touchpad

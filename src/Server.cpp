@@ -452,7 +452,7 @@ Server::Server(Config *config) : config(config) {
             wl_container_of(listener, server, new_pointer_constraint);
 
         [[maybe_unused]] PointerConstraint *constraint = new PointerConstraint(
-            static_cast<wlr_pointer_constraint_v1 *>(data));
+            static_cast<wlr_pointer_constraint_v1 *>(data), server->cursor);
     };
     wl_signal_add(&wlr_pointer_constraints->events.new_constraint,
                   &new_pointer_constraint);

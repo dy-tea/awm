@@ -29,6 +29,9 @@ struct Cursor {
     wl_listener request_set_shape;
 
     wlr_pointer_constraint_v1 *active_constraint{nullptr};
+    bool requires_warp{false};
+    pixman_region32_t confine;
+    wl_listener constraint_commit;
 
     Cursor(Server *server);
     ~Cursor();
@@ -39,6 +42,8 @@ struct Cursor {
     void process_move();
     void process_resize();
     void constrain(wlr_pointer_constraint_v1 *constraint);
+    void check_constraint_region();
+    void warp_to_constraint_hint();
 
     bool is_touchpad(wlr_pointer *pointer) const;
     void set_config(wlr_pointer *pointer);

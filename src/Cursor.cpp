@@ -347,11 +347,18 @@ void Cursor::process_resize() {
     } else
         wlr_xwayland_surface_configure(toplevel->xwayland_surface, new_x, new_y,
                                        new_width, new_height);
+
+    if (toplevel->xdg_toplevel) {
+#endif
+        // enforce minimum size
+        new_width =
+            std::max(new_width, toplevel->xdg_toplevel->current.min_width);
+        new_height =
+            std::max(new_height, toplevel->xdg_toplevel->current.min_height);
+#ifdef XWAYLAND
+    }
 #endif
 
-    new_width = std::max(new_width, toplevel->xdg_toplevel->current.min_width);
-    new_height = std::max(new_height, toplevel->xdg_toplevel->current.min_height);
-    
     toplevel->geometry = {new_x, new_y, new_width, new_height};
 
     // notify clients

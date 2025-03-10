@@ -736,10 +736,10 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 void Toplevel::set_position_size(const double x, const double y, int width,
                                  int height) {
     // get output at cursor
-    const wlr_output *wlr_output = server->focused_output()->wlr_output;
+    const Output *output = server->focused_output();
 
     // get output scale
-    const float scale = wlr_output->scale;
+    const float scale = output ? output->wlr_output->scale : 1.0;
 
     // enforce minimum size
     width = std::max(width, 1);
@@ -752,7 +752,7 @@ void Toplevel::set_position_size(const double x, const double y, int width,
 #endif
             wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
 #ifdef XWAYLAND
-        else
+        else if (xwayland_surface)
             wlr_xwayland_surface_set_maximized(xwayland_surface, false, false);
 #endif
     } else

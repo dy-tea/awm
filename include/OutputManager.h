@@ -8,11 +8,14 @@ struct OutputManager {
 
     wlr_xdg_output_manager_v1 *wlr_xdg_output_manager;
     wlr_output_manager_v1 *wlr_output_manager;
+    wlr_output_power_manager_v1 *wlr_output_power_manager;
+
     wl_listener apply;
     wl_listener test;
     wl_listener destroy;
     wl_listener new_output;
     wl_listener change;
+    wl_listener set_mode;
 
     OutputManager(Server *server);
     ~OutputManager();

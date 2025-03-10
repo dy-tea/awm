@@ -27,16 +27,18 @@
 - [wlr gamma control](https://wayland.app/protocols/wlr-gamma-control-unstable-v1)
 - [wlr layer shell](https://wayland.app/protocols/wlr-layer-shell-unstable-v1)
 - [wlr output management](https://wayland.app/protocols/wlr-output-management-unstable-v1)
+- [wlr output power management](https://wayland.app/protocols/wlr-output-power-management-unstable-v1)
 - [wlr screencopy](https://wayland.app/protocols/wlr-screencopy-unstable-v1)
 - [wlr virtual pointer](https://wayland.app/protocols/wlr-virtual-pointer-unstable-v1)
 
 ### Dependencies
 
+- `meson`
+- `ninja`
 - `wlroots` **0.19** (wlroots-git)
 - `xkbcommon`
 - `wayland-server`
 - `wayland-protocols`
-- `tomlcpp` (submodule)
 - `xwayland` (can be disabled in build)
 
 ### Build
@@ -46,11 +48,11 @@ You can build and run using:
 ```sh
 # clone
 git clone https://github.com/dy-tea/awm.git
-cd awm
+cd awm/
 
 # build
-meson setup build
-ninja -C build
+meson setup build/
+ninja -C build/
 
 # run
 ./build/awm
@@ -59,7 +61,7 @@ ninja -C build
 Additionally, you can install awm to your wayland-sessions using:
 
 ```sh
-sudo meson install -C build
+sudo meson install -C build/
 ```
 
 ### Configuration

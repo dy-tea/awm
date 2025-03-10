@@ -42,6 +42,7 @@ protocols = [
   'protocols' / 'wlr-layer-shell-unstable-v1.xml',
   'protocols' / 'wlr-data-control-unstable-v1.xml',
   'protocols' / 'wlr-screencopy-unstable-v1.xml',
+  'protocols' / 'wlr-output-power-management-unstable-v1.xml',
 ]
 
 # generate protocol headers and code

@@ -1,13 +1,18 @@
 #include "Server.h"
+#include "wlr.h"
+#include "wlr/types/wlr_output_power_management_v1.h"
 #include <map>
 
 OutputManager::OutputManager(Server *server) : server(server) {
     layout = wlr_output_layout_create(server->display);
     wl_list_init(&outputs);
 
+    // create managers
     wlr_xdg_output_manager =
         wlr_xdg_output_manager_v1_create(server->display, layout);
     wlr_output_manager = wlr_output_manager_v1_create(server->display);
+    wlr_output_power_manager =
+        wlr_output_power_manager_v1_create(server->display);
 
     // apply
     apply.notify = [](wl_listener *listener, void *data) {
@@ -127,6 +132,23 @@ OutputManager::OutputManager(Server *server) : server(server) {
                                                 config);
     };
     wl_signal_add(&layout->events.change, &change);
+
+    // set power mode
+    set_mode.notify = [](wl_listener *listener, void *data) {
+        OutputManager *manager = wl_container_of(listener, manager, set_mode);
+        auto event = static_cast<wlr_output_power_v1_set_mode_event *>(data);
+        wlr_output_state state{};
+        Output *output = manager->server->get_output(event->output);
+
+        if (!output)
+            return;
+
+        wlr_output_state_set_enabled(&state, event->mode);
+        wlr_output_commit_state(output->wlr_output, &state);
+
+        manager->arrange();
+    };
+    wl_signal_add(&wlr_output_power_manager->events.set_mode, &set_mode);
 }
 
 OutputManager::~OutputManager() {
@@ -135,6 +157,7 @@ OutputManager::~OutputManager() {
     wl_list_remove(&destroy.link);
     wl_list_remove(&new_output.link);
     wl_list_remove(&change.link);
+    wl_list_remove(&set_mode.link);
 }
 
 void OutputManager::apply_config(wlr_output_configuration_v1 *cfg,

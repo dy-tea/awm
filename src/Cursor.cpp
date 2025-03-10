@@ -357,20 +357,16 @@ void Cursor::constrain(wlr_pointer_constraint_v1 *constraint) {
 }
 
 // returns true if the cursor is a touchpad
-bool Cursor::is_touchpad() const {
-#if WLR_HAS_LIBINPUT_BACKEND
-    if (device->wlr_device->type != WLR_INPUT_DEVICE_POINTER ||
-        !wlr_input_device_is_libinput(device->wlr_device)) {
+bool Cursor::is_touchpad(wlr_pointer *pointer) const {
+    if (pointer->base.type != WLR_INPUT_DEVICE_POINTER ||
+        !wlr_input_device_is_libinput(&pointer->base)) {
         return false;
     }
 
     struct libinput_device *libinput_device =
-        wlr_libinput_get_device_handle(device->wlr_device);
+        wlr_libinput_get_device_handle(&pointer->base);
 
     return libinput_device_config_tap_get_finger_count(libinput_device) > 0;
-#else
-    return false;
-#endif
 }
 
 // set the cursor libinput configuration
@@ -381,100 +377,95 @@ void Cursor::set_config(wlr_pointer *pointer) {
         return;
     libinput_device *device = wlr_libinput_get_device_handle(&pointer->base);
 
-    switch (pointer->base.type) {
-    case WLR_INPUT_DEVICE_POINTER:
-    default: {
-        if (is_touchpad()) {
-            // touchpad config
+    if (is_touchpad(pointer)) {
+        // touchpad config
 
-            if (libinput_device_config_tap_get_finger_count(device)) {
-                // tap to click
-                libinput_device_config_tap_set_enabled(
-                    device, config->cursor.touchpad.tap_to_click);
+        if (libinput_device_config_tap_get_finger_count(device)) {
+            // tap to click
+            libinput_device_config_tap_set_enabled(
+                device, config->cursor.touchpad.tap_to_click);
 
-                // tap and drag
-                libinput_device_config_tap_set_drag_enabled(
-                    device, config->cursor.touchpad.tap_and_drag);
+            // tap and drag
+            libinput_device_config_tap_set_drag_enabled(
+                device, config->cursor.touchpad.tap_and_drag);
 
-                // drag lock
-                libinput_device_config_tap_set_drag_lock_enabled(
-                    device, config->cursor.touchpad.drag_lock);
+            // drag lock
+            libinput_device_config_tap_set_drag_lock_enabled(
+                device, config->cursor.touchpad.drag_lock);
 
-                // button map
-                libinput_device_config_tap_set_button_map(
-                    device, config->cursor.touchpad.tap_button_map);
-            }
-
-            // natural scroll
-            if (libinput_device_config_scroll_has_natural_scroll(device))
-                libinput_device_config_scroll_set_natural_scroll_enabled(
-                    device, config->cursor.touchpad.natural_scroll);
-
-            // disable while typing
-            if (libinput_device_config_dwt_is_available(device))
-                libinput_device_config_dwt_set_enabled(
-                    device, config->cursor.touchpad.disable_while_typing);
-
-            // left-handed
-            if (libinput_device_config_left_handed_is_available(device))
-                libinput_device_config_left_handed_set(
-                    device, config->cursor.touchpad.left_handed);
-
-            // middle emulation
-            if (libinput_device_config_middle_emulation_is_available(device))
-                libinput_device_config_middle_emulation_set_enabled(
-                    device, config->cursor.touchpad.middle_emulation);
-
-            // scroll method
-            if (libinput_device_config_scroll_get_methods(device) !=
-                LIBINPUT_CONFIG_SCROLL_NO_SCROLL)
-                libinput_device_config_scroll_set_method(
-                    device, config->cursor.touchpad.scroll_method);
-
-            // click method
-            if (libinput_device_config_click_get_methods(device) !=
-                LIBINPUT_CONFIG_CLICK_METHOD_NONE)
-                libinput_device_config_click_set_method(
-                    device, config->cursor.touchpad.click_method);
-
-            // event mode
-            if (libinput_device_config_send_events_get_modes(device))
-                libinput_device_config_send_events_set_mode(
-                    device, config->cursor.touchpad.event_mode);
-
-            if (libinput_device_config_accel_is_available(device)) {
-                // profile
-                libinput_device_config_accel_set_profile(
-                    device, config->cursor.touchpad.profile);
-
-                // accel speed
-                libinput_device_config_accel_set_speed(
-                    device, config->cursor.touchpad.accel_speed);
-            }
-        } else {
-            // mouse config
-
-            // natural scroll
-            if (libinput_device_config_scroll_has_natural_scroll(device))
-                libinput_device_config_scroll_set_natural_scroll_enabled(
-                    device, config->cursor.mouse.natural_scroll);
-
-            // left-handed
-            if (libinput_device_config_left_handed_is_available(device))
-                libinput_device_config_left_handed_set(
-                    device, config->cursor.mouse.left_handed);
-
-            if (libinput_device_config_accel_is_available(device)) {
-                // profile
-                libinput_device_config_accel_set_profile(
-                    device, config->cursor.mouse.profile);
-
-                // accel speed
-                libinput_device_config_accel_set_speed(
-                    device, config->cursor.mouse.accel_speed);
-            }
+            // button map
+            libinput_device_config_tap_set_button_map(
+                device, config->cursor.touchpad.tap_button_map);
         }
-    }
+
+        // natural scroll
+        if (libinput_device_config_scroll_has_natural_scroll(device))
+            libinput_device_config_scroll_set_natural_scroll_enabled(
+                device, config->cursor.touchpad.natural_scroll);
+
+        // disable while typing
+        if (libinput_device_config_dwt_is_available(device))
+            libinput_device_config_dwt_set_enabled(
+                device, config->cursor.touchpad.disable_while_typing);
+
+        // left-handed
+        if (libinput_device_config_left_handed_is_available(device))
+            libinput_device_config_left_handed_set(
+                device, config->cursor.touchpad.left_handed);
+
+        // middle emulation
+        if (libinput_device_config_middle_emulation_is_available(device))
+            libinput_device_config_middle_emulation_set_enabled(
+                device, config->cursor.touchpad.middle_emulation);
+
+        // scroll method
+        if (libinput_device_config_scroll_get_methods(device) !=
+            LIBINPUT_CONFIG_SCROLL_NO_SCROLL)
+            libinput_device_config_scroll_set_method(
+                device, config->cursor.touchpad.scroll_method);
+
+        // click method
+        if (libinput_device_config_click_get_methods(device) !=
+            LIBINPUT_CONFIG_CLICK_METHOD_NONE)
+            libinput_device_config_click_set_method(
+                device, config->cursor.touchpad.click_method);
+
+        // event mode
+        if (libinput_device_config_send_events_get_modes(device))
+            libinput_device_config_send_events_set_mode(
+                device, config->cursor.touchpad.event_mode);
+
+        if (libinput_device_config_accel_is_available(device)) {
+            // profile
+            libinput_device_config_accel_set_profile(
+                device, config->cursor.touchpad.profile);
+
+            // accel speed
+            libinput_device_config_accel_set_speed(
+                device, config->cursor.touchpad.accel_speed);
+        }
+    } else {
+        // mouse config
+
+        // natural scroll
+        if (libinput_device_config_scroll_has_natural_scroll(device))
+            libinput_device_config_scroll_set_natural_scroll_enabled(
+                device, config->cursor.mouse.natural_scroll);
+
+        // left-handed
+        if (libinput_device_config_left_handed_is_available(device))
+            libinput_device_config_left_handed_set(
+                device, config->cursor.mouse.left_handed);
+
+        if (libinput_device_config_accel_is_available(device)) {
+            // profile
+            libinput_device_config_accel_set_profile(
+                device, config->cursor.mouse.profile);
+
+            // accel speed
+            libinput_device_config_accel_set_speed(
+                device, config->cursor.mouse.accel_speed);
+        }
     }
 
     // add pointer to list

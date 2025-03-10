@@ -689,12 +689,7 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
     cursor->cursor_mode = mode;
 
     if (mode == CURSORMODE_MOVE) {
-        if ((xdg_toplevel && xdg_toplevel->current.maximized)
-#ifdef XWAYLAND
-            || (xwayland_surface && xwayland_surface->maximized_horz &&
-                xwayland_surface->maximized_vert)
-#endif
-        ) {
+        if (maximized()) {
             // unmaximize if maximized
             saved_geometry.y = cursor->cursor->y - 10; // TODO Magic number here
             saved_geometry.x = cursor->cursor->x - (saved_geometry.width / 2.0);
@@ -707,12 +702,8 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
         cursor->grab_y = cursor->cursor->y - scene_tree->node.y;
     } else {
         // don't resize fullscreened windows
-        if (xdg_toplevel && xdg_toplevel->current.fullscreen)
+        if (fullscreen())
             return;
-#ifdef XWAYLAND
-        else if (xwayland_surface && xwayland_surface->fullscreen)
-            return;
-#endif
 
         // get toplevel geometry
         const wlr_box geo_box = get_geometry();
@@ -915,19 +906,13 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
 
 // set the toplevel to be maximized
 void Toplevel::set_maximized(const bool maximized) {
-    if (xdg_toplevel) {
-        // HACK: do not maximize if not initialized
-        if (!xdg_toplevel->base->initialized)
-            return;
+    // HACK: do not maximize if not initialized
+    if (xdg_toplevel && !xdg_toplevel->base->initialized)
+        return;
 
-        // unfullscreen if fullscreened
-        if (xdg_toplevel->current.fullscreen)
-            wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, false);
-    }
-#ifdef XWAYLAND
-    else if (xwayland_surface && xwayland_surface->fullscreen)
-        wlr_xwayland_surface_set_fullscreen(xwayland_surface, false);
-#endif
+    // unfullscreen if fullscreened
+    if (fullscreen())
+        set_fullscreen(false);
 
     // get output
     const Output *output = server->focused_output();

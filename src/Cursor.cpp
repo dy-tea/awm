@@ -328,6 +328,12 @@ void Cursor::process_resize() {
     int new_width = new_right - new_left;
     int new_height = new_bottom - new_top;
 
+    // wtf???
+    if (resize_edges & WLR_EDGE_LEFT)
+        new_x -= geo_box.width - new_width;
+    if (resize_edges & WLR_EDGE_TOP)
+        new_y -= geo_box.height - new_height;
+
     // set new geometry
     wlr_scene_node_set_position(&toplevel->scene_tree->node, new_x, new_y);
 

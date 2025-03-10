@@ -349,6 +349,9 @@ void Cursor::process_resize() {
                                        new_width, new_height);
 #endif
 
+    new_width = std::max(new_width, toplevel->xdg_toplevel->current.min_width);
+    new_height = std::max(new_height, toplevel->xdg_toplevel->current.min_height);
+    
     toplevel->geometry = {new_x, new_y, new_width, new_height};
 
     // notify clients

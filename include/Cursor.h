@@ -40,6 +40,7 @@ struct Cursor {
     void process_resize();
     void constrain(wlr_pointer_constraint_v1 *constraint);
 
+    bool is_touchpad() const;
     void set_config(wlr_pointer *pointer);
     void reconfigure_all();
 };

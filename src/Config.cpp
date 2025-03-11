@@ -3,6 +3,10 @@
 #include <libinput.h>
 #include <sstream>
 
+const std::string MOUSE_BUTTONS[] = {
+    "MouseLeft", "MouseRight", "MouseMiddle", "MouseBack", "MouseForward",
+};
+
 // get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(const std::string &modifier) {
 
@@ -20,6 +24,8 @@ Bind *parse_bind(const std::string &definition, BindName name) {
     std::string token;
     std::stringstream ss(definition);
 
+cont:
+
     // get each space-seperated token
     while (std::getline(ss, token, ' ')) {
         // special handling for number keys
@@ -27,6 +33,13 @@ Bind *parse_bind(const std::string &definition, BindName name) {
             bind->sym = XKB_KEY_NoSymbol;
             continue;
         }
+
+        // mouse buttons
+        for (int i = 0; i != 5; ++i)
+            if (token == MOUSE_BUTTONS[i]) {
+                bind->sym = 0x20000000 + i + 272;
+                goto cont; // can't continue here due to for loop
+            }
 
         // parse keysym
         const xkb_keysym_t sym =

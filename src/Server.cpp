@@ -109,7 +109,7 @@ Toplevel *Server::get_toplevel(wlr_surface *surface) const {
     return nullptr;
 }
 
-// get the focused output
+// get the output under the cursor
 Output *Server::focused_output() const {
     return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
 }

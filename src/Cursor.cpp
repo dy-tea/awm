@@ -106,6 +106,10 @@ Cursor::Cursor(Server *server) : server(server) {
             if (toplevel && surface && surface->mapped)
                 server->focused_output()->get_active()->focus_toplevel(
                     toplevel);
+
+            // set pressed button
+            cursor->pressed_button =
+                static_cast<CursorButton>(event->button - 271);
         }
     };
     wl_signal_add(&cursor->events.button, &button);
@@ -157,6 +161,7 @@ Cursor::~Cursor() {
 // deactivate cursor
 void Cursor::reset_mode() {
     cursor_mode = CURSORMODE_PASSTHROUGH;
+    pressed_button = CURSOR_BUTTON_NONE;
     server->grabbed_toplevel = nullptr;
 }
 

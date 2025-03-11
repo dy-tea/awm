@@ -7,6 +7,15 @@ enum CursorMode {
     CURSORMODE_RESIZE,
 };
 
+enum CursorButton {
+    CURSOR_BUTTON_NONE,
+    CURSOR_BUTTON_LEFT,
+    CURSOR_BUTTON_MIDDLE,
+    CURSOR_BUTTON_RIGHT,
+    CURSOR_BUTTON_BACK,
+    CURSOR_BUTTON_FORWARD,
+};
+
 struct Cursor {
     Server *server;
     wlr_cursor *cursor;
@@ -19,6 +28,7 @@ struct Cursor {
     double grab_x, grab_y;
     wlr_box grab_geobox;
     uint32_t resize_edges;
+    CursorButton pressed_button{CURSOR_BUTTON_NONE};
 
     wl_listener motion;
     wl_listener motion_absolute;

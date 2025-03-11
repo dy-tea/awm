@@ -127,6 +127,9 @@ struct Server {
     void exit() const;
 
     Output *get_output(const wlr_output *wlr_output) const;
+    Workspace *get_workspace(Toplevel *toplevel) const;
+    Toplevel *get_toplevel(wlr_surface *surface) const;
+
     Output *focused_output() const;
 
     template <typename T>
@@ -136,8 +139,4 @@ struct Server {
                           double *sx, double *sy);
     LayerSurface *layer_surface_at(double lx, double ly, wlr_surface **surface,
                                    double *sx, double *sy);
-
-    Workspace *get_workspace(Toplevel *toplevel) const;
-
-    Toplevel *get_toplevel(wlr_surface *surface) const;
 };

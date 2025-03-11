@@ -183,8 +183,8 @@ Server::Server(Config *config) : config(config) {
         Server *server = wl_container_of(listener, server, new_xdg_toplevel);
 
         // toplevels are managed by workspaces
-        [[maybe_unused]] Toplevel *toplevel =
-            new Toplevel(server, static_cast<wlr_xdg_toplevel *>(data));
+
+        new Toplevel(server, static_cast<wlr_xdg_toplevel *>(data));
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
 
@@ -294,9 +294,7 @@ Server::Server(Config *config) : config(config) {
             return;
         }
 
-        [[maybe_unused]] SessionLock *lock =
-            new SessionLock(server, session_lock);
-        server->current_session_lock = session_lock;
+        new SessionLock(server, session_lock);
     };
     wl_signal_add(&wlr_session_lock_manager->events.new_lock,
                   &new_session_lock);
@@ -321,13 +319,17 @@ Server::Server(Config *config) : config(config) {
                 device->type) {
         case WLR_INPUT_DEVICE_KEYBOARD: {
             // create keyboard
-            Keyboard *keyboard = new Keyboard(server, device);
+            Keyboard *keyboard =
+                new Keyboard(server, wlr_keyboard_from_input_device(device));
 
-            // connect to seat
-            wlr_seat_set_keyboard(server->seat, keyboard->wlr_keyboard);
-
-            // add to keyboards list
-            wl_list_insert(&server->keyboards, &keyboard->link);
+            // handle_destroy
+            keyboard->destroy.notify = [](wl_listener *listener,
+                                          [[maybe_unused]] void *data) {
+                Keyboard *keyboard =
+                    wl_container_of(listener, keyboard, destroy);
+                delete keyboard;
+            };
+            wl_signal_add(&device->events.destroy, &keyboard->destroy);
             break;
         }
         case WLR_INPUT_DEVICE_POINTER: {
@@ -425,7 +427,7 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&seat->events.start_drag, &start_drag);
 
-    // virtual pointer manager
+    // virtual pointer
     virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(display);
 
     new_virtual_pointer.notify = [](wl_listener *listener, void *data) {
@@ -444,6 +446,20 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&virtual_pointer_mgr->events.new_virtual_pointer,
                   &new_virtual_pointer);
 
+    // virtual keyboard
+    virtual_keyboard_manager = wlr_virtual_keyboard_manager_v1_create(display);
+
+    new_virtual_keyboard.notify = [](wl_listener *listener, void *data) {
+        Server *server =
+            wl_container_of(listener, server, new_virtual_keyboard);
+
+        auto *virtual_keyboard = static_cast<wlr_virtual_keyboard_v1 *>(data);
+
+        new Keyboard(server, virtual_keyboard);
+    };
+    wl_signal_add(&virtual_keyboard_manager->events.new_virtual_keyboard,
+                  &new_virtual_keyboard);
+
     // pointer constraints
     wlr_pointer_constraints = wlr_pointer_constraints_v1_create(display);
 
@@ -451,8 +467,8 @@ Server::Server(Config *config) : config(config) {
         Server *server =
             wl_container_of(listener, server, new_pointer_constraint);
 
-        [[maybe_unused]] PointerConstraint *constraint = new PointerConstraint(
-            static_cast<wlr_pointer_constraint_v1 *>(data), server->cursor);
+        new PointerConstraint(static_cast<wlr_pointer_constraint_v1 *>(data),
+                              server->cursor);
     };
     wl_signal_add(&wlr_pointer_constraints->events.new_constraint,
                   &new_pointer_constraint);
@@ -558,7 +574,7 @@ Server::Server(Config *config) : config(config) {
 
             wlr_xwayland_surface *surface =
                 static_cast<wlr_xwayland_surface *>(data);
-            [[maybe_unused]] Toplevel *toplevel = new Toplevel(server, surface);
+            new Toplevel(server, surface);
         };
         wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
 
@@ -662,6 +678,7 @@ Server::~Server() {
     wl_list_remove(&new_shell_surface.link);
     wl_list_remove(&new_session_lock.link);
     wl_list_remove(&new_virtual_pointer.link);
+    wl_list_remove(&new_virtual_keyboard.link);
     wl_list_remove(&new_pointer_constraint.link);
 
     LayerSurface *surface, *tmp;

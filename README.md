@@ -30,6 +30,7 @@
 - [wlr output power management](https://wayland.app/protocols/wlr-output-power-management-unstable-v1)
 - [wlr screencopy](https://wayland.app/protocols/wlr-screencopy-unstable-v1)
 - [wlr virtual pointer](https://wayland.app/protocols/wlr-virtual-pointer-unstable-v1)
+- [Virtual keyboard](https://wayland.app/protocols/virtual-keyboard-unstable-v1)
 
 ### Dependencies
 

@@ -216,8 +216,14 @@ uint32_t Keyboard::keysyms_translated(const xkb_keycode_t keycode,
     return xkb_state_key_get_syms(wlr_keyboard->xkb_state, keycode, keysyms);
 }
 
-Keyboard::Keyboard(Server *server, wlr_input_device *device)
-    : server(server), wlr_keyboard(wlr_keyboard_from_input_device(device)) {
+Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
+    : server(server), wlr_keyboard(keyboard) {
+    // connect to seat
+    wlr_seat_set_keyboard(server->seat, keyboard);
+
+    // add to keyboards list
+    wl_list_insert(&server->keyboards, &link);
+
     // set data
     wlr_keyboard->data = this;
 
@@ -286,13 +292,18 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device)
         }
     };
     wl_signal_add(&wlr_keyboard->events.key, &key);
+}
 
-    // handle_destroy
+Keyboard::Keyboard(Server *server, wlr_virtual_keyboard_v1 *virtual_keyboard)
+    : server(server), wlr_keyboard(&virtual_keyboard->keyboard) {
+    // Call the existing constructor to initialize the keyboard
+    new (this) Keyboard(server, &virtual_keyboard->keyboard);
+
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
         delete keyboard;
     };
-    wl_signal_add(&device->events.destroy, &destroy);
+    wl_signal_add(&virtual_keyboard->keyboard.base.events.destroy, &destroy);
 }
 
 Keyboard::~Keyboard() {

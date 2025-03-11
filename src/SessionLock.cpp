@@ -3,6 +3,7 @@
 SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
     : server(server), session_lock(session_lock) {
     scene_tree = wlr_scene_tree_create(server->layers.lock);
+    server->current_session_lock = session_lock;
 
     new_surface.notify = [](wl_listener *listener, void *data) {
         SessionLock *lock = wl_container_of(listener, lock, new_surface);

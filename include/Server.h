@@ -14,6 +14,7 @@
 #include "SessionLock.h"
 #include "Toplevel.h"
 #include "Workspace.h"
+#include "wlr.h"
 
 struct Server {
     // singleton
@@ -87,6 +88,9 @@ struct Server {
 
     wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
     wl_listener new_virtual_pointer;
+
+    wlr_virtual_keyboard_manager_v1 *virtual_keyboard_manager;
+    wl_listener new_virtual_keyboard;
 
     wlr_pointer_constraints_v1 *wlr_pointer_constraints;
     wl_listener new_pointer_constraint;

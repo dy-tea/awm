@@ -1,5 +1,6 @@
 #include "Server.h"
 #include <sys/socket.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
 using json = nlohmann::json;
 
 IPC::IPC(Server *server) : server(server) {
@@ -399,7 +400,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"modifiers", modifiers.empty()
                                   ? "None"
                                   : modifiers.substr(0, modifiers.size() - 1)},
-                {"sym", name.empty() ? "Number" : name},
+                {"sym", bind.sym == XKB_KEY_NoSymbol ? "Number" : name},
             };
         }
         break;
@@ -443,7 +444,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                      modifiers.empty()
                          ? "None"
                          : modifiers.substr(0, modifiers.size() - 1)},
-                    {"sym", name.empty() ? "Number" : name},
+                    {"sym", bind.sym == XKB_KEY_NoSymbol ? "Number" : name},
                 };
                 break;
             }

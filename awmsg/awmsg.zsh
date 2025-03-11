@@ -1,7 +1,7 @@
 #compdef awmsg
 
 _awmsg () {
-    local -a literals=("help" "exit" "-c" "--continuous" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current")
+    local -a literals=("help" "exit" "-c" "--continuous" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "display")
 
     local -A descriptions
     descriptions[3]="keep reading events until cancelled"
@@ -14,18 +14,22 @@ _awmsg () {
     descriptions[14]="list keyboards"
     descriptions[16]="list devices"
     descriptions[17]="show current device"
+    descriptions[19]="list key bindings"
+    descriptions[20]="run key binding for name"
+    descriptions[21]="display key binding for name"
 
     local -A literal_transitions
-    literal_transitions[1]="([1]=2 [2]=2 [3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8)"
-    literal_transitions[3]="([3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8)"
+    literal_transitions[1]="([1]=2 [2]=2 [3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8 [18]=9)"
+    literal_transitions[3]="([3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8 [18]=9)"
     literal_transitions[4]="([6]=2 [7]=2)"
-    literal_transitions[5]="([9]=2 [10]=9)"
+    literal_transitions[5]="([9]=2 [10]=11)"
     literal_transitions[6]="([12]=2)"
     literal_transitions[7]="([14]=2)"
     literal_transitions[8]="([16]=2 [17]=2)"
+    literal_transitions[9]="([19]=2 [20]=10 [21]=10)"
 
     local -A match_anything_transitions
-    match_anything_transitions=([9]=2)
+    match_anything_transitions=([10]=2 [11]=2)
 
     declare -A subword_transitions
 
@@ -61,7 +65,7 @@ _awmsg () {
 
         return 1
     done
-    declare -A literal_transitions_level_0=([7]="14" [5]="9 10" [8]="16 17" [1]="1 2 3 4 5 8 11 13 15" [3]="3 4 5 8 11 13 15" [4]="6 7" [6]="12")
+    declare -A literal_transitions_level_0=([7]="14" [8]="16 17" [1]="1 2 3 4 5 8 11 13 15 18" [9]="19 20 21" [4]="6 7" [6]="12" [5]="9 10" [3]="3 4 5 8 11 13 15 18")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
     declare -A specialized_commands_level_0=()

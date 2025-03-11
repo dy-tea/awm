@@ -5,20 +5,17 @@
 
 // get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(const std::string &modifier) {
-    const std::string modifiers[] = {
-        "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
-    };
 
     for (int i = 0; i != 8; ++i)
-        if (modifier == modifiers[i])
+        if (modifier == MODIFIERS[i])
             return 1 << i;
 
     return 69420;
 }
 
 // create a bind from a space-seperated string of modifiers and key
-Bind *parse_bind(const std::string &definition) {
-    Bind *bind = new Bind;
+Bind *parse_bind(const std::string &definition, BindName name) {
+    Bind *bind = new Bind{name, 0, 0};
 
     std::string token;
     std::stringstream ss(definition);
@@ -56,13 +53,13 @@ Bind *parse_bind(const std::string &definition) {
     return bind;
 }
 
-// helper function to bind a variable from a given table and row name
-void set_bind(const std::string &name, const toml::Table *source,
-              Bind *target) {
-    if (auto [fst, snd] = source->getString(name); fst)
-        if (const Bind *parsed = parse_bind(snd)) {
-            *target = *parsed;
-            delete parsed;
+// add bind to binds if valid
+void Config::set_bind(const std::string &name, toml::Table *source,
+                      const BindName target) {
+    if (auto [valid, value] = source->getString(name); valid)
+        if (const Bind *bind = parse_bind(value, target)) {
+            binds.emplace_back(*bind);
+            delete bind;
         }
 }
 
@@ -377,71 +374,81 @@ bool Config::load() {
     }
 
     // get awm binds
-    std::unique_ptr<toml::Table> binds = config_file.table->getTable("binds");
-    if (binds) {
+    std::unique_ptr<toml::Table> binds_table =
+        config_file.table->getTable("binds");
+    if (binds_table) {
+        // clear binds
+        binds.clear();
+
         // exit bind
-        set_bind("exit", binds.get(), &exit);
+        set_bind("exit", binds_table.get(), BIND_EXIT);
+
+        // ensure exit bind is available
+        if (binds.empty()) {
+            binds.push_back(Bind{BIND_EXIT, WLR_MODIFIER_ALT, XKB_KEY_Escape});
+            notify_send("%s", "No exit bind set, press Alt+Escape to exit awm");
+        }
 
         // window binds
-        auto window_bind = binds->getTable("window");
+        auto window_bind = binds_table->getTable("window");
         if (window_bind) {
             // window_fullscreen bind
-            set_bind("fullscreen", window_bind.get(), &window_fullscreen);
+            set_bind("fullscreen", window_bind.get(), BIND_WINDOW_FULLSCREEN);
 
             // window_previous bind
-            set_bind("previous", window_bind.get(), &window_previous);
+            set_bind("previous", window_bind.get(), BIND_WINDOW_PREVIOUS);
 
             // window_next bind
-            set_bind("next", window_bind.get(), &window_next);
+            set_bind("next", window_bind.get(), BIND_WINDOW_NEXT);
 
             // window_move bind
-            set_bind("move", window_bind.get(), &window_move);
+            set_bind("move", window_bind.get(), BIND_WINDOW_MOVE);
 
             // window_up bind
-            set_bind("up", window_bind.get(), &window_up);
+            set_bind("up", window_bind.get(), BIND_WINDOW_UP);
 
             // window_down bind
-            set_bind("down", window_bind.get(), &window_down);
+            set_bind("down", window_bind.get(), BIND_WINDOW_DOWN);
 
             // window_left bind
-            set_bind("left", window_bind.get(), &window_left);
+            set_bind("left", window_bind.get(), BIND_WINDOW_LEFT);
 
             // window_right bind
-            set_bind("right", window_bind.get(), &window_right);
+            set_bind("right", window_bind.get(), BIND_WINDOW_RIGHT);
 
             // window_close bind
-            set_bind("close", window_bind.get(), &window_close);
+            set_bind("close", window_bind.get(), BIND_WINDOW_CLOSE);
 
             auto swap_bind = window_bind->getTable("swap");
             if (swap_bind) {
                 // window_swap_up bind
-                set_bind("up", swap_bind.get(), &window_swap_up);
+                set_bind("up", swap_bind.get(), BIND_WINDOW_SWAP_UP);
 
                 // window_swap_down bind
-                set_bind("down", swap_bind.get(), &window_swap_down);
+                set_bind("down", swap_bind.get(), BIND_WINDOW_SWAP_DOWN);
 
                 // window_swap_left bind
-                set_bind("left", swap_bind.get(), &window_swap_left);
+                set_bind("left", swap_bind.get(), BIND_WINDOW_SWAP_LEFT);
 
                 // window_swap_right bind
-                set_bind("right", swap_bind.get(), &window_swap_right);
+                set_bind("right", swap_bind.get(), BIND_WINDOW_SWAP_RIGHT);
             }
         }
 
         // workspace binds
-        auto workspace_bind = binds->getTable("workspace");
+        auto workspace_bind = binds_table->getTable("workspace");
         if (workspace_bind) {
             // workspace_tile bind
-            set_bind("tile", workspace_bind.get(), &workspace_tile);
+            set_bind("tile", workspace_bind.get(), BIND_WORKSPACE_TILE);
 
             // workspace_open bind
-            set_bind("open", workspace_bind.get(), &workspace_open);
+            set_bind("open", workspace_bind.get(), BIND_WORKSPACE_OPEN);
 
             // workspace_window_to bind
-            set_bind("window_to", workspace_bind.get(), &workspace_window_to);
+            set_bind("window_to", workspace_bind.get(),
+                     BIND_WORKSPACE_WINDOW_TO);
         }
-    } else
-        wlr_log(WLR_INFO, "%s", "No binds set, using defaults");
+    }
 
     // Get user-defined commands
     std::unique_ptr<toml::Array> command_tables =
@@ -458,7 +465,7 @@ bool Config::load() {
                 auto exec = table.getString("exec");
 
                 if (bind.first && exec.first)
-                    if (Bind *parsed = parse_bind(bind.second)) {
+                    if (Bind *parsed = parse_bind(bind.second, BIND_NONE)) {
                         commands.emplace_back(*parsed, exec.second);
                         delete parsed;
                     }

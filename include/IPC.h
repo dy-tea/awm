@@ -21,6 +21,9 @@ enum IPCMessage {
     IPC_KEYBOARD_LIST,
     IPC_DEVICE_LIST,
     IPC_DEVICE_CURRENT,
+    IPC_BIND_LIST,
+    IPC_BIND_RUN,
+    IPC_BIND_DISPLAY,
 };
 
 struct IPC {

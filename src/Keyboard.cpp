@@ -2,7 +2,7 @@
 
 // execute either a wm bind or command bind, returns true if
 // bind is valid, false otherwise
-bool Keyboard::handle_bind(const Bind bind) {
+bool Keyboard::handle_bind(Bind bind) {
     // retrieve config
     Config *config = server->config;
 
@@ -11,109 +11,136 @@ bool Keyboard::handle_bind(const Bind bind) {
     if (!output)
         return false;
 
-    // handle user-defined binds
-    for (const auto &[cmd_bind, cmd] : config->commands)
-        if (cmd_bind == bind)
-            if (fork() == 0) {
-                execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), nullptr);
-                return true;
-            }
+    // digit pressed
+    int n = 1;
 
-    // handle compositor binds
-    if (bind == config->exit) {
+    // handle digits
+    if (bind.sym >= XKB_KEY_0 && bind.sym <= XKB_KEY_9) {
+        // 0 is on the right of 9 so it makes more sense this way
+        n = XKB_KEY_0 == bind.sym ? 10 : bind.sym - XKB_KEY_0;
+
+        // digit pressed
+        bind.sym = XKB_KEY_NoSymbol;
+    }
+
+    // handle wm binds
+    for (Bind b : config->binds)
+        if (b == bind) {
+            bind.name = b.name;
+            break;
+        }
+
+    switch (bind.name) {
+    case BIND_EXIT:
         // exit compositor
         server->exit();
-    } else if (bind == config->window_fullscreen) {
+        break;
+    case BIND_WINDOW_FULLSCREEN: {
         // fullscreen the active toplevel
         Toplevel *active = output->get_active()->active_toplevel;
 
-        if (active == nullptr)
+        if (!active)
             return false;
 
         active->toggle_fullscreen();
-    } else if (bind == config->window_previous) {
+        break;
+    }
+    case BIND_WINDOW_PREVIOUS:
         // focus the previous toplevel in the active workspace
         output->get_active()->focus_prev();
-    } else if (bind == config->window_next) {
+        break;
+    case BIND_WINDOW_NEXT:
         // focus the next toplevel in the active workspace
         output->get_active()->focus_next();
-    } else if (bind == config->window_move) {
+        break;
+    case BIND_WINDOW_MOVE:
         // move the active toplevel with the mouse
         if (Toplevel *active = output->get_active()->active_toplevel)
             active->begin_interactive(CURSORMODE_MOVE, 0);
-    } else if (bind == config->window_up) {
+        break;
+    case BIND_WINDOW_UP:
         // focus the toplevel in the up direction
         if (Toplevel *up = output->get_active()->in_direction(WLR_DIRECTION_UP))
             output->get_active()->focus_toplevel(up);
-    } else if (bind == config->window_down) {
+        break;
+    case BIND_WINDOW_DOWN:
         // focus the toplevel in the down direction
         if (Toplevel *down =
                 output->get_active()->in_direction(WLR_DIRECTION_DOWN))
             output->get_active()->focus_toplevel(down);
-    } else if (bind == config->window_left) {
+        break;
+    case BIND_WINDOW_LEFT:
         // focus the toplevel in the left direction
         if (Toplevel *left =
                 output->get_active()->in_direction(WLR_DIRECTION_LEFT))
             output->get_active()->focus_toplevel(left);
-    } else if (bind == config->window_right) {
+        break;
+    case BIND_WINDOW_RIGHT:
         // focus the toplevel in the right direction
-        Toplevel *right =
-            output->get_active()->in_direction(WLR_DIRECTION_RIGHT);
-        if (right)
+        if (Toplevel *right =
+                output->get_active()->in_direction(WLR_DIRECTION_RIGHT))
             output->get_active()->focus_toplevel(right);
-    } else if (bind == config->window_close) {
+        break;
+    case BIND_WINDOW_CLOSE:
         // close the active toplevel
         output->get_active()->close_active();
-    } else if (bind == config->window_swap_up) {
+        break;
+    case BIND_WINDOW_SWAP_UP:
         // swap the active toplevel with the one above it
         if (Toplevel *other =
                 output->get_active()->in_direction(WLR_DIRECTION_UP))
             output->get_active()->swap(other);
-    } else if (bind == config->window_swap_down) {
+        break;
+    case BIND_WINDOW_SWAP_DOWN:
         // swap the active toplevel with the one below it
-        Toplevel *other =
-            output->get_active()->in_direction(WLR_DIRECTION_DOWN);
-        if (other)
+        if (Toplevel *other =
+                output->get_active()->in_direction(WLR_DIRECTION_DOWN))
             output->get_active()->swap(other);
-    } else if (bind == config->window_swap_left) {
+        break;
+    case BIND_WINDOW_SWAP_LEFT:
         // swap the active toplevel with the one to the left of it
-        Toplevel *other =
-            output->get_active()->in_direction(WLR_DIRECTION_LEFT);
-        if (other)
+        if (Toplevel *other =
+                output->get_active()->in_direction(WLR_DIRECTION_LEFT))
             output->get_active()->swap(other);
-    } else if (bind == config->window_swap_right) {
+        break;
+    case BIND_WINDOW_SWAP_RIGHT:
         // swap the active toplevel with the one to the right of it
-        Toplevel *other =
-            output->get_active()->in_direction(WLR_DIRECTION_RIGHT);
-        if (other)
+        if (Toplevel *other =
+                output->get_active()->in_direction(WLR_DIRECTION_RIGHT))
             output->get_active()->swap(other);
-    } else if (bind == config->workspace_tile) {
+        break;
+    case BIND_WORKSPACE_TILE:
         // set workspace to tile
         output->get_active()->tile();
-    } else if (bind.sym >= XKB_KEY_0 && bind.sym <= XKB_KEY_9) {
-        // digit pressed
-        const Bind digit_bind = Bind{bind.modifiers, XKB_KEY_NoSymbol};
+        break;
+    case BIND_WORKSPACE_OPEN:
+        // open workspace n
+        return output->set_workspace(n);
+    case BIND_WORKSPACE_WINDOW_TO: {
+        // move active toplevel to workspace n
+        Workspace *current = output->get_active();
+        Workspace *target = output->get_workspace(n);
 
-        // 0 is on the right of 9 so it makes more sense this way
-        const int n = XKB_KEY_0 == bind.sym ? 10 : bind.sym - XKB_KEY_0;
-
-        if (digit_bind == config->workspace_open) {
-            // set workspace to n
-            return output->set_workspace(n);
-        } else if (digit_bind == config->workspace_window_to) {
-            // move active toplevel to workspace n
-            Workspace *current = output->get_active();
-            Workspace *target = output->get_workspace(n);
-
-            if (target == nullptr)
-                return false;
-
-            if (current->active_toplevel)
-                current->move_to(current->active_toplevel, target);
-        } else
+        if (target == nullptr)
             return false;
-    } else
+
+        if (current->active_toplevel)
+            current->move_to(current->active_toplevel, target);
+        break;
+    }
+    case BIND_NONE:
+    default: {
+        // handle user-defined binds
+        for (const auto &[cmd_bind, cmd] : config->commands)
+            if (cmd_bind == bind)
+                if (fork() == 0) {
+                    execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), nullptr);
+                    return true;
+                }
+
         return false;
+    }
+    }
 
     return true;
 }
@@ -237,7 +264,8 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device)
                 keyboard->keysyms_raw(keycode, &syms_raw, &modifiers);
 
             for (uint32_t i = 0; i != nsyms_raw; ++i)
-                handled = keyboard->handle_bind(Bind{modifiers, syms_raw[i]});
+                handled = keyboard->handle_bind(
+                    Bind{BIND_NONE, modifiers, syms_raw[i]});
 
             // translated
             const xkb_keysym_t *syms_translated;
@@ -247,7 +275,7 @@ Keyboard::Keyboard(Server *server, wlr_input_device *device)
             if (modifiers & WLR_MODIFIER_SHIFT || modifiers & WLR_MODIFIER_CAPS)
                 for (uint32_t i = 0; i != nsyms_translated; ++i)
                     handled = keyboard->handle_bind(
-                        Bind{modifiers, syms_translated[i]});
+                        Bind{BIND_NONE, modifiers, syms_translated[i]});
         }
 
         if (!handled) {

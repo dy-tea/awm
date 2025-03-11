@@ -41,7 +41,11 @@ void print_usage() {
                  "\t\t- [l]ist\n"
                  "\t[d]evice\n"
                  "\t\t- [l]ist\n"
-                 "\t\t- [c]urrent\n");
+                 "\t\t- [c]urrent\n"
+                 "\t[b]ind\n"
+                 "\t\t- [l]ist\n"
+                 "\t\t- [r]un <name>\n"
+                 "\t\t- [d]isplay <name>\n");
 }
 
 int arg_index = 0;
@@ -135,6 +139,21 @@ int main(int argc, char **argv) {
             message = "d l";
         else if (group[0] == 'c')
             message = "d c";
+    }
+
+    // group bind
+    if (group[0] == 'b') {
+        group = next(argc, argv);
+
+        if (group[0] == 'l')
+            message = "b l";
+        else if (group[0] == 'r') {
+            group = next(argc, argv);
+            message = "b r " + group;
+        } else if (group[0] == 'd') {
+            group = next(argc, argv);
+            message = "b d " + group;
+        }
     }
 
     // invalid group or command

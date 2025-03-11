@@ -6,6 +6,7 @@ awmsg [<FLAGS>]... (workspace) <WORKSPACE-OPTION>;
 awmsg [<FLAGS>]... (toplevel) <TOPLEVEL-OPTION>;
 awmsg [<FLAGS>]... (keyboard) <KEYBOARD-OPTION>;
 awmsg [<FLAGS>]... (device) <DEVICE-OPTION>;
+awmsg [<FLAGS>]... (bind) <BIND-OPTION>;
 
 <FLAGS> ::= (-c | --continuous) "keep reading events until cancelled";
 
@@ -21,3 +22,7 @@ awmsg [<FLAGS>]... (device) <DEVICE-OPTION>;
 
 <DEVICE-OPTION> ::= (list) "list devices"
                   | (current) "show current device";
+
+<BIND-OPTION> ::= (list) "list key bindings"
+                | (run <NAME>) "run key binding for name"
+                | (display <NAME>) "display key binding for name";

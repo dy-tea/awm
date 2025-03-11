@@ -5,7 +5,39 @@
 #include <libinput.h>
 #include <vector>
 
+const std::string MODIFIERS[] = {
+    "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
+};
+
+enum BindName {
+    BIND_NONE,
+    BIND_EXIT,
+    BIND_WINDOW_FULLSCREEN,
+    BIND_WINDOW_PREVIOUS,
+    BIND_WINDOW_NEXT,
+    BIND_WINDOW_MOVE,
+    BIND_WINDOW_UP,
+    BIND_WINDOW_DOWN,
+    BIND_WINDOW_LEFT,
+    BIND_WINDOW_RIGHT,
+    BIND_WINDOW_CLOSE,
+    BIND_WINDOW_SWAP_UP,
+    BIND_WINDOW_SWAP_DOWN,
+    BIND_WINDOW_SWAP_LEFT,
+    BIND_WINDOW_SWAP_RIGHT,
+    BIND_WORKSPACE_TILE,
+    BIND_WORKSPACE_OPEN,
+    BIND_WORKSPACE_WINDOW_TO,
+};
+
+const std::string BIND_NAMES[] = {
+    "none",      "exit",      "fullscreen", "previous", "next",  "move",
+    "up",        "down",      "left",       "right",    "close", "swap_up",
+    "swap_down", "swap_left", "swap_right", "tile",     "open",  "window_to",
+};
+
 struct Bind {
+    BindName name;
     uint32_t modifiers{0};
     xkb_keysym_t sym;
 
@@ -100,64 +132,18 @@ struct Config {
         } touchpad;
     } cursor;
 
-    // exit compositor
-    struct Bind exit{WLR_MODIFIER_ALT, XKB_KEY_Escape};
+    // compostior binds
+    std::vector<Bind> binds;
 
-    // fullscreen the active toplevel
-    struct Bind window_fullscreen{};
-
-    // focus the previous toplevel in the active workspace
-    struct Bind window_previous{};
-
-    // focus the next toplevel in the active workspace
-    struct Bind window_next{};
-
-    // move the active toplevel with the mouse
-    struct Bind window_move{};
-
-    // focus the window above the active one
-    struct Bind window_up{};
-
-    // focus the window below the active one
-    struct Bind window_down{};
-
-    // focus the window left of the active one
-    struct Bind window_left{};
-
-    // focus the window right of the active one
-    struct Bind window_right{};
-
-    // close the active toplevel
-    struct Bind window_close{};
-
-    // swap active and above toplevels
-    struct Bind window_swap_up{};
-
-    // swap active and below toplevels
-    struct Bind window_swap_down{};
-
-    // swap active and left toplevels
-    struct Bind window_swap_left{};
-
-    // swap active and above toplevels
-    struct Bind window_swap_right{};
-
-    // set workspace to tile
-    struct Bind workspace_tile{};
-
-    // open workspace n
-    struct Bind workspace_open{};
-
-    // move active toplevel to workspace n
-    struct Bind workspace_window_to{};
-
+    // outputs
     std::vector<OutputConfig *> outputs;
 
     Config();
     explicit Config(const std::string &path);
     ~Config() = default;
 
+    void set_bind(const std::string &name, toml::Table *source,
+                  const BindName target);
     bool load();
-
     void update(const struct Server *server);
 };

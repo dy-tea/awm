@@ -134,6 +134,21 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
                 else if (token[0] == 'c') // device current
                     message = IPC_DEVICE_CURRENT;
             }
+        } else if (token[0] == 'b') { // bind
+            if (std::getline(ss, token, ' ')) {
+                if (token[0] == 'l') // bind list
+                    message = IPC_BIND_LIST;
+                else if (token[0] == 'r') { // bind run
+                    if (std::getline(ss, token, ' ')) {
+                        data = token;
+                        message = IPC_BIND_RUN;
+                    }
+                } else if (token[0] == 'd') // bind display
+                    if (std::getline(ss, token, ' ')) {
+                        data = token;
+                        message = IPC_BIND_DISPLAY;
+                    }
+            }
         } else
             notify_send("unknown command `%s`", token.c_str());
     }
@@ -362,6 +377,77 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             }
         }
 
+        break;
+    }
+    case IPC_BIND_LIST: {
+        int i = 0;
+        for (const Bind &bind : server->config->binds) {
+            // get modifier string
+            std::string modifiers = "";
+            for (int j = 0; j != 8; ++j)
+                if (bind.modifiers & 1 << j)
+                    modifiers += MODIFIERS[j] + " ";
+
+            // get the name of the keysym
+            char buffer[255];
+            xkb_keysym_get_name(bind.sym, buffer, 255);
+            std::string name(buffer);
+
+            // add to list of binds
+            j[i++] = {
+                {"name", BIND_NAMES[bind.name]},
+                {"modifiers", modifiers.empty()
+                                  ? "None"
+                                  : modifiers.substr(0, modifiers.size() - 1)},
+                {"sym", name.empty() ? "Number" : name},
+            };
+        }
+        break;
+    }
+    case IPC_BIND_RUN: {
+        for (unsigned long i = 0; i != BIND_NAMES->length(); ++i) {
+            if (data == BIND_NAMES[i]) {
+                Keyboard *keyboard =
+                    wl_container_of(server->keyboards.next, keyboard, link);
+                keyboard->handle_bind(Bind{static_cast<BindName>(i), 0, 0});
+                break;
+            }
+        }
+        break;
+    }
+    case IPC_BIND_DISPLAY: {
+        for (unsigned long i = 0; i != BIND_NAMES->length(); ++i) {
+            if (data == BIND_NAMES[i]) {
+                // get the bind
+                Bind bind{};
+                for (Bind b : server->config->binds)
+                    if (b.name == i) {
+                        bind = b;
+                        break;
+                    }
+
+                // get modifier string
+                std::string modifiers = "";
+                for (int j = 0; j != 8; ++j)
+                    if (bind.modifiers & 1 << j)
+                        modifiers += MODIFIERS[j] + " ";
+
+                // get the name of the keysym
+                std::string name;
+                xkb_keysym_get_name(bind.sym, name.data(), sizeof(name));
+
+                // display
+                j = {
+                    {"name", BIND_NAMES[i]},
+                    {"modifiers",
+                     modifiers.empty()
+                         ? "None"
+                         : modifiers.substr(0, modifiers.size() - 1)},
+                    {"sym", name.empty() ? "Number" : name},
+                };
+                break;
+            }
+        }
         break;
     }
     case IPC_NONE:

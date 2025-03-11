@@ -240,6 +240,10 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
         // send mods to seat
         wlr_seat_keyboard_notify_modifiers(keyboard->server->seat,
                                            &keyboard->wlr_keyboard->modifiers);
+        // TODO: Hacky way to detect layout switch in IPC
+        // should be triggered on layout switch
+        if (IPC *ipc = keyboard->server->ipc)
+            ipc->notify_clients(IPC_DEVICE_CURRENT);
     };
     wl_signal_add(&wlr_keyboard->events.modifiers, &modifiers);
 

@@ -47,7 +47,8 @@ cont:
 
             if (modifier == 69420) {
                 // not a keysym or modifier, tell user
-                notify_send("No such keycode or modifier '%s'", token.c_str());
+                notify_send("Config", "No such keycode or modifier '%s'",
+                            token.c_str());
                 delete bind;
                 return nullptr;
             }
@@ -81,7 +82,8 @@ template <typename T> void connect(const std::pair<bool, T> &pair, T *target) {
 Config::Config() {
     path = "";
     last_write_time = std::filesystem::file_time_type::min();
-    notify_send("%s", "no config loaded, press Alt+Escape to exit awm");
+    notify_send("Config", "%s",
+                "no config loaded, press Alt+Escape to exit awm");
 }
 
 Config::Config(const std::string &path) {
@@ -102,7 +104,7 @@ bool Config::load() {
 
     // false if no config file
     if (!config_file.table) {
-        notify_send("Could not parse config file, %s",
+        notify_send("Config", "Could not parse config file, %s",
                     config_file.errmsg.c_str());
         return false;
     }
@@ -150,9 +152,6 @@ bool Config::load() {
                     }
                 }
         }
-
-        // ipc
-        connect(startup->getBool("ipc"), &ipc);
     } else
         wlr_log(WLR_INFO, "%s", "No startup configuration found, ingoring");
 
@@ -171,6 +170,16 @@ bool Config::load() {
                     exit_commands.emplace_back(command);
             }
         }
+    }
+
+    // ipc
+    std::unique_ptr<toml::Table> ipc_table = config_file.table->getTable("ipc");
+    if (ipc_table) {
+        // enabled
+        connect(ipc_table->getBool("enabled"), &ipc.enabled);
+
+        // spawn
+        connect(ipc_table->getBool("spawn"), &ipc.spawn);
     }
 
     // get keyboard config
@@ -215,7 +224,8 @@ bool Config::load() {
                 else if (snd == "adaptive")
                     *dest = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
                 else
-                    notify_send("No such option in pointer.%s.profile ['none', "
+                    notify_send("Config",
+                                "No such option in pointer.%s.profile ['none', "
                                 "'flat', 'adaptive']: %s",
                                 name.c_str(), snd.c_str());
             }
@@ -271,6 +281,7 @@ bool Config::load() {
                         LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY;
                 else
                     notify_send(
+                        "Config",
                         "No such option in pointer.touchpad.drag_lock ['none', "
                         "'timeout', 'enabled', 'sticky']: %s",
                         drag_lock.second.c_str());
@@ -287,6 +298,7 @@ bool Config::load() {
                         LIBINPUT_CONFIG_TAP_MAP_LMR;
                 else
                     notify_send(
+                        "Config",
                         "No such option in pointer.tap_button_map ['lrm', "
                         "'lmr']: %s",
                         tap_button_map.second.c_str());
@@ -329,7 +341,8 @@ bool Config::load() {
                     cursor.touchpad.scroll_method =
                         LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
                 else
-                    notify_send("No such option in "
+                    notify_send("Config",
+                                "No such option in "
                                 "pointer.touchpad.scroll_method ['none', "
                                 "'2fg', 'edge', 'button']: %s",
                                 scroll_method.second.c_str());
@@ -348,7 +361,8 @@ bool Config::load() {
                     cursor.touchpad.click_method =
                         LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER;
                 else
-                    notify_send("No such option in "
+                    notify_send("Config",
+                                "No such option in "
                                 "pointer.touchpad.click_method ['none', "
                                 "'buttonareas', 'clickfinger']: %s",
                                 click_method.second.c_str());
@@ -366,7 +380,8 @@ bool Config::load() {
                     cursor.touchpad.event_mode =
                         LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
                 else
-                    notify_send("No such option in pointer.touchpad.event_mode "
+                    notify_send("Config",
+                                "No such option in pointer.touchpad.event_mode "
                                 "['enabled', "
                                 "'disabled', 'mousedisabled']: %s",
                                 snd.c_str());
@@ -395,7 +410,8 @@ bool Config::load() {
         // ensure exit bind is available
         if (binds.empty()) {
             binds.push_back(Bind{BIND_EXIT, WLR_MODIFIER_ALT, XKB_KEY_Escape});
-            notify_send("%s", "No exit bind set, press Alt+Escape to exit awm");
+            notify_send("Config", "%s",
+                        "No exit bind set, press Alt+Escape to exit awm");
         }
 
         // window binds
@@ -533,7 +549,7 @@ bool Config::load() {
                 // add to output configs if enough values are set
                 if (oc->name.empty() || !oc->width || !oc->height ||
                     oc->refresh <= 0.0) {
-                    notify_send("%s",
+                    notify_send("Config", "%s",
                                 "monitor config is missing one of the required "
                                 "fields: name, width, height, refresh");
                     delete oc;
@@ -579,5 +595,5 @@ void Config::update(const Server *server) {
     server->cursor->reconfigure_all();
 
     // notify user of reload
-    notify_send("%s", "config reload complete");
+    notify_send("Config", "%s", "config reload complete");
 }

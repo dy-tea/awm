@@ -101,58 +101,89 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
     wlr_log(WLR_INFO, "received command `%s`", command.c_str());
 
     if (std::getline(ss, token, ' ')) {
-        if (token[0] == 'e') // exit
+        switch (token[0]) {
+        case 'e': // exit
             message = IPC_EXIT;
-        else if (token[0] == 'o') { // output
-            if (std::getline(ss, token, ' ')) {
-                if (token[0] == 'l') // output list
-                    message = IPC_OUTPUT_LIST;
-                else if (token[0] == 'm') // output modes
-                    message = IPC_OUTPUT_MODES;
+            break;
+        case 's': // spawn
+            if (std::getline(ss, data, ' ')) {
+                message = IPC_SPAWN;
+                break;
             }
-        } else if (token[0] == 'w') { // workspace
+            goto unknown;
+        case 'o': // output
             if (std::getline(ss, token, ' ')) {
-                if (token[0] == 'l') // workspace list
+                if (token[0] == 'l') { // output list
+                    message = IPC_OUTPUT_LIST;
+                    break;
+                } else if (token[0] == 'm') { // output modes
+                    message = IPC_OUTPUT_MODES;
+                    break;
+                }
+            }
+            goto unknown;
+        case 'w': // workspace
+            if (std::getline(ss, token, ' ')) {
+                if (token[0] == 'l') { // workspace list
                     message = IPC_WORKSPACE_LIST;
-                else if (token[0] == 's') // workspace set
+                    break;
+                } else if (token[0] == 's') // workspace set
                     if (std::getline(ss, token, ' ')) {
                         data = token;
                         message = IPC_WORKSPACE_SET;
+                        break;
                     }
             }
-        } else if (token[0] == 't') { // toplevel
+            goto unknown;
+        case 't': // toplevel
             if (std::getline(ss, token, ' '))
-                if (token[0] == 'l') // toplevel list
+                if (token[0] == 'l') { // toplevel list
                     message = IPC_TOPLEVEL_LIST;
-        } else if (token[0] == 'k') { // keyboard
+                    break;
+                }
+            goto unknown;
+        case 'k': // keyboard
             if (std::getline(ss, token, ' '))
-                if (token[0] == 'l') // keyboard list
+                if (token[0] == 'l') { // keyboard list
                     message = IPC_KEYBOARD_LIST;
-        } else if (token[0] == 'd') { // device
+                    break;
+                }
+            goto unknown;
+        case 'd': // device
             if (std::getline(ss, token, ' ')) {
-                if (token[0] == 'l') // device list
+                if (token[0] == 'l') { // device list
                     message = IPC_DEVICE_LIST;
-                else if (token[0] == 'c') // device current
+                    break;
+                } else if (token[0] == 'c') { // device current
                     message = IPC_DEVICE_CURRENT;
+                    break;
+                }
             }
-        } else if (token[0] == 'b') { // bind
+            goto unknown;
+        case 'b': // bind
             if (std::getline(ss, token, ' ')) {
-                if (token[0] == 'l') // bind list
+                if (token[0] == 'l') { // bind list
                     message = IPC_BIND_LIST;
-                else if (token[0] == 'r') { // bind run
+                    break;
+                } else if (token[0] == 'r') { // bind run
                     if (std::getline(ss, token, ' ')) {
                         data = token;
                         message = IPC_BIND_RUN;
+                        break;
                     }
                 } else if (token[0] == 'd') // bind display
                     if (std::getline(ss, token, ' ')) {
                         data = token;
                         message = IPC_BIND_DISPLAY;
+                        break;
                     }
             }
-        } else
-            notify_send("unknown command `%s`", token.c_str());
-    }
+        default:
+        unknown:
+            notify_send("IPC", "unknown command `%s`", token.c_str());
+        }
+    } else
+        notify_send("IPC", "received empty command");
 
     // subscribe to command if continuous
     if (continuous && message != IPC_NONE) {
@@ -172,6 +203,11 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     switch (message) {
     case IPC_EXIT:
         server->exit();
+        break;
+    case IPC_SPAWN:
+        if (server->config->ipc.spawn)
+            if (fork() == 0)
+                execl("/bin/sh", "/bin/sh", "-c", data.c_str(), nullptr);
         break;
     case IPC_OUTPUT_LIST: {
         Output *output, *tmp;
@@ -266,7 +302,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             server->focused_output()->set_workspace(n);
         } catch (std::invalid_argument &e) {
             // if your script is incorrect it is better to notify the user
-            notify_send("invalid workspace number `%s`", data.c_str());
+            notify_send("IPC", "invalid workspace number `%s`", data.c_str());
         }
 
         // we do not set any json
@@ -281,7 +317,8 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         wl_list_for_each_safe(o, t0, &server->output_manager->outputs, link)
             wl_list_for_each_safe(w, t1, &o->workspaces, link) {
             wl_list_for_each_safe(t, t2, &w->toplevels, link) {
-                // toplevels are indexed by their pointer as title is non-unique
+                // toplevels are indexed by their pointer as title is
+                // non-unique
                 j[string_format("%p", t)] = {
                     {"title", t->title()},
                     {"x", t->geometry.x},
@@ -481,12 +518,12 @@ void IPC::notify_clients(const IPCMessage message) {
                 // write to client
                 if (send(client_fd, data.c_str(), data.size(), MSG_NOSIGNAL) ==
                     -1) {
-                    // close connection and remove subscription if write failed
-                    wlr_log(
-                        WLR_ERROR,
-                        "failed to write to client with fd `%d` on path `%s`, "
-                        "closing connection",
-                        client_fd, path.c_str());
+                    // close connection and remove subscription if write
+                    // failed
+                    wlr_log(WLR_ERROR,
+                            "failed to write to client with fd `%d` on "
+                            "path `%s`, closing connection",
+                            client_fd, path.c_str());
                     close(client_fd);
                     disconnected = true;
                     break;

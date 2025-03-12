@@ -1,6 +1,6 @@
 # complgen aot --bash-script awmsg.bash --fish-script awmsg.fish --zsh-script awmsg.zsh ./awmsg.usage
 
-awmsg (help | exit);
+awmsg ((help) "show help" | (exit) "exit awm" | (spawn <COMMAND>) "spawn a command");
 awmsg [<FLAGS>]... (output) <OUTPUT-OPTION>;
 awmsg [<FLAGS>]... (workspace) <WORKSPACE-OPTION>;
 awmsg [<FLAGS>]... (toplevel) <TOPLEVEL-OPTION>;

@@ -228,6 +228,7 @@ void Toplevel::create_handle() {
         //  toplevel
 
         notify_send(
+            "WARNING"
             "%s",
             "Minimizing foreign toplevels is not supported, expect issues");
         wlr_scene_node_lower_to_bottom(&toplevel->scene_tree->node);

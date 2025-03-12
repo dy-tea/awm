@@ -13,6 +13,7 @@ using json = nlohmann::json;
 enum IPCMessage {
     IPC_NONE,
     IPC_EXIT,
+    IPC_SPAWN,
     IPC_OUTPUT_LIST,
     IPC_OUTPUT_MODES,
     IPC_WORKSPACE_LIST,

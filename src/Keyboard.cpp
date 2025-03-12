@@ -22,6 +22,7 @@ void Keyboard::update_config() const {
     if (!((keymap = xkb_keymap_new_from_names(context, &names,
                                               XKB_KEYMAP_COMPILE_NO_FLAGS)))) {
         notify_send(
+            "Config",
             "failed to load keymap - layout: %s, model: %s, variant: %s",
             names.layout, names.model, names.variant);
 

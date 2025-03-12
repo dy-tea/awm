@@ -7,7 +7,8 @@
 
 // send a notification
 template <typename... Args>
-void notify_send(const std::string &format, Args... args) {
+void notify_send(const std::string title, const std::string &format,
+                 Args... args) {
     // format message
     const int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
     if (size_s <= 0)
@@ -23,7 +24,7 @@ void notify_send(const std::string &format, Args... args) {
     // send notification
     if (fork() == 0) {
         execl("/bin/sh", "/bin/sh", "-c",
-              ("notify-send -a awm WARNING \"" + message + "\"").c_str(),
+              ("notify-send -a awm " + title + "\"" + message + "\"").c_str(),
               nullptr);
     }
 }

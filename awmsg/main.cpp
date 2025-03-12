@@ -29,6 +29,7 @@ void print_usage() {
                  "groups:\n"
                  "\t[h]elp\n"
                  "\t[e]xit\n"
+                 "\t[s]pawn <command>\n"
                  "\t[o]utput\n"
                  "\t\t- [l]ist\n"
                  "\t\t- [m]odes\n"
@@ -81,6 +82,13 @@ int main(int argc, char **argv) {
     }
 
     std::string message = "";
+
+    // group spawn
+    if (group[0] == 's') {
+        group = next(argc, argv);
+
+        message = "s " + group;
+    }
 
     // group exit
     if (group[0] == 'e')

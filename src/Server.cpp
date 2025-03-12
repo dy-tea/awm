@@ -732,7 +732,7 @@ Server::Server(Config *config) : config(config) {
 #endif
 
     // start IPC
-    if (config->ipc)
+    if (config->ipc.enabled)
         ipc = new IPC(this);
 
     // set up signal handler

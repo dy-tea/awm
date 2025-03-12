@@ -152,3 +152,13 @@ install_data(
   install_tag: 'runtime',
   rename: '_awmsg',
 )
+
+# tests
+if get_option('tests')
+  # tests
+  executable(
+    'awmtest',
+    ['awmtest/main.cpp'],
+    dependencies: nlohmann_json,
+  )
+endif

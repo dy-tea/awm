@@ -6,7 +6,6 @@
 [startup]
 exec = ["hyprpaper"] # list of commands to run on startup
 renderer = "auto"    # "gles2", "pixman", "vulkan"
-ipc = true           # enable ipc server, controllable with awmsg, enabled by default
 
 # env variables to set on startup
 [[startup.env]]
@@ -15,6 +14,10 @@ ELECTRON_OZONE_PLATFORM_HINT = "wayland" # set electron apps to use wayland
 
 [exit]
 exec = ["echo \"exiting awm\""] # list of commands to run on exit
+
+[ipc]
+enabled = true # enable ipc server, controllable with awmsg, enabled by default
+spawn = true   # enable ipc spawm command, enabled by default
 
 [keyboard] # default keyboard layout, optional
 layout = "us"

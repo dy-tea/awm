@@ -1,35 +1,38 @@
 #compdef awmsg
 
 _awmsg () {
-    local -a literals=("help" "exit" "-c" "--continuous" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "display")
+    local -a literals=("help" "exit" "spawn" "-c" "--continuous" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "display")
 
     local -A descriptions
-    descriptions[3]="keep reading events until cancelled"
+    descriptions[1]="show help"
+    descriptions[2]="exit awm"
+    descriptions[3]="spawn a command"
     descriptions[4]="keep reading events until cancelled"
-    descriptions[6]="list outputs"
-    descriptions[7]="list output modes"
-    descriptions[9]="list workspaces"
-    descriptions[10]="set current workspace to num"
-    descriptions[12]="list toplevels"
-    descriptions[14]="list keyboards"
-    descriptions[16]="list devices"
-    descriptions[17]="show current device"
-    descriptions[19]="list key bindings"
-    descriptions[20]="run key binding for name"
-    descriptions[21]="display key binding for name"
+    descriptions[5]="keep reading events until cancelled"
+    descriptions[7]="list outputs"
+    descriptions[8]="list output modes"
+    descriptions[10]="list workspaces"
+    descriptions[11]="set current workspace to num"
+    descriptions[13]="list toplevels"
+    descriptions[15]="list keyboards"
+    descriptions[17]="list devices"
+    descriptions[18]="show current device"
+    descriptions[20]="list key bindings"
+    descriptions[21]="run key binding for name"
+    descriptions[22]="display key binding for name"
 
     local -A literal_transitions
-    literal_transitions[1]="([1]=2 [2]=2 [3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8 [18]=9)"
-    literal_transitions[3]="([3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8 [18]=9)"
-    literal_transitions[4]="([6]=2 [7]=2)"
-    literal_transitions[5]="([9]=2 [10]=11)"
-    literal_transitions[6]="([12]=2)"
-    literal_transitions[7]="([14]=2)"
-    literal_transitions[8]="([16]=2 [17]=2)"
-    literal_transitions[9]="([19]=2 [20]=10 [21]=10)"
+    literal_transitions[1]="([1]=2 [2]=2 [3]=3 [4]=4 [5]=4 [6]=5 [9]=6 [12]=7 [14]=8 [16]=9 [19]=10)"
+    literal_transitions[4]="([4]=4 [5]=4 [6]=5 [9]=6 [12]=7 [14]=8 [16]=9 [19]=10)"
+    literal_transitions[5]="([7]=2 [8]=2)"
+    literal_transitions[6]="([10]=2 [11]=12)"
+    literal_transitions[7]="([13]=2)"
+    literal_transitions[8]="([15]=2)"
+    literal_transitions[9]="([17]=2 [18]=2)"
+    literal_transitions[10]="([20]=2 [21]=11 [22]=11)"
 
     local -A match_anything_transitions
-    match_anything_transitions=([10]=2 [11]=2)
+    match_anything_transitions=([12]=2 [11]=2 [3]=2)
 
     declare -A subword_transitions
 
@@ -65,7 +68,7 @@ _awmsg () {
 
         return 1
     done
-    declare -A literal_transitions_level_0=([7]="14" [8]="16 17" [1]="1 2 3 4 5 8 11 13 15 18" [9]="19 20 21" [4]="6 7" [6]="12" [5]="9 10" [3]="3 4 5 8 11 13 15 18")
+    declare -A literal_transitions_level_0=([7]="13" [8]="15" [1]="1 2 3 4 5 6 9 12 14 16 19" [9]="17 18" [4]="4 5 6 9 12 14 16 19" [10]="20 21 22" [6]="10 11" [5]="7 8")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
     declare -A specialized_commands_level_0=()

@@ -31,19 +31,19 @@ _awmsg () {
     local words cword
     _get_comp_words_by_ref -n "$COMP_WORDBREAKS" words cword
 
-    declare -a literals=(help exit -c --continuous output list modes workspace list set toplevel list keyboard list device list current bind list run display)
+    declare -a literals=(help exit spawn -c --continuous output list modes workspace list set toplevel list keyboard list device list current bind list run display)
     declare -a regexes=()
     declare -A literal_transitions=()
     declare -A nontail_transitions=()
-    literal_transitions[0]="([0]=1 [1]=1 [2]=2 [3]=2 [4]=3 [7]=4 [10]=5 [12]=6 [14]=7 [17]=8)"
-    literal_transitions[2]="([2]=2 [3]=2 [4]=3 [7]=4 [10]=5 [12]=6 [14]=7 [17]=8)"
-    literal_transitions[3]="([5]=1 [6]=1)"
-    literal_transitions[4]="([8]=1 [9]=10)"
-    literal_transitions[5]="([11]=1)"
-    literal_transitions[6]="([13]=1)"
-    literal_transitions[7]="([15]=1 [16]=1)"
-    literal_transitions[8]="([18]=1 [19]=9 [20]=9)"
-    declare -A match_anything_transitions=([9]=1 [10]=1)
+    literal_transitions[0]="([0]=1 [1]=1 [2]=2 [3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8 [18]=9)"
+    literal_transitions[3]="([3]=3 [4]=3 [5]=4 [8]=5 [11]=6 [13]=7 [15]=8 [18]=9)"
+    literal_transitions[4]="([6]=1 [7]=1)"
+    literal_transitions[5]="([9]=1 [10]=11)"
+    literal_transitions[6]="([12]=1)"
+    literal_transitions[7]="([14]=1)"
+    literal_transitions[8]="([16]=1 [17]=1)"
+    literal_transitions[9]="([19]=1 [20]=10 [21]=10)"
+    declare -A match_anything_transitions=([11]=1 [10]=1 [2]=1)
     declare -A subword_transitions
 
     local state=0
@@ -80,7 +80,7 @@ _awmsg () {
         return 1
     done
 
-    declare -A literal_transitions_level_0=([6]="13" [7]="15 16" [0]="0 1 2 3 4 7 10 12 14 17" [8]="18 19 20" [3]="5 6" [5]="11" [4]="8 9" [2]="2 3 4 7 10 12 14 17")
+    declare -A literal_transitions_level_0=([6]="12" [7]="14" [0]="0 1 2 3 4 5 8 11 13 15 18" [8]="16 17" [3]="3 4 5 8 11 13 15 18" [9]="19 20 21" [5]="9 10" [4]="6 7")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
 

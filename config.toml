@@ -62,7 +62,7 @@ workspace.tile = "Alt t"
 workspace.open = "Alt Number"
 workspace.window_to = "Alt Shift Number"
 # modifiers: "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
-# Number is a special token that will be replaced with the number key pressed - 1
+# Number is a special token that will be replaced with the number key pressed
 
 # name, width, height and refresh are required fields
 # monitors do not need to be in the config to function

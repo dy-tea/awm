@@ -51,10 +51,10 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
 
             // save geometry
-            toplevel->geometry.width = width;
-            toplevel->geometry.height = height;
-            toplevel->geometry.x = x;
-            toplevel->geometry.y = y;
+            toplevel->geometry = {x, y, static_cast<int>(width),
+                                  static_cast<int>(height)};
+            memcpy(&toplevel->saved_geometry, &toplevel->geometry,
+                   sizeof(wlr_box));
 
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel, true);

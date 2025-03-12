@@ -36,6 +36,10 @@ const std::string BIND_NAMES[] = {
     "swap_down", "swap_left", "swap_right", "tile",     "open",  "window_to",
 };
 
+const std::string MOUSE_BUTTONS[] = {
+    "MouseLeft", "MouseRight", "MouseMiddle", "MouseBack", "MouseForward",
+};
+
 struct Bind {
     BindName name;
     uint32_t modifiers{0};

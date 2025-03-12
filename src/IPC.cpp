@@ -394,6 +394,10 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             xkb_keysym_get_name(bind.sym, buffer, 255);
             std::string name(buffer);
 
+            // handle mouse binds
+            if (bind.sym >= 0x20000000 + 272 && bind.sym <= 0x20000000 + 276)
+                name = MOUSE_BUTTONS[bind.sym - 0x20000000 - 272];
+
             // add to list of binds
             j[i++] = {
                 {"name", BIND_NAMES[bind.name]},
@@ -408,9 +412,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     case IPC_BIND_RUN: {
         for (unsigned long i = 0; i != BIND_NAMES->length(); ++i) {
             if (data == BIND_NAMES[i]) {
-                Keyboard *keyboard =
-                    wl_container_of(server->keyboards.next, keyboard, link);
-                keyboard->handle_bind(Bind{static_cast<BindName>(i), 0, 0});
+                server->handle_bind(Bind{static_cast<BindName>(i), 0, 0});
                 break;
             }
         }

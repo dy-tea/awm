@@ -1,6 +1,5 @@
 #include "Server.h"
 #include "pixman.h"
-#include <wayland-util.h>
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
@@ -111,6 +110,18 @@ Cursor::Cursor(Server *server) : server(server) {
             cursor->pressed_button =
                 static_cast<CursorButton>(event->button - 271);
         }
+
+        // emit a keyboard event for the pressed button
+        Keyboard *keyboard =
+            wl_container_of(server->keyboards.next, keyboard, link);
+        uint32_t time_msec = event->time_msec;
+        wlr_keyboard_key_event *key_event = new wlr_keyboard_key_event{
+            time_msec,
+            0,
+            false,
+            static_cast<wl_keyboard_key_state>(event->state),
+        };
+        wl_signal_emit(&keyboard->wlr_keyboard->events.key, key_event);
     };
     wl_signal_add(&cursor->events.button, &button);
 

@@ -139,4 +139,6 @@ struct Server {
                           double *sx, double *sy);
     LayerSurface *layer_surface_at(double lx, double ly, wlr_surface **surface,
                                    double *sx, double *sy);
+
+    bool handle_bind(Bind bind);
 };

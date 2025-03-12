@@ -114,6 +114,148 @@ Output *Server::focused_output() const {
     return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
 }
 
+// execute either a wm bind or command bind, returns true if
+// bind is valid, false otherwise
+bool Server::handle_bind(Bind bind) {
+    // get current output
+    Output *output = focused_output();
+    if (!output)
+        return false;
+
+    // digit pressed
+    int n = 1;
+
+    // handle digits
+    if (bind.sym >= XKB_KEY_0 && bind.sym <= XKB_KEY_9) {
+        // 0 is on the right of 9 so it makes more sense this way
+        n = XKB_KEY_0 == bind.sym ? 10 : bind.sym - XKB_KEY_0;
+
+        // digit pressed
+        bind.sym = XKB_KEY_NoSymbol;
+    }
+
+    // locate in wm binds
+    for (Bind b : config->binds)
+        if (b == bind) {
+            bind.name = b.name;
+            break;
+        }
+
+    switch (bind.name) {
+    case BIND_EXIT:
+        // exit compositor
+        exit();
+        break;
+    case BIND_WINDOW_FULLSCREEN: {
+        // fullscreen the active toplevel
+        Toplevel *active = output->get_active()->active_toplevel;
+
+        if (!active)
+            return false;
+
+        active->toggle_fullscreen();
+        break;
+    }
+    case BIND_WINDOW_PREVIOUS:
+        // focus the previous toplevel in the active workspace
+        output->get_active()->focus_prev();
+        break;
+    case BIND_WINDOW_NEXT:
+        // focus the next toplevel in the active workspace
+        output->get_active()->focus_next();
+        break;
+    case BIND_WINDOW_MOVE:
+        // move the active toplevel with the mouse
+        if (Toplevel *active = output->get_active()->active_toplevel)
+            active->begin_interactive(CURSORMODE_MOVE, 0);
+        break;
+    case BIND_WINDOW_UP:
+        // focus the toplevel in the up direction
+        if (Toplevel *up = output->get_active()->in_direction(WLR_DIRECTION_UP))
+            output->get_active()->focus_toplevel(up);
+        break;
+    case BIND_WINDOW_DOWN:
+        // focus the toplevel in the down direction
+        if (Toplevel *down =
+                output->get_active()->in_direction(WLR_DIRECTION_DOWN))
+            output->get_active()->focus_toplevel(down);
+        break;
+    case BIND_WINDOW_LEFT:
+        // focus the toplevel in the left direction
+        if (Toplevel *left =
+                output->get_active()->in_direction(WLR_DIRECTION_LEFT))
+            output->get_active()->focus_toplevel(left);
+        break;
+    case BIND_WINDOW_RIGHT:
+        // focus the toplevel in the right direction
+        if (Toplevel *right =
+                output->get_active()->in_direction(WLR_DIRECTION_RIGHT))
+            output->get_active()->focus_toplevel(right);
+        break;
+    case BIND_WINDOW_CLOSE:
+        // close the active toplevel
+        output->get_active()->close_active();
+        break;
+    case BIND_WINDOW_SWAP_UP:
+        // swap the active toplevel with the one above it
+        if (Toplevel *other =
+                output->get_active()->in_direction(WLR_DIRECTION_UP))
+            output->get_active()->swap(other);
+        break;
+    case BIND_WINDOW_SWAP_DOWN:
+        // swap the active toplevel with the one below it
+        if (Toplevel *other =
+                output->get_active()->in_direction(WLR_DIRECTION_DOWN))
+            output->get_active()->swap(other);
+        break;
+    case BIND_WINDOW_SWAP_LEFT:
+        // swap the active toplevel with the one to the left of it
+        if (Toplevel *other =
+                output->get_active()->in_direction(WLR_DIRECTION_LEFT))
+            output->get_active()->swap(other);
+        break;
+    case BIND_WINDOW_SWAP_RIGHT:
+        // swap the active toplevel with the one to the right of it
+        if (Toplevel *other =
+                output->get_active()->in_direction(WLR_DIRECTION_RIGHT))
+            output->get_active()->swap(other);
+        break;
+    case BIND_WORKSPACE_TILE:
+        // set workspace to tile
+        output->get_active()->tile();
+        break;
+    case BIND_WORKSPACE_OPEN:
+        // open workspace n
+        return output->set_workspace(n);
+    case BIND_WORKSPACE_WINDOW_TO: {
+        // move active toplevel to workspace n
+        Workspace *current = output->get_active();
+        Workspace *target = output->get_workspace(n);
+
+        if (target == nullptr)
+            return false;
+
+        if (current->active_toplevel)
+            current->move_to(current->active_toplevel, target);
+        break;
+    }
+    case BIND_NONE:
+    default: {
+        // handle user-defined binds
+        for (const auto &[cmd_bind, cmd] : config->commands)
+            if (cmd_bind == bind)
+                if (fork() == 0) {
+                    execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), nullptr);
+                    return true;
+                }
+
+        return false;
+    }
+    }
+
+    return true;
+}
+
 Server::Server(Config *config) : config(config) {
     // set renderer
     setenv("WLR_RENDERER", config->renderer.c_str(), true);

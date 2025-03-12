@@ -122,6 +122,7 @@ Cursor::Cursor(Server *server) : server(server) {
             static_cast<wl_keyboard_key_state>(event->state),
         };
         wl_signal_emit(&keyboard->wlr_keyboard->events.key, key_event);
+        delete key_event;
     };
     wl_signal_add(&cursor->events.button, &button);
 

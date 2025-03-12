@@ -28,7 +28,7 @@ std::string exec1(const std::string &cmd) {
 // execute command
 void exec0(const std::string &cmd) {
     std::cout << "EXECUTING: " << cmd << std::endl;
-    if (!fork())
+    if (fork() == 0)
         execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), nullptr);
 }
 
@@ -69,6 +69,8 @@ void test_fullscreen() {
 
     assert(toplevels == toplevels2);
 
+    sleep(1);
+
     // close all toplevels
     awmsg("b r close", false);
 }
@@ -80,4 +82,7 @@ int main() {
     sleep(3);
 
     test_fullscreen();
+
+    // exit
+    awmsg("e", false);
 }

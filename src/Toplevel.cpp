@@ -47,17 +47,11 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             x = std::max(x, usable_area.x);
             y = std::max(y, usable_area.y);
 
-            // set the position
-            wlr_scene_node_set_position(&toplevel->scene_tree->node, x, y);
-
-            // save geometry
-            toplevel->geometry = {x, y, static_cast<int>(width),
-                                  static_cast<int>(height)};
-            memcpy(&toplevel->saved_geometry, &toplevel->geometry,
-                   sizeof(wlr_box));
-
             // add toplevel to active workspace and focus it
             output->get_active()->add_toplevel(toplevel, true);
+
+            // set position and size
+            toplevel->set_position_size(x, y, width, height);
         }
     }
 #ifdef XWAYLAND

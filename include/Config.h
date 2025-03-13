@@ -57,7 +57,7 @@ struct OutputConfig {
     double x{0.0}, y{0.0};
     double refresh{0.0};
     enum wl_output_transform transform { WL_OUTPUT_TRANSFORM_NORMAL };
-    double scale{1.0};
+    float scale{1.0};
     bool adaptive_sync{false};
 
     OutputConfig() = default;

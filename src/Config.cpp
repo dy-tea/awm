@@ -541,7 +541,7 @@ bool Config::load() {
                         }
 
                 // scale
-                connect(table.getDouble("scale"), &oc->scale);
+                connect<float>(table.getDouble("scale"), &oc->scale);
 
                 // adaptive sync
                 connect(table.getBool("adaptive"), &oc->adaptive_sync);

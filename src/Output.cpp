@@ -268,9 +268,8 @@ bool Output::apply_config(const OutputConfig *config, const bool test_only) {
         }
 
         // scale
-        if (config->scale > 0)
-            wlr_output_state_set_scale(&state,
-                                       static_cast<float>(config->scale));
+        if (config->scale > 0.0)
+            wlr_output_state_set_scale(&state, config->scale);
 
         // transform
         wlr_output_state_set_transform(&state, config->transform);

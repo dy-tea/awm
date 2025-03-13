@@ -730,12 +730,6 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 // set the position and size of a toplevel, send a configure
 void Toplevel::set_position_size(const double x, const double y, int width,
                                  int height) {
-    // get output at cursor
-    const Output *output = server->focused_output();
-
-    // get output scale
-    const float scale = output ? output->wlr_output->scale : 1.0;
-
     // enforce minimum size
     width = std::max(width, 1);
     height = std::max(height, 1);
@@ -762,7 +756,7 @@ void Toplevel::set_position_size(const double x, const double y, int width,
         wlr_scene_node_set_position(&scene_tree->node, x, y);
 
         // set position and size
-        wlr_xdg_toplevel_set_size(xdg_toplevel, width / scale, height / scale);
+        wlr_xdg_toplevel_set_size(xdg_toplevel, width, height);
 
         // schedule configure
         wlr_xdg_surface_schedule_configure(xdg_toplevel->base);

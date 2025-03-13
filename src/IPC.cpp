@@ -178,6 +178,7 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
                         break;
                     }
             }
+            [[fallthrough]];
         default:
         unknown:
             notify_send("IPC", "unknown command `%s`", token.c_str());

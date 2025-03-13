@@ -24,7 +24,8 @@ void notify_send(const std::string title, const std::string &format,
     // send notification
     if (fork() == 0) {
         execl("/bin/sh", "/bin/sh", "-c",
-              ("notify-send -a awm " + title + "\"" + message + "\"").c_str(),
+              ("notify-send -a awm \"" + title + "\" \"" + message + "\"")
+                  .c_str(),
               nullptr);
     }
 }

@@ -757,9 +757,8 @@ Server::Server(Config *config) : config(config) {
     setenv("XDG_CURRENT_DESKTOP", "awm", true);
     setenv("XDG_BACKEND", "wayland", true);
 
-    // set xcursor path
-    if (!config->cursor.xcursor.theme.empty())
-        setenv("XCURSOR_PATH", "~/.local/share/icons", true);
+    // set xcursor paths
+    setenv("XCURSOR_PATH", "/usr/share/icons:~/.local/share/icons", true);
 
     // set envvars from config
     for (const auto &[key, value] : config->startup_env)

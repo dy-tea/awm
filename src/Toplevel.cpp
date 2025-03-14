@@ -731,8 +731,15 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 void Toplevel::set_position_size(const double x, const double y, int width,
                                  int height) {
     // enforce minimum size
-    width = std::max(width, 1);
-    height = std::max(height, 1);
+    // if width and height are 0, it is likely a virtual output
+    if (width && height
+#ifdef XWAYLAND
+        && xdg_toplevel
+#endif
+    ) {
+        width = std::max(width, xdg_toplevel->current.min_width);
+        height = std::max(height, xdg_toplevel->current.min_height);
+    }
 
     // toggle maximized if maximized
     if (maximized()) {

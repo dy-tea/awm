@@ -18,9 +18,9 @@ void Keyboard::update_config() const {
     };
 
     // keymap
-    xkb_keymap *keymap{nullptr};
-    if (!((keymap = xkb_keymap_new_from_names(context, &names,
-                                              XKB_KEYMAP_COMPILE_NO_FLAGS)))) {
+    xkb_keymap *keymap =
+        xkb_keymap_new_from_names(context, &names, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    if (!keymap) {
         notify_send(
             "Config",
             "failed to load keymap - layout: %s, model: %s, variant: %s",

@@ -753,11 +753,13 @@ Server::Server(Config *config) : config(config) {
     // set wayland display to our socket
     setenv("WAYLAND_DISPLAY", socket.c_str(), true);
 
-    // set xdg current desktop for portals
+    // set xdg env vars
     setenv("XDG_CURRENT_DESKTOP", "awm", true);
-
-    // tell xdg to use wayland
     setenv("XDG_BACKEND", "wayland", true);
+
+    // set xcursor path
+    if (!config->cursor.xcursor.theme.empty())
+        setenv("XCURSOR_PATH", "~/.local/share/icons", true);
 
     // set envvars from config
     for (const auto &[key, value] : config->startup_env)

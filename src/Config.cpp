@@ -212,6 +212,16 @@ bool Config::load() {
     std::unique_ptr<toml::Table> pointer =
         config_file.table->getTable("pointer");
     if (pointer) {
+        // xcursor
+        auto xcursor_table = pointer->getTable("xcursor");
+        if (xcursor_table) {
+            // theme
+            connect(xcursor_table->getString("theme"), &cursor.xcursor.theme);
+
+            // size
+            connect(xcursor_table->getInt("size"), &cursor.xcursor.size);
+        }
+
         // used for both mouse and touchpad
         auto pointer_profile = [&](toml::Table *table,
                                    libinput_config_accel_profile *dest,

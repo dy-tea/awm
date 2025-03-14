@@ -27,6 +27,12 @@ options = ""
 repeat_rate = 25
 repeat_delay = 600
 
+# to use a cursor theme, add it to ~/.local/share/icons
+# and set its directory as the theme name
+[pointer.xcursor]
+theme = "miku-cursor"
+size = 48
+
 [pointer.mouse]
 natural_scroll = true
 left_handed = 0

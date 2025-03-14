@@ -108,6 +108,11 @@ struct Config {
     // cursor
     struct {
         struct {
+            std::string theme{};
+            int64_t size{24};
+        } xcursor;
+
+        struct {
             libinput_config_accel_profile profile{
                 LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE};
             double accel_speed{0.0};

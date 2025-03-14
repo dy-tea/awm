@@ -5,7 +5,14 @@ Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
     cursor = wlr_cursor_create();
     wlr_cursor_attach_output_layout(cursor, server->output_manager->layout);
-    cursor_mgr = wlr_xcursor_manager_create(nullptr, 24);
+
+    // size
+    const int64_t size = server->config->cursor.xcursor.size;
+    const char *theme = server->config->cursor.xcursor.theme.empty()
+                            ? nullptr
+                            : server->config->cursor.xcursor.theme.data();
+    cursor_mgr = wlr_xcursor_manager_create(theme, size > 0 ? size : 24);
+
     cursor_mode = CURSORMODE_PASSTHROUGH;
 
     // cursor shape manager

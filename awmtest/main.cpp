@@ -5,6 +5,7 @@ using json = nlohmann::json;
 
 std::string awm_executable = "./build/awm";
 std::string awmsg_executable = "./build/awmsg";
+std::string terminal_executable = "alacritty";
 
 // execute command and get output
 std::string exec1(const std::string &cmd) {
@@ -47,7 +48,7 @@ void spawn(std::string command) { awmsg("s \"" + command + "\"", false); }
 
 void test_fullscreen_10() {
     // spawn a terminal
-    spawn("alacritty");
+    spawn(terminal_executable);
 
     sleep(1);
 
@@ -77,7 +78,7 @@ void test_fullscreen_10() {
 
 void test_fullscreen_size() {
     // spawn a terminal
-    spawn("alacritty");
+    spawn(terminal_executable);
 
     sleep(1);
 
@@ -111,6 +112,34 @@ void test_fullscreen_size() {
     awmsg("b r close", false);
 }
 
+void test_maximize_10() {
+    // spawn a terminal
+    spawn(terminal_executable);
+
+    sleep(1);
+
+    // get toplevel bounds
+    json toplevel = awmsg("t l", true);
+
+    // send maximize 10 times
+    for (int i = 0; i != 10; ++i) {
+        sleep(1);
+        awmsg("b r maximize", false);
+    }
+
+    sleep(1);
+
+    // get toplevel bounds
+    json toplevel1 = awmsg("t l", true);
+
+    assert(toplevel == toplevel1);
+
+    sleep(1);
+
+    // close all toplevels
+    awmsg("b r close", false);
+}
+
 int main() {
     // open awm
     exec0(awm_executable + " -c config.toml");
@@ -120,6 +149,8 @@ int main() {
     test_fullscreen_10();
     sleep(1);
     test_fullscreen_size();
+    sleep(1);
+    test_maximize_10();
     sleep(1);
 
     // exit

@@ -427,6 +427,9 @@ bool Config::load() {
         // window binds
         auto window_bind = binds_table->getTable("window");
         if (window_bind) {
+            // window_maximize bind
+            set_bind("maximize", window_bind.get(), BIND_WINDOW_MAXIMIZE);
+
             // window_fullscreen bind
             set_bind("fullscreen", window_bind.get(), BIND_WINDOW_FULLSCREEN);
 

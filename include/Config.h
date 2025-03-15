@@ -12,6 +12,7 @@ const std::string MODIFIERS[] = {
 enum BindName {
     BIND_NONE,
     BIND_EXIT,
+    BIND_WINDOW_MAXIMIZE,
     BIND_WINDOW_FULLSCREEN,
     BIND_WINDOW_PREVIOUS,
     BIND_WINDOW_NEXT,
@@ -31,9 +32,10 @@ enum BindName {
 };
 
 const std::string BIND_NAMES[] = {
-    "none",      "exit",      "fullscreen", "previous", "next",  "move",
-    "up",        "down",      "left",       "right",    "close", "swap_up",
-    "swap_down", "swap_left", "swap_right", "tile",     "open",  "window_to",
+    "none",       "exit",  "maximize", "fullscreen", "previous",
+    "next",       "move",  "up",       "down",       "left",
+    "right",      "close", "swap_up",  "swap_down",  "swap_left",
+    "swap_right", "tile",  "open",     "window_to",
 };
 
 const std::string MOUSE_BUTTONS[] = {

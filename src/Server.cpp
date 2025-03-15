@@ -146,6 +146,16 @@ bool Server::handle_bind(Bind bind) {
         // exit compositor
         exit();
         break;
+    case BIND_WINDOW_MAXIMIZE: {
+        // maximize the active toplevel
+        Toplevel *active = output->get_active()->active_toplevel;
+
+        if (!active)
+            return false;
+
+        active->toggle_maximized();
+        break;
+    }
     case BIND_WINDOW_FULLSCREEN: {
         // fullscreen the active toplevel
         Toplevel *active = output->get_active()->active_toplevel;

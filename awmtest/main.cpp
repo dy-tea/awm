@@ -3,6 +3,18 @@
 #include <unistd.h>
 using json = nlohmann::json;
 
+// awmtest dependencies
+// - ./build/awm
+// - ./build/awmsg
+// - alacritty (can be changed to any wayland toplevel)
+// - waybar (this is to test layer shell interaction with toplevels)
+// - miku cursors (this is because the test will not run automatically if it is
+// not receiving input, the animation forces updates)
+//
+// currently the tests require the cursor to be moving at all times or some
+// animation playing for the binds being run to be accepted. not entirely sure
+// what causes this.
+
 std::string awm_executable = "./build/awm";
 std::string awmsg_executable = "./build/awmsg";
 std::string terminal_executable = "alacritty";
@@ -46,12 +58,8 @@ json awmsg(std::string command, bool data) {
 // spawn a command
 void spawn(std::string command) { awmsg("s \"" + command + "\"", false); }
 
+// fullscreen 10 times, the toplevel geometry should be the same
 void test_fullscreen_10() {
-    // spawn a terminal
-    spawn(terminal_executable);
-
-    sleep(1);
-
     json toplevels = awmsg("t l", true);
 
     std::cout << toplevels.dump(4) << std::endl;
@@ -69,19 +77,10 @@ void test_fullscreen_10() {
     std::cout << toplevels2.dump(4) << std::endl;
 
     assert(toplevels == toplevels2);
-
-    sleep(1);
-
-    // close all toplevels
-    awmsg("b r close", false);
 }
 
+// toplevels should be the same size as the output when fullscreened
 void test_fullscreen_size() {
-    // spawn a terminal
-    spawn(terminal_executable);
-
-    sleep(1);
-
     // fullscreen
     awmsg("b r fullscreen", false);
 
@@ -101,23 +100,14 @@ void test_fullscreen_size() {
 
     // assertions
     assert(toplevel["fullscreen"] == true);
-    assert(output["width"] == toplevel["width"]);
-    assert(output["height"] == toplevel["height"]);
-    assert(output["x"] == toplevel["x"]);
-    assert(output["y"] == toplevel["y"]);
-
-    sleep(1);
-
-    // close all toplevels
-    awmsg("b r close", false);
+    assert(output["layout"]["width"] == toplevel["width"]);
+    assert(output["layout"]["height"] == toplevel["height"]);
+    assert(output["layout"]["x"] == toplevel["x"]);
+    assert(output["layout"]["y"] == toplevel["y"]);
 }
 
+// maximize 10 times, the toplevel geometry should be the same
 void test_maximize_10() {
-    // spawn a terminal
-    spawn(terminal_executable);
-
-    sleep(1);
-
     // get toplevel bounds
     json toplevel = awmsg("t l", true);
 
@@ -133,26 +123,80 @@ void test_maximize_10() {
     json toplevel1 = awmsg("t l", true);
 
     assert(toplevel == toplevel1);
+}
+
+// maximized toplevels should take up the entire output if usable area has not
+// changed due to layer surfaces
+void test_maximize_size() {
+    // maximize
+    awmsg("b r maximize", false);
 
     sleep(1);
 
-    // close all toplevels
-    awmsg("b r close", false);
+    // get toplevel bounds
+    json toplevels = awmsg("t l", true);
+    json toplevel = *toplevels.begin();
+    std::cout << toplevel.dump(4) << std::endl;
+
+    sleep(1);
+
+    // get output bounds
+    json outputs = awmsg("o l", true);
+    json output = *outputs.begin();
+    std::cout << output.dump(4) << std::endl;
+
+    // assertions
+    assert(toplevel["maximized"] == true);
+    assert(output["usable"]["width"] == toplevel["width"]);
+    assert(output["usable"]["height"] == toplevel["height"]);
+    assert(output["usable"]["x"] == toplevel["x"]);
+    assert(output["usable"]["y"] == toplevel["y"]);
 }
 
 int main() {
-    // open awm
-    exec0(awm_executable + " -c config.toml");
+    const std::string awm_default = awm_executable + " -c config.toml";
 
-    sleep(3);
+    // test fullscreen
+    {
+        // open awm
+        exec0(awm_default);
 
-    test_fullscreen_10();
-    sleep(1);
-    test_fullscreen_size();
-    sleep(1);
-    test_maximize_10();
-    sleep(1);
+        // give time to position cursor on awm
+        sleep(3);
 
-    // exit
-    awmsg("e", false);
+        // spawn a terminal
+        spawn(terminal_executable);
+
+        // tests
+        sleep(1);
+        test_fullscreen_10();
+        sleep(1);
+        test_fullscreen_size();
+        sleep(1);
+
+        // exit
+        awmsg("e", false);
+    }
+
+    // test maximize
+    {
+        // open awm
+        exec0(awm_default);
+
+        // give time to position cursor on awm
+        sleep(3);
+
+        // spawn a terminal
+        spawn(terminal_executable);
+
+        // tests
+        sleep(1);
+        test_maximize_10();
+        sleep(1);
+        test_maximize_size();
+        sleep(1);
+
+        // exit
+        awmsg("e", false);
+    }
 }

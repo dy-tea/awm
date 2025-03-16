@@ -41,63 +41,10 @@ OutputManager::OutputManager(Server *server) : server(server) {
     new_output.notify = [](wl_listener *listener, void *data) {
         // new display / monitor available
         OutputManager *manager = wl_container_of(listener, manager, new_output);
-        Server *server = manager->server;
         auto *wlr_output = static_cast<struct wlr_output *>(data);
 
-        // set allocator and renderer for output
-        wlr_output_init_render(wlr_output, server->allocator, server->renderer);
-
-        // add to outputs list
-        Output *output = new Output(server, wlr_output);
-        wl_list_insert(&manager->outputs, &output->link);
-
-        // find matching config
-        OutputConfig *matching = nullptr;
-        for (OutputConfig *config : server->config->outputs) {
-            if (config->name == wlr_output->name) {
-                matching = config;
-                break;
-            }
-        }
-
-        // apply the config
-        bool config_success = matching && output->apply_config(matching, false);
-
-        // fallback
-        if (!config_success) {
-            wlr_log(WLR_INFO, "using fallback mode for output %s",
-                    output->wlr_output->name);
-
-            // create new state
-            wlr_output_state state{};
-            wlr_output_state_init(&state);
-
-            // use preferred mode
-            wlr_output_state_set_enabled(&state, true);
-            wlr_output_state_set_mode(&state,
-                                      wlr_output_preferred_mode(wlr_output));
-
-            // commit state
-            config_success = wlr_output_commit_state(wlr_output, &state);
-            wlr_output_state_finish(&state);
-        }
-
-        // position
-        wlr_output_layout_output *output_layout_output =
-            matching && config_success
-                ? wlr_output_layout_add(manager->layout, wlr_output,
-                                        matching->x, matching->y)
-                : wlr_output_layout_add_auto(manager->layout, wlr_output);
-
-        // add to scene output
-        wlr_scene_output *scene_output =
-            wlr_scene_output_create(server->scene, wlr_output);
-        wlr_scene_output_layout_add_output(server->scene_layout,
-                                           output_layout_output, scene_output);
-
-        // set usable area
-        wlr_output_layout_get_box(manager->layout, wlr_output,
-                                  &output->usable_area);
+        // create new output
+        new Output(manager->server, wlr_output);
     };
     wl_signal_add(&server->backend->events.new_output, &new_output);
 

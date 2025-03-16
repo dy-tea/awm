@@ -216,10 +216,20 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                               link) {
             // outputs are distinguished by name
             j[output->wlr_output->name] = {
-                {"x", output->layout_geometry.x},
-                {"y", output->layout_geometry.y},
-                {"width", output->layout_geometry.width},
-                {"height", output->layout_geometry.height},
+                {"layout",
+                 {
+                     {"x", output->layout_geometry.x},
+                     {"y", output->layout_geometry.y},
+                     {"width", output->layout_geometry.width},
+                     {"height", output->layout_geometry.height},
+                 }},
+                {"usable",
+                 {
+                     {"x", output->usable_area.x},
+                     {"y", output->usable_area.y},
+                     {"width", output->usable_area.width},
+                     {"height", output->usable_area.height},
+                 }},
                 {"refresh", output->wlr_output->refresh / 1000.0},
                 {"scale", output->wlr_output->scale},
                 {"transform", output->wlr_output->transform},

@@ -768,7 +768,12 @@ Server::Server(Config *config) : config(config) {
     setenv("XDG_BACKEND", "wayland", true);
 
     // set xcursor paths
-    setenv("XCURSOR_PATH", "/usr/share/icons:~/.local/share/icons", true);
+    char *xcursor_path = getenv("XCURSOR_PATH");
+    std::string xcursor_path_str =
+        xcursor_path == nullptr ? "" : ":" + std::string(xcursor_path);
+    setenv("XCURSOR_PATH",
+           ("/usr/share/icons:~/.local/share/icons" + xcursor_path_str).c_str(),
+           true);
 
     // set envvars from config
     for (const auto &[key, value] : config->startup_env)

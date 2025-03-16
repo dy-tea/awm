@@ -11,13 +11,14 @@ renderer = "auto"    # "gles2", "pixman", "vulkan"
 [[startup.env]]
 MOZ_ENABLE_WAYLAND = 1                   # enable wayland for firefox
 ELECTRON_OZONE_PLATFORM_HINT = "wayland" # set electron apps to use wayland
+SDL_VIDEODRIVER = "wayland"              # set sdl apps to use wayland (e.g. osu-lazer)
 
 [exit]
 exec = ["echo \"exiting awm\""] # list of commands to run on exit
 
 [ipc]
 enabled = true # enable ipc server, controllable with awmsg, enabled by default
-spawn = true   # enable ipc spawm command, enabled by default
+spawn = true   # enable ipc spawn command, enabled by default
 
 [keyboard] # default keyboard layout, optional
 layout = "us"

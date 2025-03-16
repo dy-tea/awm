@@ -10,54 +10,6 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     OutputManager *manager = server->output_manager;
     wl_list_insert(&manager->outputs, &link);
 
-    // find matching config
-    OutputConfig *matching = nullptr;
-    for (OutputConfig *config : server->config->outputs) {
-        if (config->name == wlr_output->name) {
-            matching = config;
-            break;
-        }
-    }
-
-    // apply the config
-    bool config_success = matching && apply_config(matching, false);
-
-    // fallback config
-    if (!config_success) {
-        wlr_log(WLR_INFO, "using fallback mode for output %s",
-                wlr_output->name);
-
-        // create new state
-        wlr_output_state state{};
-        wlr_output_state_init(&state);
-
-        // use preferred mode
-        wlr_output_state_set_enabled(&state, true);
-        wlr_output_state_set_mode(&state,
-                                  wlr_output_preferred_mode(wlr_output));
-
-        // commit state
-        config_success = wlr_output_commit_state(wlr_output, &state);
-        wlr_output_state_finish(&state);
-    }
-
-    // position
-    wlr_output_layout_output *output_layout_output =
-        matching && config_success
-            ? wlr_output_layout_add(manager->layout, wlr_output, matching->x,
-                                    matching->y)
-            : wlr_output_layout_add_auto(manager->layout, wlr_output);
-
-    // add to scene output
-    wlr_scene_output *scene_output =
-        wlr_scene_output_create(server->scene, wlr_output);
-    wlr_scene_output_layout_add_output(server->scene_layout,
-                                       output_layout_output, scene_output);
-
-    // set geometry
-    wlr_output_layout_get_box(manager->layout, wlr_output, &layout_geometry);
-    memcpy(&usable_area, &layout_geometry, sizeof(wlr_box));
-
     // create workspaces
     wl_list_init(&workspaces);
     for (int i = 0; i != 10; ++i)
@@ -115,6 +67,54 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
         delete output;
     };
     wl_signal_add(&wlr_output->events.destroy, &destroy);
+
+    // find matching config
+    OutputConfig *matching = nullptr;
+    for (OutputConfig *config : server->config->outputs) {
+        if (config->name == wlr_output->name) {
+            matching = config;
+            break;
+        }
+    }
+
+    // apply the config
+    bool config_success = matching && apply_config(matching, false);
+
+    // fallback config
+    if (!config_success) {
+        wlr_log(WLR_INFO, "using fallback mode for output %s",
+                wlr_output->name);
+
+        // create new state
+        wlr_output_state state{};
+        wlr_output_state_init(&state);
+
+        // use preferred mode
+        wlr_output_state_set_enabled(&state, true);
+        wlr_output_state_set_mode(&state,
+                                  wlr_output_preferred_mode(wlr_output));
+
+        // commit state
+        config_success = wlr_output_commit_state(wlr_output, &state);
+        wlr_output_state_finish(&state);
+    }
+
+    // position
+    wlr_output_layout_output *output_layout_output =
+        matching && config_success
+            ? wlr_output_layout_add(manager->layout, wlr_output, matching->x,
+                                    matching->y)
+            : wlr_output_layout_add_auto(manager->layout, wlr_output);
+
+    // add to scene output
+    wlr_scene_output *scene_output =
+        wlr_scene_output_create(server->scene, wlr_output);
+    wlr_scene_output_layout_add_output(server->scene_layout,
+                                       output_layout_output, scene_output);
+
+    // set geometry
+    wlr_output_layout_get_box(manager->layout, wlr_output, &layout_geometry);
+    memcpy(&usable_area, &layout_geometry, sizeof(wlr_box));
 }
 
 Output::~Output() {

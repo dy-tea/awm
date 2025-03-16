@@ -92,8 +92,7 @@ IPC::IPC(Server *server) : server(server) {
 // parse a command and return the response
 std::string IPC::parse_command(const std::string &command, const int client_fd,
                                const bool continuous) {
-    std::string token;
-    std::string data;
+    std::string token, data, tmp;
     IPCMessage message{IPC_NONE};
 
     std::stringstream ss(command);
@@ -106,10 +105,12 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
             message = IPC_EXIT;
             break;
         case 's': // spawn
-            if (std::getline(ss, data, ' ')) {
+            while (std::getline(ss, tmp, ' ')) {
+                data += tmp + " ";
                 message = IPC_SPAWN;
-                break;
             }
+            if (!data.empty())
+                break;
             goto unknown;
         case 'o': // output
             if (std::getline(ss, token, ' ')) {

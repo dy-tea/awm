@@ -8,7 +8,7 @@ using json = nlohmann::json;
 // - ./build/awmsg
 // - alacritty (can be changed to any wayland toplevel)
 // - waybar (this is to test layer shell interaction with toplevels)
-// - miku cursors (this is because the test will not run automatically if it is
+// - tmatrix (this is because the test will not run automatically if it is
 // not receiving input, the animation forces updates)
 //
 // currently the tests require the cursor to be moving at all times or some
@@ -17,7 +17,7 @@ using json = nlohmann::json;
 
 std::string awm_executable = "./build/awm";
 std::string awmsg_executable = "./build/awmsg";
-std::string terminal_executable = "alacritty";
+std::string terminal_executable = "alacritty -e tmatrix";
 
 // execute command and get output
 std::string exec1(const std::string &cmd) {
@@ -160,9 +160,7 @@ int main() {
     {
         // open awm
         exec0(awm_default);
-
-        // give time to position cursor on awm
-        sleep(3);
+        sleep(1);
 
         // spawn a terminal
         spawn(terminal_executable);

@@ -189,6 +189,31 @@ void test_maximize_waybar() {
     assert(toplevel["height"] == output["usable"]["height"]);
 }
 
+void test_workpaces_10() {
+    // spawn a toplevel on each workspace
+    for (int i = 1; i <= 10; ++i) {
+        spawn(terminal_executable);
+        sleep(1);
+
+        awmsg("w s " + std::to_string(i), false);
+        sleep(1);
+    }
+
+    // get toplevels
+    json toplevels = awmsg("t l", true);
+    sleep(1);
+
+    // get workspace info
+    json workspaces = awmsg("w l", true);
+    sleep(1);
+
+    // assertions
+    assert(toplevels.size() == 10);
+    assert(workspaces["active"] == 10);
+    assert(workspaces["max"] == 10);
+    assert(workspaces["toplevels"] == 10);
+}
+
 int main() {
     // test fullscreen
     {
@@ -198,9 +223,9 @@ int main() {
 
         // spawn a terminal
         spawn(terminal_executable);
+        sleep(1);
 
         // tests
-        sleep(1);
         test_fullscreen_10();
         sleep(1);
         test_fullscreen_size();
@@ -208,21 +233,20 @@ int main() {
 
         // exit
         awmsg("e", false);
+        sleep(1);
     }
 
     // test maximize
     {
         // open awm
         exec0(awm_default);
-
-        // give time to position cursor on awm
-        sleep(3);
+        sleep(1);
 
         // spawn a terminal
         spawn(terminal_executable);
+        sleep(1);
 
         // tests
-        sleep(1);
         test_maximize_10();
         sleep(1);
         test_maximize_size();
@@ -232,5 +256,20 @@ int main() {
 
         // exit
         awmsg("e", false);
+        sleep(1);
+    }
+
+    // test workspaces
+    {
+        // open awm
+        exec0(awm_default);
+        sleep(1);
+
+        // tests
+        test_workpaces_10();
+
+        // exit
+        awmsg("e", false);
+        sleep(1);
     }
 }

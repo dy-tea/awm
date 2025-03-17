@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    std::string group = next(argc, argv);
+    std::string group = next(argc, argv), message = "";
     bool continuous = false;
 
     // get continuous flag if present
@@ -75,16 +75,12 @@ int main(int argc, char **argv) {
         group = next(argc, argv);
     }
 
-    // group help
-    if (group[0] == 'h') {
+    // parse the group
+    switch (group[0]) {
+    case 'h': // help
         print_usage();
         return 0;
-    }
-
-    std::string message = "";
-
-    // group spawn
-    if (group[0] == 's') {
+    case 's': // spawn
         // commnd is required
         if (argc == arg_index + 1) {
             print_err("Expected argument after 's'");
@@ -92,34 +88,31 @@ int main(int argc, char **argv) {
         }
 
         // get command
-        std::string command = "";
+        message = "s ";
         while (argc > arg_index + 1)
-            command += " " + next(argc, argv);
-
-        message = "s " + command;
-    }
-
-    // group exit
-    if (group[0] == 'e')
+            message += " " + next(argc, argv);
+        break;
+    case 'e': // exit
         message = "exit";
-
-    // group output
-    if (group[0] == 'o') {
+        break;
+    case 'o': // output
         group = next(argc, argv);
 
-        if (group[0] == 'l')
+        if (group[0] == 'l') { // output list
             message = "o l";
-        else if (group[0] == 'm')
+            break;
+        } else if (group[0] == 'm') { // output modes
             message = "o m";
-    }
-
-    // group workspace
-    if (group[0] == 'w') {
+            break;
+        }
+        goto unknown;
+    case 'w': // workspace
         group = next(argc, argv);
 
-        if (group[0] == 'l')
+        if (group[0] == 'l') { // workspace list
             message = "w l";
-        else if (group[0] == 's') {
+            break;
+        } else if (group[0] == 's') { // workspace set
             group = next(argc, argv);
 
             if (!is_number(group)) {
@@ -129,59 +122,62 @@ int main(int argc, char **argv) {
             }
 
             message = "w s " + group;
+            break;
         }
-    }
-
-    // group toplevel
-    if (group[0] == 't') {
+        goto unknown;
+    case 't': // toplevel
         group = next(argc, argv);
 
-        if (group[0] == 'l')
+        if (group[0] == 'l') { // toplevel list
             message = "t l";
-    }
-
-    // group keyboard
-    if (group[0] == 'k') {
+            break;
+        }
+        goto unknown;
+    case 'k': // keyboard
         group = next(argc, argv);
 
-        if (group[0] == 'l')
+        if (group[0] == 'l') { // keyboard list
             message = "k l";
-    }
-
-    // group device
-    if (group[0] == 'd') {
+            break;
+        }
+        goto unknown;
+    case 'd': // device
         group = next(argc, argv);
 
-        if (group[0] == 'l')
+        if (group[0] == 'l') { // device list
             message = "d l";
-        else if (group[0] == 'c')
+            break;
+        } else if (group[0] == 'c') { // device current
             message = "d c";
-    }
-
-    // group bind
-    if (group[0] == 'b') {
+            break;
+        }
+        goto unknown;
+    case 'b': // bind
         group = next(argc, argv);
 
-        if (group[0] == 'l')
+        if (group[0] == 'l') { // bind list
             message = "b l";
-        else if (group[0] == 'r') {
+            break;
+        } else if (group[0] == 'r') { // bind run
             group = next(argc, argv);
             message = "b r " + group;
-        } else if (group[0] == 'd') {
+            break;
+        } else if (group[0] == 'd') { // bind display
             group = next(argc, argv);
             message = "b d " + group;
+            break;
         }
-    }
-
-    // invalid group or command
-    if (message == "") {
+        [[fallthrough]];
+    default:
+    unknown:
+        // invalid group or command
         std::string query = argv[1];
         for (int i = 2; i < argc; i++)
             query += " " + std::string(argv[i]);
 
         print_err("Query '%s' did not match command", query.c_str());
         print_usage();
-        return 0;
+        return 1;
     }
 
     // add continuous flag if present

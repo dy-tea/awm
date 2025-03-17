@@ -85,9 +85,18 @@ int main(int argc, char **argv) {
 
     // group spawn
     if (group[0] == 's') {
-        group = next(argc, argv);
+        // commnd is required
+        if (argc == arg_index + 1) {
+            print_err("Expected argument after 's'");
+            return 1;
+        }
 
-        message = "s " + group;
+        // get command
+        std::string command = "";
+        while (argc > arg_index + 1)
+            command += " " + next(argc, argv);
+
+        message = "s " + command;
     }
 
     // group exit

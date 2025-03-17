@@ -15,9 +15,10 @@ using json = nlohmann::json;
 // animation playing for the binds being run to be accepted. not entirely sure
 // what causes this.
 
-std::string awm_executable = "./build/awm";
-std::string awmsg_executable = "./build/awmsg";
-std::string terminal_executable = "alacritty -e tmatrix";
+const std::string awm_executable = "./build/awm";
+const std::string awmsg_executable = "./build/awmsg";
+const std::string terminal_executable = "alacritty -e tmatrix";
+const std::string awm_default = awm_executable + " -c config.toml";
 
 // execute command and get output
 std::string exec1(const std::string &cmd) {
@@ -151,11 +152,44 @@ void test_maximize_size() {
     assert(output["usable"]["height"] == toplevel["height"]);
     assert(output["usable"]["x"] == toplevel["x"]);
     assert(output["usable"]["y"] == toplevel["y"]);
+
+    sleep(1);
+
+    // unmaximize
+    awmsg("b r maximize", false);
+}
+
+// waybar will change usable area due it being a layer surface, the toplevel
+// should maximize accordinly
+void test_maximize_waybar() {
+    // spawn a waybar
+    spawn("waybar");
+    sleep(1);
+
+    // maximize
+    awmsg("b r maximize", false);
+    sleep(1);
+
+    // get toplevel bounds
+    json toplevels = awmsg("t l", true);
+    json toplevel = *toplevels.begin();
+
+    sleep(1);
+
+    // get output bounds
+    json outputs = awmsg("o l", true);
+    json output = *outputs.begin();
+    std::cout << output.dump(4) << std::endl;
+
+    // assertions
+    assert(toplevel["maximized"] == true);
+    assert(toplevel["x"] == output["usable"]["x"]);
+    assert(toplevel["y"] == output["usable"]["y"]);
+    assert(toplevel["width"] == output["usable"]["width"]);
+    assert(toplevel["height"] == output["usable"]["height"]);
 }
 
 int main() {
-    const std::string awm_default = awm_executable + " -c config.toml";
-
     // test fullscreen
     {
         // open awm
@@ -192,6 +226,8 @@ int main() {
         test_maximize_10();
         sleep(1);
         test_maximize_size();
+        sleep(1);
+        test_maximize_waybar();
         sleep(1);
 
         // exit

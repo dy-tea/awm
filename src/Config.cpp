@@ -249,7 +249,7 @@ bool Config::load() {
                     &cursor.mouse.natural_scroll);
 
             // left-handed
-            connect(mouse->getInt("left_handed"), &cursor.mouse.left_handed);
+            connect(mouse->getBool("left_handed"), &cursor.mouse.left_handed);
 
             // profile
             pointer_profile(mouse.get(), &cursor.mouse.profile, "mouse");
@@ -327,7 +327,7 @@ bool Config::load() {
                         disable_while_typing.second);
 
             // left-handed
-            connect(touchpad->getInt("left_handed"),
+            connect(touchpad->getBool("left_handed"),
                     &cursor.touchpad.left_handed);
 
             // middle emulation

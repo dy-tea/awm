@@ -119,7 +119,7 @@ struct Config {
                 LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE};
             double accel_speed{0.0};
             bool natural_scroll{true};
-            int64_t left_handed{0};
+            bool left_handed{false};
         } mouse;
 
         struct {
@@ -133,7 +133,7 @@ struct Config {
             bool natural_scroll{true};
             libinput_config_dwt_state disable_while_typing{
                 LIBINPUT_CONFIG_DWT_ENABLED};
-            int64_t left_handed{0};
+            bool left_handed{false};
             libinput_config_middle_emulation_state middle_emulation{
                 LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED};
             libinput_config_scroll_method scroll_method{

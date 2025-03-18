@@ -259,6 +259,10 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
         // connect the seat to the toplevel
         wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
         wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
+
+        // focus on hover
+        if (server->config->general.focus_on_hover)
+            toplevel->focus();
         return;
     }
 
@@ -269,6 +273,10 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
         // connect the seat to the layer surface
         wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
         wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
+
+        // focus on hover
+        if (server->config->general.focus_on_hover)
+            layer_surface->handle_focus();
         return;
     }
 

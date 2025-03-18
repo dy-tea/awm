@@ -407,6 +407,15 @@ bool Config::load() {
         }
     }
 
+    // general
+    std::unique_ptr<toml::Table> general_table =
+        config_file.table->getTable("general");
+    if (general_table) {
+        // focus on hover
+        connect(general_table->getBool("focus_on_hover"),
+                &general.focus_on_hover);
+    }
+
     // get awm binds
     std::unique_ptr<toml::Table> binds_table =
         config_file.table->getTable("binds");

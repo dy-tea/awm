@@ -147,6 +147,10 @@ struct Config {
         } touchpad;
     } cursor;
 
+    struct {
+        bool focus_on_hover{false};
+    } general;
+
     // compostior binds
     std::vector<Bind> binds;
 

@@ -3,24 +3,13 @@
 #include <unistd.h>
 using json = nlohmann::json;
 
-// awmtest dependencies
-// - ./build/awm
-// - ./build/awmsg
-// - alacritty (can be changed to any wayland toplevel)
-// - waybar (this is to test layer shell interaction with toplevels)
-// - tmatrix (this is because the test will not run automatically if it is
-// not receiving input, the animation forces updates)
-//
-// currently the tests require the cursor to be moving at all times or some
-// animation playing for the binds being run to be accepted. not entirely sure
-// what causes this.
-
+// globals
 const std::string awm_executable = "./build/awm";
 const std::string awmsg_executable = "./build/awmsg";
 const std::string terminal_executable = "alacritty -e tmatrix";
 const std::string awm_default = awm_executable + " -c config.toml";
 
-// execute command and get output
+// execute command and get its output
 std::string exec1(const std::string &cmd) {
     std::cout << "EXECUTING: " << cmd << std::endl;
     char buffer[128];

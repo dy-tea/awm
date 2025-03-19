@@ -1,5 +1,7 @@
 #include "Server.h"
 #include "pixman.h"
+#include "wlr.h"
+#include "wlr/util/box.h"
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
@@ -287,29 +289,47 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
 
 // move a toplevel
 void Cursor::process_move() {
+    // grabbed toplevel
+    Toplevel *toplevel = server->grabbed_toplevel;
+
     // do not move fullscreen toplevel
-    if (server->grabbed_toplevel->fullscreen())
+    if (toplevel->fullscreen())
         return;
 
     // get the output of the current workspace
-    Workspace *current = server->get_workspace(server->grabbed_toplevel);
+    Workspace *current = server->get_workspace(toplevel);
 
     // calculate new x and y based on cursor position
     double new_x = cursor->x - grab_x;
     double new_y = cursor->y - grab_y;
 
     // set the new position
-    wlr_scene_node_set_position(&server->grabbed_toplevel->scene_tree->node,
-                                new_x, new_y);
+    wlr_scene_node_set_position(&toplevel->scene_tree->node, new_x, new_y);
 
     // update position
-    server->grabbed_toplevel->geometry.x = new_x;
-    server->grabbed_toplevel->geometry.y = new_y;
+    toplevel->geometry.x = new_x;
+    toplevel->geometry.y = new_y;
 
     // move toplevel to different workspace if it's moved into other output
-    Workspace *target = server->focused_output()->get_active();
-    if (!target->contains(server->grabbed_toplevel) && current)
-        current->move_to(server->grabbed_toplevel, target);
+    Output *output = server->focused_output();
+    Workspace *target = output->get_active();
+    if (!target->contains(toplevel) && current) {
+        // set the new workspace
+        current->move_to(toplevel, target);
+
+        // handle foreign toplevel
+        if (toplevel->foreign_handle) {
+            // notify of entered output
+            wlr_foreign_toplevel_handle_v1_output_enter(
+                toplevel->foreign_handle, output->wlr_output);
+
+            // notify of left output
+            if (wlr_box_contains_box(&output->layout_geometry,
+                                     &toplevel->geometry))
+                wlr_foreign_toplevel_handle_v1_output_leave(
+                    toplevel->foreign_handle, current->output->wlr_output);
+        }
+    }
 
     // notify clients
     if (IPC *ipc = server->ipc)

@@ -38,15 +38,12 @@ struct Toplevel {
     wl_listener xwayland_close;
 #endif
 
-    wlr_foreign_toplevel_handle_v1 *handle{nullptr};
+    wlr_foreign_toplevel_handle_v1 *foreign_handle;
+    wl_listener foreign_activate;
+    wl_listener foreign_close;
 
-    wl_listener handle_request_maximize;
-    wl_listener handle_request_minimize;
-    wl_listener handle_request_fullscreen;
-    wl_listener handle_request_activate;
-    wl_listener handle_request_close;
-    wl_listener handle_set_rectangle;
-    wl_listener handle_destroy;
+    wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_handle;
+    wl_listener ext_foreign_destroy;
 
     bool hidden{false};
 
@@ -63,9 +60,17 @@ struct Toplevel {
     static void map_notify(wl_listener *listener, void *data);
     static void unmap_notify(wl_listener *listener, void *data);
 
-    void create_handle();
+    void create_foreign();
+    void update_foreign() const;
+
+    void create_ext_foreign();
+    void update_ext_foreign() const;
 
     std::string title() const;
+    std::string app_id() const;
+    void update_title();
+    void update_app_id();
+
     void focus() const;
     void begin_interactive(CursorMode mode, uint32_t edges);
     void set_position_size(double x, double y, int width, int height);
@@ -80,6 +85,4 @@ struct Toplevel {
     void toggle_maximized();
     void save_geometry();
     void close() const;
-
-    void update_foreign_toplevel() const;
 };

@@ -135,6 +135,17 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         }
     }
 #endif
+    // foreign toplevel
+    toplevel->create_foreign();
+    toplevel->create_ext_foreign();
+
+    // set app id for foreign toplevel
+    if (std::string app_id = toplevel->app_id(); !app_id.empty()) {
+        wlr_foreign_toplevel_handle_v1_set_app_id(toplevel->foreign_handle,
+                                                  app_id.c_str());
+    }
+
+    toplevel->update_ext_foreign();
 
     // notify clients
     if (toplevel->server->ipc) {
@@ -146,7 +157,6 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 void Toplevel::unmap_notify(wl_listener *listener,
                             [[maybe_unused]] void *data) {
     Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
-
     Server *server = toplevel->server;
 
     // deactivate
@@ -160,155 +170,25 @@ void Toplevel::unmap_notify(wl_listener *listener,
     // remove link
     wl_list_remove(&toplevel->link);
 
+    // remove foreign handle
+    if (toplevel->foreign_handle) {
+        wl_list_remove(&toplevel->foreign_activate.link);
+        wl_list_remove(&toplevel->foreign_close.link);
+        wlr_foreign_toplevel_handle_v1_destroy(toplevel->foreign_handle);
+    }
+
+    // remove ext foreign handle
+    if (toplevel->ext_foreign_handle) {
+        wl_list_remove(&toplevel->ext_foreign_destroy.link);
+        wlr_ext_foreign_toplevel_handle_v1_destroy(
+            toplevel->ext_foreign_handle);
+    }
+
     // notify clients
     if (IPC *ipc = server->ipc) {
         ipc->notify_clients(IPC_TOPLEVEL_LIST);
         ipc->notify_clients(IPC_WORKSPACE_LIST);
     }
-}
-
-// create a foreign toplevel handle
-void Toplevel::create_handle() {
-    // set foreign toplevel initial state
-    handle = wlr_foreign_toplevel_handle_v1_create(
-        server->wlr_foreign_toplevel_manager);
-
-    if (xdg_toplevel) {
-        if (xdg_toplevel->title)
-            wlr_foreign_toplevel_handle_v1_set_title(handle,
-                                                     xdg_toplevel->title);
-
-        if (xdg_toplevel->app_id)
-            wlr_foreign_toplevel_handle_v1_set_app_id(handle,
-                                                      xdg_toplevel->app_id);
-    }
-#ifdef XWAYLAND
-    else if (xwayland_surface) {
-        if (xwayland_surface->title)
-            wlr_foreign_toplevel_handle_v1_set_title(handle,
-                                                     xwayland_surface->title);
-
-        if (xwayland_surface->class_)
-            wlr_foreign_toplevel_handle_v1_set_app_id(handle,
-                                                      xwayland_surface->class_);
-    }
-#endif
-
-    // handle_request_maximize
-    handle_request_maximize.notify = [](wl_listener *listener, void *data) {
-        Toplevel *toplevel =
-            wl_container_of(listener, toplevel, handle_request_maximize);
-
-        const auto *event =
-            static_cast<wlr_foreign_toplevel_handle_v1_maximized_event *>(data);
-
-        if (toplevel->maximized() != event->maximized)
-            toplevel->set_maximized(event->maximized);
-        toplevel->update_foreign_toplevel();
-    };
-    wl_signal_add(&handle->events.request_maximize, &handle_request_maximize);
-
-    // handle_request_minimize
-    handle_request_minimize.notify = [](wl_listener *listener,
-                                        [[maybe_unused]] void *data) {
-        Toplevel *toplevel =
-            wl_container_of(listener, toplevel, handle_request_minimize);
-
-        // wlr_foreign_toplevel_handle_v1_minimized_event *event =
-        //     static_cast<wlr_foreign_toplevel_handle_v1_minimized_event
-        //     *>(data);
-        //
-        //  FIXME: since awm doesn't support minimization, just update the
-        //  toplevel
-
-        notify_send(
-            "WARNING"
-            "%s",
-            "Minimizing foreign toplevels is not supported, expect issues");
-        wlr_scene_node_lower_to_bottom(&toplevel->scene_tree->node);
-
-        toplevel->update_foreign_toplevel();
-    };
-    wl_signal_add(&handle->events.request_minimize, &handle_request_minimize);
-
-    // handle_request_fullscreen
-    handle_request_fullscreen.notify = [](wl_listener *listener, void *data) {
-        Toplevel *toplevel =
-            wl_container_of(listener, toplevel, handle_request_fullscreen);
-
-        const auto *event =
-            static_cast<wlr_foreign_toplevel_handle_v1_fullscreen_event *>(
-                data);
-
-        // output specified
-        if (event->output) {
-            // get the source and target workspaces
-            Workspace *target =
-                toplevel->server->get_output(event->output)->get_active();
-            Workspace *source = toplevel->server->get_workspace(toplevel);
-
-            // move the toplevel to the target workspace
-            source->move_to(toplevel, target);
-        }
-
-        // set fullscreen
-        if (event->fullscreen != toplevel->fullscreen())
-            toplevel->set_fullscreen(event->fullscreen);
-        toplevel->update_foreign_toplevel();
-    };
-    wl_signal_add(&handle->events.request_fullscreen,
-                  &handle_request_fullscreen);
-
-    // handle_request_activate
-    handle_request_activate.notify = [](wl_listener *listener,
-                                        [[maybe_unused]] void *data) {
-        Toplevel *toplevel =
-            wl_container_of(listener, toplevel, handle_request_activate);
-
-        // send focus
-        toplevel->focus();
-        toplevel->update_foreign_toplevel();
-    };
-    wl_signal_add(&handle->events.request_activate, &handle_request_activate);
-
-    // handle_request_close
-    handle_request_close.notify = [](wl_listener *listener,
-                                     [[maybe_unused]] void *data) {
-        Toplevel *toplevel =
-            wl_container_of(listener, toplevel, handle_request_close);
-
-        // send close
-        toplevel->close();
-        toplevel->update_foreign_toplevel();
-    };
-    wl_signal_add(&handle->events.request_close, &handle_request_close);
-
-    // handle_set_rectangle
-    handle_set_rectangle.notify = [](wl_listener *listener, void *data) {
-        Toplevel *toplevel =
-            wl_container_of(listener, toplevel, handle_request_close);
-
-        const auto *event =
-            static_cast<wlr_foreign_toplevel_handle_v1_set_rectangle_event *>(
-                data);
-
-        // NOTE: this might be entirely incorrect
-        toplevel->set_position_size(event->x, event->y, event->width,
-                                    event->height);
-
-        toplevel->update_foreign_toplevel();
-    };
-    wl_signal_add(&handle->events.set_rectangle, &handle_set_rectangle);
-
-    // handle_destroy
-    handle_destroy.notify = [](wl_listener *listener,
-                               [[maybe_unused]] void *data) {
-        Toplevel *toplevel =
-            wl_container_of(listener, toplevel, handle_destroy);
-
-        delete toplevel;
-    };
-    wl_signal_add(&handle->events.destroy, &handle_destroy);
 }
 
 // Toplevel from xdg toplevel
@@ -319,9 +199,6 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
                                               xdg_toplevel->base);
     scene_tree->node.data = this;
     xdg_toplevel->base->data = scene_tree;
-
-    // create foreign toplevel handle
-    create_handle();
 
     // xdg_toplevel_map
     map.notify = map_notify;
@@ -448,21 +325,12 @@ Toplevel::~Toplevel() {
 #endif
 
     wl_list_remove(&destroy.link);
-    wl_list_remove(&handle_request_maximize.link);
-    wl_list_remove(&handle_request_minimize.link);
-    wl_list_remove(&handle_request_fullscreen.link);
-    wl_list_remove(&handle_request_activate.link);
-    wl_list_remove(&handle_request_close.link);
-    wl_list_remove(&handle_set_rectangle.link);
-    wl_list_remove(&handle_destroy.link);
 }
 
 #ifdef XWAYLAND
 // Toplevel from xwayland surface
 Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     : server(server), xwayland_surface(xwayland_surface) {
-    // create foreign toplevel handle
-    create_handle();
 
     // destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
@@ -848,12 +716,10 @@ bool Toplevel::fullscreen() const {
 #ifdef XWAYLAND
     if (xdg_toplevel)
 #endif
-        return xdg_toplevel->current.fullscreen ||
-               handle->state & WLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN;
+        return xdg_toplevel->current.fullscreen;
 #ifdef XWAYLAND
     else
-        return xwayland_surface->fullscreen ||
-               handle->state & WLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN;
+        return xwayland_surface->fullscreen;
 #endif
 };
 
@@ -948,15 +814,61 @@ void Toplevel::set_maximized(const bool maximized) {
                               output_box.height / 2);
 }
 
-// update foreign toplevel on window state change
-void Toplevel::update_foreign_toplevel() const {
-    // update foreign state with xdg toplevel state
-    wlr_foreign_toplevel_handle_v1_set_maximized(
-        handle, xdg_toplevel->current.maximized);
-    wlr_foreign_toplevel_handle_v1_set_fullscreen(
-        handle, xdg_toplevel->current.fullscreen);
-    wlr_foreign_toplevel_handle_v1_set_activated(
-        handle, xdg_toplevel->current.activated);
+// create foreign toplevel
+void Toplevel::create_foreign() {
+    foreign_handle = wlr_foreign_toplevel_handle_v1_create(
+        server->wlr_foreign_toplevel_manager);
+
+    // foreign toplevel activate
+    foreign_activate.notify = [](wl_listener *listener, void *data) {
+        Toplevel *toplevel =
+            wl_container_of(listener, toplevel, foreign_activate);
+        const auto *event =
+            static_cast<wlr_foreign_toplevel_handle_v1_activated_event *>(data);
+        if (event->seat == toplevel->server->seat)
+            toplevel->focus();
+    };
+    wl_signal_add(&foreign_handle->events.request_activate, &foreign_activate);
+
+    // foreign_toplevel close
+    foreign_close.notify = [](wl_listener *listener,
+                              [[maybe_unused]] void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, foreign_close);
+        toplevel->close();
+    };
+    wl_signal_add(&foreign_handle->events.request_close, &foreign_close);
+}
+
+// update foreign toplevel
+void Toplevel::update_foreign() const {
+    wlr_log(WLR_ERROR, "should not be called");
+}
+
+// create ext foreign toplevel
+void Toplevel::create_ext_foreign() {
+    wlr_ext_foreign_toplevel_handle_v1_state state{};
+    state.app_id = app_id().c_str();
+    state.title = title().c_str(),
+    ext_foreign_handle = wlr_ext_foreign_toplevel_handle_v1_create(
+        server->wlr_foreign_toplevel_list, &state);
+
+    // ext foreign toplevel destroy
+    ext_foreign_destroy.notify = [](wl_listener *listener,
+                                    [[maybe_unused]] void *data) {
+        Toplevel *toplevel =
+            wl_container_of(listener, toplevel, ext_foreign_destroy);
+        wlr_ext_foreign_toplevel_handle_v1_destroy(
+            toplevel->ext_foreign_handle);
+    };
+    wl_signal_add(&ext_foreign_handle->events.destroy, &ext_foreign_destroy);
+}
+
+// update ext foreign toplevel
+void Toplevel::update_ext_foreign() const {
+    wlr_ext_foreign_toplevel_handle_v1_state state{};
+    state.app_id = app_id().c_str();
+    state.title = title().c_str();
+    wlr_ext_foreign_toplevel_handle_v1_update_state(ext_foreign_handle, &state);
 }
 
 // toggle maximized
@@ -989,14 +901,51 @@ void Toplevel::save_geometry() {
     }
 }
 
+// get the title of the toplevel
 std::string Toplevel::title() const {
 #ifdef XWAYLAND
     if (xdg_toplevel)
         return xdg_toplevel->title ? xdg_toplevel->title : "";
     else if (xwayland_surface)
         return xwayland_surface->title ? xwayland_surface->title : "";
-#endif
+#else
     return xdg_toplevel->title ? xdg_toplevel->title : "";
+#endif
+}
+
+// get the app id of the toplevel
+std::string Toplevel::app_id() const {
+#ifdef XWAYLAND
+    if (xdg_toplevel)
+        return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
+    else if (xwayland_surface)
+        return xwayland_surface->app_id ? xwayland_surface->app_id : "";
+#else
+    return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
+#endif
+}
+
+// update the title of the toplevel
+void Toplevel::update_title() {
+    const std::string title = this->title();
+
+    if (foreign_handle && !title.empty())
+        wlr_foreign_toplevel_handle_v1_set_title(foreign_handle, title.c_str());
+
+    if (ext_foreign_handle)
+        update_ext_foreign();
+}
+
+// update the app id of the toplevel
+void Toplevel::update_app_id() {
+    const std::string app_id = this->app_id();
+
+    if (foreign_handle && !app_id.empty())
+        wlr_foreign_toplevel_handle_v1_set_app_id(foreign_handle,
+                                                  app_id.c_str());
+
+    if (ext_foreign_handle)
+        update_ext_foreign();
 }
 
 // tell the toplevel to close

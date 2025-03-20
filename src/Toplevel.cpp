@@ -839,11 +839,6 @@ void Toplevel::create_foreign() {
     wl_signal_add(&foreign_handle->events.request_close, &foreign_close);
 }
 
-// update foreign toplevel
-void Toplevel::update_foreign() const {
-    wlr_log(WLR_ERROR, "should not be called");
-}
-
 // create ext foreign toplevel
 void Toplevel::create_ext_foreign() {
     wlr_ext_foreign_toplevel_handle_v1_state state{};
@@ -904,25 +899,22 @@ void Toplevel::save_geometry() {
 // get the title of the toplevel
 std::string Toplevel::title() const {
 #ifdef XWAYLAND
-    if (xdg_toplevel)
-        return xdg_toplevel->title ? xdg_toplevel->title : "";
-    else if (xwayland_surface)
+    if (xwayland_surface)
         return xwayland_surface->title ? xwayland_surface->title : "";
-#else
-    return xdg_toplevel->title ? xdg_toplevel->title : "";
 #endif
+
+    return xdg_toplevel->title ? xdg_toplevel->title : "";
 }
 
 // get the app id of the toplevel
 std::string Toplevel::app_id() const {
 #ifdef XWAYLAND
-    if (xdg_toplevel)
-        return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
-    else if (xwayland_surface)
-        return xwayland_surface->app_id ? xwayland_surface->app_id : "";
-#else
-    return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
+    if (xwayland_surface)
+        return xwayland_surface->surface_id
+                   ? std::to_string(xwayland_surface->surface_id)
+                   : "";
 #endif
+    return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
 }
 
 // update the title of the toplevel

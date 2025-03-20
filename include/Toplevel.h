@@ -61,7 +61,6 @@ struct Toplevel {
     static void unmap_notify(wl_listener *listener, void *data);
 
     void create_foreign();
-    void update_foreign() const;
 
     void create_ext_foreign();
     void update_ext_foreign() const;

@@ -1,4 +1,5 @@
 #include "Server.h"
+#include <string>
 #include <sys/socket.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 using json = nlohmann::json;
@@ -11,11 +12,15 @@ IPC::IPC(Server *server) : server(server) {
         return;
     }
 
-    wlr_log(WLR_INFO, "starting IPC on socket %d", fd);
+    wlr_log(WLR_INFO, "starting IPC with fd %d", fd);
 
-    // unlink old socket if present
-    if (!unlink(path.c_str()))
-        wlr_log(WLR_INFO, "removed old socket at path `%s`", path.c_str());
+    // find available socket path
+    for (int i = 0; i != 10; ++i) {
+        path = "/tmp/awm" + std::to_string(i) + ".sock";
+        if (access(path.c_str(), F_OK) == 0)
+            break;
+    }
+    setenv("AWM_SOCK", path.c_str(), true);
 
     // set socket address
     addr.sun_family = AF_UNIX;

@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -625,6 +626,40 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_pointer_constraints->events.new_constraint,
                   &new_pointer_constraint);
 
+    // xdg activation
+    wlr_xdg_activation = wlr_xdg_activation_v1_create(display);
+
+    xdg_activation_activate.notify = [](wl_listener *listener, void *data) {
+        Server *server =
+            wl_container_of(listener, server, xdg_activation_activate);
+        const auto event =
+            static_cast<wlr_xdg_activation_v1_request_activate_event *>(data);
+
+        // get toplevel associated with surface
+        Toplevel *toplevel = server->get_toplevel(event->surface);
+        if (!toplevel)
+            return;
+
+        // set token for toplevel
+        wlr_xdg_activation_token_v1 *token = event->token;
+        toplevel->xdg_activation_token = token;
+
+        // unsure about this
+        if (token->seat)
+            toplevel->focus();
+    };
+    wl_signal_add(&wlr_xdg_activation->events.request_activate,
+                  &xdg_activation_activate);
+
+    xdg_activation_new_token.notify = [](wl_listener *listener, void *data) {
+        Server *server =
+            wl_container_of(listener, server, xdg_activation_activate);
+        const auto token =
+            static_cast<wlr_xdg_activation_token_v1 *>(data); // ???
+    };
+    wl_signal_add(&wlr_xdg_activation->events.new_token,
+                  &xdg_activation_new_token);
+
     // viewporter
     wlr_viewporter = wlr_viewporter_create(display);
 
@@ -763,10 +798,6 @@ Server::Server(Config *config) : config(config) {
     // set wayland display to our socket
     setenv("WAYLAND_DISPLAY", socket.c_str(), true);
 
-    // set xdg env vars
-    setenv("XDG_CURRENT_DESKTOP", "awm", true);
-    setenv("XDG_BACKEND", "wayland", true);
-
     // set xcursor paths
     char *xcursor_path = getenv("XCURSOR_PATH");
     std::string xcursor_path_str =
@@ -838,6 +869,8 @@ Server::~Server() {
     wl_list_remove(&new_virtual_pointer.link);
     wl_list_remove(&new_virtual_keyboard.link);
     wl_list_remove(&new_pointer_constraint.link);
+    wl_list_remove(&xdg_activation_activate.link);
+    wl_list_remove(&xdg_activation_new_token.link);
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

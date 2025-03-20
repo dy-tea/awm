@@ -95,6 +95,10 @@ struct Server {
     wlr_pointer_constraints_v1 *wlr_pointer_constraints;
     wl_listener new_pointer_constraint;
 
+    wlr_xdg_activation_v1 *wlr_xdg_activation;
+    wl_listener xdg_activation_activate;
+    wl_listener xdg_activation_new_token;
+
     struct wlr_viewporter *wlr_viewporter;
     struct wlr_presentation *wlr_presentation;
     wlr_export_dmabuf_manager_v1 *wlr_export_dmabuf_manager;

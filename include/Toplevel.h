@@ -45,6 +45,8 @@ struct Toplevel {
     wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_handle;
     wl_listener ext_foreign_destroy;
 
+    wlr_xdg_activation_token_v1 *xdg_activation_token{nullptr};
+
     bool hidden{false};
 
     wlr_box geometry{};

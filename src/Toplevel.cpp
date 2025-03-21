@@ -4,135 +4,129 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // on map or display
     Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
+    // get the focused output
+    Output *output = toplevel->server->focused_output();
+
     // xdg toplevel
     if (const wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel) {
+        // set the fractional scale for this surface
+        const float scale = output->wlr_output->scale;
+        wlr_fractional_scale_v1_notify_scale(xdg_toplevel->base->surface,
+                                             scale);
+        wlr_surface_set_preferred_buffer_scale(xdg_toplevel->base->surface,
+                                               ceil(scale));
 
-        // get the focused output
-        if (Output *output = toplevel->server->focused_output()) {
-            // set the fractional scale for this surface
-            const float scale = output->wlr_output->scale;
-            wlr_fractional_scale_v1_notify_scale(xdg_toplevel->base->surface,
-                                                 scale);
-            wlr_surface_set_preferred_buffer_scale(xdg_toplevel->base->surface,
-                                                   ceil(scale));
+        // get usable area of the output
+        wlr_box usable_area = output->usable_area;
 
-            // get usable area of the output
-            wlr_box usable_area = output->usable_area;
+        // get scheduled width and height
+        uint32_t width = xdg_toplevel->scheduled.width > 0
+                             ? xdg_toplevel->scheduled.width
+                             : xdg_toplevel->current.width;
+        uint32_t height = xdg_toplevel->scheduled.height > 0
+                              ? xdg_toplevel->scheduled.height
+                              : xdg_toplevel->current.height;
 
-            // get scheduled width and height
-            uint32_t width = xdg_toplevel->scheduled.width > 0
-                                 ? xdg_toplevel->scheduled.width
-                                 : xdg_toplevel->current.width;
-            uint32_t height = xdg_toplevel->scheduled.height > 0
-                                  ? xdg_toplevel->scheduled.height
-                                  : xdg_toplevel->current.height;
-
-            // set current width and height if not scheduled
-            if (!width || !height) {
-                width = xdg_toplevel->base->surface->current.width;
-                height = xdg_toplevel->base->surface->current.height;
-            }
-
-            // ensure size does not exceed output
-            width = std::min(width, static_cast<uint32_t>(usable_area.width));
-            height =
-                std::min(height, static_cast<uint32_t>(usable_area.height));
-
-            wlr_box output_box = output->layout_geometry;
-
-            int32_t x = output_box.x + (usable_area.width - width) / 2;
-            int32_t y = output_box.y + (usable_area.height - height) / 2;
-
-            // ensure position falls in bounds
-            x = std::max(x, usable_area.x);
-            y = std::max(y, usable_area.y);
-
-            // add toplevel to active workspace and focus it
-            output->get_active()->add_toplevel(toplevel, true);
-
-            // set position and size
-            toplevel->set_position_size(x, y, width, height);
+        // set current width and height if not scheduled
+        if (!width || !height) {
+            width = xdg_toplevel->base->surface->current.width;
+            height = xdg_toplevel->base->surface->current.height;
         }
+
+        // ensure size does not exceed output
+        width = std::min(width, static_cast<uint32_t>(usable_area.width));
+        height = std::min(height, static_cast<uint32_t>(usable_area.height));
+
+        wlr_box output_box = output->layout_geometry;
+
+        int32_t x = output_box.x + (usable_area.width - width) / 2;
+        int32_t y = output_box.y + (usable_area.height - height) / 2;
+
+        // ensure position falls in bounds
+        x = std::max(x, usable_area.x);
+        y = std::max(y, usable_area.y);
+
+        // add toplevel to active workspace and focus it
+        output->get_active()->add_toplevel(toplevel, true);
+
+        // set position and size
+        toplevel->set_position_size(x, y, width, height);
     }
 #ifdef XWAYLAND
+    // xwayland surface
     else {
-        // xwayland surface
+        // create scene surface
+        toplevel->scene_tree =
+            wlr_scene_tree_create(toplevel->server->layers.floating);
+        toplevel->scene_surface = wlr_scene_surface_create(
+            toplevel->scene_tree, toplevel->xwayland_surface->surface);
 
-        if (Output *output = toplevel->server->focused_output()) {
-            // create scene surface
-            toplevel->scene_tree =
-                wlr_scene_tree_create(toplevel->server->layers.floating);
-            toplevel->scene_surface = wlr_scene_surface_create(
-                toplevel->scene_tree, toplevel->xwayland_surface->surface);
+        // get usable area of the output
+        wlr_box area = output->usable_area;
 
-            // get usable area of the output
-            wlr_box area = output->usable_area;
+        // calcualte the width and height
+        int width = toplevel->xwayland_surface->width;
+        int height = toplevel->xwayland_surface->height;
 
-            // calcualte the width and height
-            int width = toplevel->xwayland_surface->width;
-            int height = toplevel->xwayland_surface->height;
+        // ensure size does not exceed output
+        if (width > area.width)
+            width = area.width;
 
-            // ensure size does not exceed output
-            if (width > area.width)
-                width = area.width;
+        if (height > area.height)
+            height = area.height;
 
-            if (height > area.height)
-                height = area.height;
+        // get surface position
+        int x = toplevel->xwayland_surface->x;
+        int y = toplevel->xwayland_surface->y;
 
-            // get surface position
-            int x = toplevel->xwayland_surface->x;
-            int y = toplevel->xwayland_surface->y;
+        // center the surface to the focused output if zero
+        if (!x)
+            x += area.x + (output->layout_geometry.width - width) / 2;
+        if (!y)
+            y += area.y + (output->layout_geometry.height - height) / 2;
 
-            // center the surface to the focused output if zero
-            if (!x)
-                x += area.x + (output->layout_geometry.width - width) / 2;
-            if (!y)
-                y += area.y + (output->layout_geometry.height - height) / 2;
+        // send a configure event
+        wlr_xwayland_surface_configure(toplevel->xwayland_surface, x, y, width,
+                                       height);
 
-            // send a configure event
-            wlr_xwayland_surface_configure(toplevel->xwayland_surface, x, y,
-                                           width, height);
+        // set the position
+        wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node, x,
+                                    y);
 
-            // set the position
-            wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
-                                        x, y);
+        // add the toplevel to the scene tree
+        toplevel->scene_surface->buffer->node.data = toplevel;
+        toplevel->scene_tree->node.data = toplevel;
 
-            // add the toplevel to the scene tree
-            toplevel->scene_surface->buffer->node.data = toplevel;
-            toplevel->scene_tree->node.data = toplevel;
+        // xwayland commit
+        toplevel->xwayland_commit.notify = [](wl_listener *listener,
+                                              [[maybe_unused]] void *data) {
+            Toplevel *toplevel =
+                wl_container_of(listener, toplevel, xwayland_commit);
+            const wlr_surface_state *state =
+                &toplevel->xwayland_surface->surface->current;
 
-            // xwayland commit
-            toplevel->xwayland_commit.notify = [](wl_listener *listener,
-                                                  [[maybe_unused]] void *data) {
-                Toplevel *toplevel =
-                    wl_container_of(listener, toplevel, xwayland_commit);
-                const wlr_surface_state *state =
-                    &toplevel->xwayland_surface->surface->current;
-
-                wlr_box new_box{
-                    0,
-                    0,
-                    state->width,
-                    state->height,
-                };
-
-                if (new_box.width != toplevel->saved_geometry.width ||
-                    new_box.height != toplevel->saved_geometry.height)
-                    memcpy(&toplevel->saved_geometry, &new_box,
-                           sizeof(wlr_box));
+            wlr_box new_box{
+                0,
+                0,
+                state->width,
+                state->height,
             };
-            wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
-                          &toplevel->xwayland_commit);
 
-            // set seat if requested
-            if (wlr_xwayland_surface_override_redirect_wants_focus(
-                    toplevel->xwayland_surface))
-                wlr_xwayland_set_seat(toplevel->server->xwayland,
-                                      toplevel->server->seat);
+            if (new_box.width != toplevel->saved_geometry.width ||
+                new_box.height != toplevel->saved_geometry.height)
+                memcpy(&toplevel->saved_geometry, &new_box, sizeof(wlr_box));
+        };
+        wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
+                      &toplevel->xwayland_commit);
 
-            // add to active workspace
-            output->get_active()->add_toplevel(toplevel, true);
-        }
+        // set seat if requested
+        if (wlr_xwayland_surface_override_redirect_wants_focus(
+                toplevel->xwayland_surface))
+            wlr_xwayland_set_seat(toplevel->server->xwayland,
+                                  toplevel->server->seat);
+
+        // add to active workspace
+        output->get_active()->add_toplevel(toplevel, true);
     }
 #endif
     // foreign toplevel
@@ -930,11 +924,10 @@ void Toplevel::update_title() {
 
 // update the app id of the toplevel
 void Toplevel::update_app_id() {
-    const std::string app_id = this->app_id();
+    const std::string id = app_id();
 
-    if (foreign_handle && !app_id.empty())
-        wlr_foreign_toplevel_handle_v1_set_app_id(foreign_handle,
-                                                  app_id.c_str());
+    if (foreign_handle && !id.empty())
+        wlr_foreign_toplevel_handle_v1_set_app_id(foreign_handle, id.c_str());
 
     if (ext_foreign_handle)
         update_ext_foreign();

@@ -194,8 +194,7 @@ int main(int argc, char **argv) {
     // set socket address
     sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
-    std::string socket_path = getenv("AWM_SOCK");
-    strncpy(addr.sun_path, socket_path.c_str(), sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, "/tmp/awm.sock", sizeof(addr.sun_path) - 1);
 
     // connect to ipc socket
     if (connect(fd, reinterpret_cast<struct sockaddr *>(&addr),

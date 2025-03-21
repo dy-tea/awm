@@ -12,15 +12,11 @@ IPC::IPC(Server *server) : server(server) {
         return;
     }
 
-    wlr_log(WLR_INFO, "starting IPC with fd %d", fd);
+    // unlink old socket
+    if (!unlink(path.c_str()))
+        wlr_log(WLR_ERROR, "unlinked old socket on path `%s`", path.c_str());
 
-    // find available socket path
-    for (int i = 0; i != 10; ++i) {
-        path = "/tmp/awm" + std::to_string(i) + ".sock";
-        if (access(path.c_str(), F_OK) == 0)
-            break;
-    }
-    setenv("AWM_SOCK", path.c_str(), true);
+    wlr_log(WLR_INFO, "starting IPC with fd %d on path `%s`", fd, path.c_str());
 
     // set socket address
     addr.sun_family = AF_UNIX;

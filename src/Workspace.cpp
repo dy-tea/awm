@@ -282,35 +282,55 @@ void Workspace::tile() {
     if (!toplevel_count)
         return;
 
-    // calculate rows and cols from toplevel count
-    int rows = std::round(std::sqrt(toplevel_count));
-    int cols = (toplevel_count + rows - 1) / rows;
+    TileMethod method = TILE_GRID; // FIXME: add config option
+    switch (method) {
+    case TILE_GRID: {
+        // calculate rows and cols from toplevel count
+        int rows = std::round(std::sqrt(toplevel_count));
+        int cols = (toplevel_count + rows - 1) / rows;
 
-    // width and height is just the fraction of the output binds
-    int width = box.width / cols;
-    int height = box.height / rows;
+        // width and height is just the fraction of the output binds
+        int width = box.width / cols;
+        int height = box.height / rows;
 
-    // sort by row and column order
-    std::sort(tiled.begin(), tiled.end(), [&](Toplevel *a, Toplevel *b) {
-        int ar = (a->geometry.y - box.y) / height;
-        int ac = (a->geometry.x - box.x) / width;
-        int br = (b->geometry.y - box.y) / height;
-        int bc = (b->geometry.x - box.x) / width;
+        // sort by row and column order
+        std::sort(tiled.begin(), tiled.end(), [&](Toplevel *a, Toplevel *b) {
+            int ar = (a->geometry.y - box.y) / height;
+            int ac = (a->geometry.x - box.x) / width;
+            int br = (b->geometry.y - box.y) / height;
+            int bc = (b->geometry.x - box.x) / width;
 
-        if (ar == br)
-            return ac < bc;
-        return ar < br;
-    });
+            if (ar == br)
+                return ac < bc;
+            return ar < br;
+        });
 
-    // loop through each toplevel
-    for (unsigned long i = 0; i != tiled.size(); ++i) {
-        // calculate toplevel geometry
-        int row = i / cols;
-        int col = i % cols;
-        int x = output->layout_geometry.x + box.x + (col * width);
-        int y = output->layout_geometry.y + box.y + (row * height);
+        // loop through each toplevel
+        for (unsigned long i = 0; i != tiled.size(); ++i) {
+            // calculate toplevel geometry
+            int row = i / cols;
+            int col = i % cols;
+            int x = output->layout_geometry.x + box.x + (col * width);
+            int y = output->layout_geometry.y + box.y + (row * height);
 
-        // set toplevel geometry
-        tiled[i]->set_position_size(x, y, width, height);
+            // set toplevel geometry
+            tiled[i]->set_position_size(x, y, width, height);
+        }
+
+        break;
+    }
+    case TILE_MASTER:
+        // split into 4 halfway along either axis;
+        // for every additional toplevel, split again starting from the top
+        // left region
+        wlr_log(WLR_INFO, "todo");
+        break;
+    case TILE_DWINDLE:
+        // split according to a fibonacci sequence in a spiral starting from the
+        // bottom left corner
+        wlr_log(WLR_INFO, "todo");
+        break;
+    default:
+        break;
     }
 }

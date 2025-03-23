@@ -1,5 +1,7 @@
 #include "wlr.h"
 
+enum TileMethod { TILE_GRID, TILE_MASTER, TILE_DWINDLE };
+
 struct Workspace {
     wl_list link;
     uint32_t num;

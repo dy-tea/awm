@@ -268,18 +268,27 @@ void Workspace::tile() {
 
     int toplevel_count = wl_list_length(&toplevels);
 
-    // do not tile if there is a fullscreen toplevel
+    // do not tile fullscreen toplevels
     Toplevel *toplevel, *tmp;
-    std::vector<Toplevel *> fullscreened;
-    wl_list_for_each_safe(toplevel, tmp, &toplevels,
-                          link) if (toplevel->fullscreen()) {
-        --toplevel_count;
-        fullscreened.push_back(toplevel);
+    std::vector<Toplevel *> tiled;
+    wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
+        if (toplevel->fullscreen())
+            --toplevel_count;
+        else
+            tiled.push_back(toplevel);
     }
 
     // ensure there is a toplevel to tile
     if (!toplevel_count)
         return;
+
+    // sort by distance to the top left corner of usable area
+    std::sort(tiled.begin(), tiled.end(), [&](Toplevel *a, Toplevel *b) {
+        return std::abs(a->geometry.x - box.x) +
+                   std::abs(a->geometry.y - box.y) <
+               std::abs(b->geometry.x - box.x) +
+                   std::abs(b->geometry.y - box.y);
+    });
 
     // calculate rows and cols from toplevel count
     int rows = std::round(std::sqrt(toplevel_count));
@@ -290,13 +299,7 @@ void Workspace::tile() {
     int height = box.height / rows;
 
     // loop through each toplevel
-    int i = 0;
-    wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
-        // skip fullscreened toplevel
-        if (std::find(fullscreened.begin(), fullscreened.end(), toplevel) !=
-            fullscreened.end())
-            continue;
-
+    for (unsigned long i = 0; i != tiled.size(); ++i) {
         // calculate toplevel geometry
         int row = i / cols;
         int col = i % cols;
@@ -304,7 +307,6 @@ void Workspace::tile() {
         int y = output->layout_geometry.y + box.y + (row * height);
 
         // set toplevel geometry
-        toplevel->set_position_size(x, y, width, height);
-        ++i;
+        tiled[i]->set_position_size(x, y, width, height);
     }
 }

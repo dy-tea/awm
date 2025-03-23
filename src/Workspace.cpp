@@ -302,15 +302,33 @@ void Workspace::tile() {
         return ar < br;
     });
 
-    // loop through each toplevel
-    for (unsigned long i = 0; i != tiled.size(); ++i) {
-        // calculate toplevel geometry
-        int row = i / cols;
-        int col = i % cols;
-        int x = output->layout_geometry.x + box.x + (col * width);
-        int y = output->layout_geometry.y + box.y + (row * height);
+    if (tiled.size() % 2) {
+        // odd number of toplevels, double the height of the median toplevel
+        unsigned long median = tiled.size() / 2;
 
-        // set toplevel geometry
-        tiled[i]->set_position_size(x, y, width, height);
+        // loop through each toplevel
+        for (unsigned long i = 0; i != tiled.size(); ++i) {
+            // calculate toplevel geometry
+            int row = i / cols;
+            int col = i % cols;
+            int x = output->layout_geometry.x + box.x + (col * width);
+            int y = output->layout_geometry.y + box.y + (row * height);
+
+            // set toplevel geometry
+            tiled[i]->set_position_size(x, y, width,
+                                        i == median ? height * 2 : height);
+        }
+    } else {
+        // loop through each toplevel
+        for (unsigned long i = 0; i != tiled.size(); ++i) {
+            // calculate toplevel geometry
+            int row = i / cols;
+            int col = i % cols;
+            int x = output->layout_geometry.x + box.x + (col * width);
+            int y = output->layout_geometry.y + box.y + (row * height);
+
+            // set toplevel geometry
+            tiled[i]->set_position_size(x, y, width, height);
+        }
     }
 }

@@ -282,14 +282,6 @@ void Workspace::tile() {
     if (!toplevel_count)
         return;
 
-    // sort by distance to the top left corner of usable area
-    std::sort(tiled.begin(), tiled.end(), [&](Toplevel *a, Toplevel *b) {
-        return std::abs(a->geometry.x - box.x) +
-                   std::abs(a->geometry.y - box.y) <
-               std::abs(b->geometry.x - box.x) +
-                   std::abs(b->geometry.y - box.y);
-    });
-
     // calculate rows and cols from toplevel count
     int rows = std::round(std::sqrt(toplevel_count));
     int cols = (toplevel_count + rows - 1) / rows;
@@ -297,6 +289,18 @@ void Workspace::tile() {
     // width and height is just the fraction of the output binds
     int width = box.width / cols;
     int height = box.height / rows;
+
+    // sort by row and column order
+    std::sort(tiled.begin(), tiled.end(), [&](Toplevel *a, Toplevel *b) {
+        int ar = (a->geometry.y - box.y) / height;
+        int ac = (a->geometry.x - box.x) / width;
+        int br = (b->geometry.y - box.y) / height;
+        int bc = (b->geometry.x - box.x) / width;
+
+        if (ar == br)
+            return ac < bc;
+        return ar < br;
+    });
 
     // loop through each toplevel
     for (unsigned long i = 0; i != tiled.size(); ++i) {

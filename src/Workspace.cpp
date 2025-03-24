@@ -282,7 +282,7 @@ void Workspace::tile() {
     if (!toplevel_count)
         return;
 
-    TileMethod method = TILE_GRID; // FIXME: add config option
+    TileMethod method = TILE_DWINDLE; // FIXME: add config option
     switch (method) {
     case TILE_GRID: {
         // calculate rows and cols from toplevel count
@@ -306,7 +306,7 @@ void Workspace::tile() {
         });
 
         // loop through each toplevel
-        for (unsigned long i = 0; i != tiled.size(); ++i) {
+        for (int i = 0; i != toplevel_count; ++i) {
             // calculate toplevel geometry
             int row = i / cols;
             int col = i % cols;
@@ -323,13 +323,39 @@ void Workspace::tile() {
         // split into 4 halfway along either axis;
         // for every additional toplevel, split again starting from the top
         // left region
-        wlr_log(WLR_INFO, "todo");
+
         break;
-    case TILE_DWINDLE:
-        // split according to a fibonacci sequence in a spiral starting from the
-        // bottom left corner
-        wlr_log(WLR_INFO, "todo");
+    case TILE_DWINDLE: {
+        // start with width and height being the full output area
+        int width = box.width;
+        int height = box.height;
+        int x = 0, y = 0;
+
+        // 1 toplevel means that it should take up the full screen
+        if (tiled.size() != 1)
+            width /= 2;
+
+        for (int i = 0; i != toplevel_count; ++i) {
+            // set toplevel geometry
+            tiled[i]->set_position_size(x, y, width, height);
+
+            if (i % 2) {
+                // do not change size for last toplevel
+                if (i != toplevel_count - 2)
+                    width /= 2;
+                // add height to y
+                y += height;
+            } else {
+                // do not change size for last toplevel
+                if (i != toplevel_count - 2)
+                    height /= 2;
+                // add width to x
+                x += width;
+            }
+        }
+
         break;
+    }
     default:
         break;
     }

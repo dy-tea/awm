@@ -56,6 +56,9 @@ accel_speed = 0.0            # range from -1.0 to 1.0
 [general]
 focus_on_hover = false # focus window on mouse hover, false by default
 
+[tiling]
+method = "grid" # "none", "grid", "dwindle"
+
 [binds] # default binds which can be overwitten in your config
 exit = "Alt Escape"
 window.maximize = "Alt w"

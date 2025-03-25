@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {

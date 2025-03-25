@@ -85,6 +85,8 @@ struct OutputConfig {
     }
 };
 
+enum TileMethod { TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE };
+
 struct Config {
     std::string path;
     std::filesystem::file_time_type last_write_time;
@@ -150,6 +152,10 @@ struct Config {
     struct {
         bool focus_on_hover{false};
     } general;
+
+    struct {
+        TileMethod method{TILE_GRID};
+    } tiling;
 
     // compostior binds
     std::vector<Bind> binds;

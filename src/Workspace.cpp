@@ -282,8 +282,8 @@ void Workspace::tile() {
     if (!toplevel_count)
         return;
 
-    TileMethod method = TILE_DWINDLE; // FIXME: add config option
-    switch (method) {
+    // tile according to tiling method
+    switch (output->server->config->tiling.method) {
     case TILE_GRID: {
         // calculate rows and cols from toplevel count
         int rows = std::round(std::sqrt(toplevel_count));

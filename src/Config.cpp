@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "tomlcpp.hpp"
+#include <algorithm>
 #include <libinput.h>
 #include <sstream>
 
@@ -414,6 +415,21 @@ bool Config::load() {
         // focus on hover
         connect(general_table->getBool("focus_on_hover"),
                 &general.focus_on_hover);
+    }
+
+    // tiling
+    std::unique_ptr<toml::Table> tiling_table =
+        config_file.table->getTable("tiling");
+    if (tiling_table) {
+        // method
+        const std::string method_values[] = {"none", "grid", "dwindle"};
+        auto method = tiling_table->getString("method");
+        if (method.first)
+            for (int i = 0; i != TILE_DWINDLE + 1; ++i)
+                if (method_values[i] == method.second) {
+                    tiling.method = static_cast<TileMethod>(i);
+                    break;
+                }
     }
 
     // get awm binds

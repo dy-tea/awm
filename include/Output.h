@@ -1,3 +1,5 @@
+#pragma once
+
 #include "wlr.h"
 
 struct Output {

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "tomlcpp.hpp"
 #include "util.h"
 #include "wlr.h"

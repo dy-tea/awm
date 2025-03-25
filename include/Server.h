@@ -1,3 +1,5 @@
+#pragma once
+
 #include <atomic>
 #include <cassert>
 #include <sys/wait.h>
@@ -14,7 +16,6 @@
 #include "SessionLock.h"
 #include "Toplevel.h"
 #include "Workspace.h"
-#include "wlr.h"
 
 struct Server {
     // singleton

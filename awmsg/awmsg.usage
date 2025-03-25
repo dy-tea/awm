@@ -8,7 +8,9 @@ awmsg [<FLAGS>]... (keyboard) <KEYBOARD-OPTION>;
 awmsg [<FLAGS>]... (device) <DEVICE-OPTION>;
 awmsg [<FLAGS>]... (bind) <BIND-OPTION>;
 
-<FLAGS> ::= (-c | --continuous) "keep reading events until cancelled";
+<FLAGS> ::= (-h | --help) "show help"
+          | (-c | --continuous) "keep writing updates until cancelled"
+          | (-1 | --1-line) "write on a single line";
 
 <OUTPUT-OPTION> ::= (list) "list outputs"
                   | (modes) "list output modes";

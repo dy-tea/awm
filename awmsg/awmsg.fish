@@ -67,45 +67,49 @@ function _awmsg
         set COMP_CWORD (count $COMP_WORDS)
     end
 
-    set literals help exit spawn -c --continuous output list modes workspace list set toplevel list keyboard list device list current bind list run display
+    set literals help exit spawn -h --help -c --continuous -1 --1-line output list modes workspace list set toplevel list keyboard list device list current bind list run display
 
     set descriptions
     set descriptions[1] "show help"
     set descriptions[2] "exit awm"
     set descriptions[3] "spawn a command"
-    set descriptions[4] "keep reading events until cancelled"
-    set descriptions[5] "keep reading events until cancelled"
-    set descriptions[7] "list outputs"
-    set descriptions[8] "list output modes"
-    set descriptions[10] "list workspaces"
-    set descriptions[11] "set current workspace to num"
-    set descriptions[13] "list toplevels"
-    set descriptions[15] "list keyboards"
-    set descriptions[17] "list devices"
-    set descriptions[18] "show current device"
-    set descriptions[20] "list key bindings"
-    set descriptions[21] "run key binding for name"
-    set descriptions[22] "display key binding for name"
+    set descriptions[4] "show help"
+    set descriptions[5] "show help"
+    set descriptions[6] "keep writing updates until cancelled"
+    set descriptions[7] "keep writing updates until cancelled"
+    set descriptions[8] "write on a single line"
+    set descriptions[9] "write on a single line"
+    set descriptions[11] "list outputs"
+    set descriptions[12] "list output modes"
+    set descriptions[14] "list workspaces"
+    set descriptions[15] "set current workspace to num"
+    set descriptions[17] "list toplevels"
+    set descriptions[19] "list keyboards"
+    set descriptions[21] "list devices"
+    set descriptions[22] "show current device"
+    set descriptions[24] "list key bindings"
+    set descriptions[25] "run key binding for name"
+    set descriptions[26] "display key binding for name"
 
     set literal_transitions_inputs
-    set literal_transitions_inputs[1] "1 2 3 4 5 6 9 12 14 16 19"
-    set literal_transitions_tos[1] "2 2 3 4 4 5 6 7 8 9 10"
-    set literal_transitions_inputs[4] "4 5 6 9 12 14 16 19"
-    set literal_transitions_tos[4] "4 4 5 6 7 8 9 10"
-    set literal_transitions_inputs[5] "7 8"
+    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 13 16 18 20 23"
+    set literal_transitions_tos[1] "2 2 3 4 4 4 4 4 4 5 6 7 8 9 10"
+    set literal_transitions_inputs[4] "4 5 6 7 8 9 10 13 16 18 20 23"
+    set literal_transitions_tos[4] "4 4 4 4 4 4 5 6 7 8 9 10"
+    set literal_transitions_inputs[5] "11 12"
     set literal_transitions_tos[5] "2 2"
-    set literal_transitions_inputs[6] "10 11"
+    set literal_transitions_inputs[6] "14 15"
     set literal_transitions_tos[6] "2 12"
-    set literal_transitions_inputs[7] 13
+    set literal_transitions_inputs[7] 17
     set literal_transitions_tos[7] 2
-    set literal_transitions_inputs[8] 15
+    set literal_transitions_inputs[8] 19
     set literal_transitions_tos[8] 2
-    set literal_transitions_inputs[9] "17 18"
+    set literal_transitions_inputs[9] "21 22"
     set literal_transitions_tos[9] "2 2"
-    set literal_transitions_inputs[10] "20 21 22"
+    set literal_transitions_inputs[10] "24 25 26"
     set literal_transitions_tos[10] "2 11 11"
 
-    set match_anything_transitions_from 12 11 3
+    set match_anything_transitions_from 11 12 3
     set match_anything_transitions_to 2 2 2
 
     set state 1
@@ -137,7 +141,7 @@ function _awmsg
     end
 
     set literal_froms_level_0 7 8 1 9 4 10 6 5
-    set literal_inputs_level_0 "13|15|1 2 3 4 5 6 9 12 14 16 19|17 18|4 5 6 9 12 14 16 19|20 21 22|10 11|7 8"
+    set literal_inputs_level_0 "17|19|1 2 3 4 5 6 7 8 9 10 13 16 18 20 23|21 22|4 5 6 7 8 9 10 13 16 18 20 23|24 25 26|14 15|11 12"
 
     set max_fallback_level 0
     for fallback_level in (seq 0 0)

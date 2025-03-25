@@ -26,6 +26,7 @@ void print_usage() {
     printf("%s", "Usage: awmsg [flags] [group] [subcommand]\n"
                  "flags:\n"
                  "\t-c --continuous\n"
+                 "\t-1 --1-line\n"
                  "groups:\n"
                  "\t[h]elp\n"
                  "\t[e]xit\n"
@@ -68,10 +69,17 @@ int main(int argc, char **argv) {
 
     std::string group = next(argc, argv), message = "";
     bool continuous = false;
+    bool one_line = false;
 
     // get continuous flag if present
     if (group == "-c" || group == "--continuous") {
         continuous = true;
+        group = next(argc, argv);
+    }
+
+    // get one_line flag if present
+    if (group == "-1" || group == "--1-line") {
+        one_line = true;
         group = next(argc, argv);
     }
 
@@ -245,7 +253,10 @@ int main(int argc, char **argv) {
                     json response_json = json::parse(response);
 
                     // print response
-                    std::cout << response_json.dump(4) << std::endl;
+                    if (one_line)
+                        std::cout << response_json.dump() << std::endl;
+                    else
+                        std::cout << response_json.dump(4) << std::endl;
 
                     // clear response
                     response.clear();

@@ -653,8 +653,19 @@ Server::Server(Config *config) : config(config) {
     xdg_activation_new_token.notify = [](wl_listener *listener, void *data) {
         Server *server =
             wl_container_of(listener, server, xdg_activation_activate);
-        const auto token =
-            static_cast<wlr_xdg_activation_token_v1 *>(data); // ???
+        const auto token = static_cast<wlr_xdg_activation_token_v1 *>(data);
+
+        // try to find a toplevel associated with the surface
+        Toplevel *toplevel = server->get_toplevel(token->surface);
+        if (!toplevel)
+            return;
+
+        // set token for toplevel
+        toplevel->xdg_activation_token = token;
+
+        // yeah idk
+        if (token->seat)
+            toplevel->focus();
     };
     wl_signal_add(&wlr_xdg_activation->events.new_token,
                   &xdg_activation_new_token);

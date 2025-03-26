@@ -639,13 +639,25 @@ Server::Server(Config *config) : config(config) {
         if (!toplevel)
             return;
 
-        // set token for toplevel
+        // ensure valid token
         wlr_xdg_activation_token_v1 *token = event->token;
-        toplevel->xdg_activation_token = token;
+        if (toplevel->xdg_activation_token != token)
+            return;
 
-        // unsure about this
-        if (token->seat)
+        // activate toplevel
+        if (token->seat) {
+            if (token->seat != server->seat)
+                return;
+
+            // set workspace to toplevel's workspace
+            Workspace *workspace = server->get_workspace(toplevel);
+            Output *output = workspace->output;
+            if (output->get_active() != workspace)
+                output->set_workspace(workspace->num);
+
+            // focus toplevel
             toplevel->focus();
+        }
     };
     wl_signal_add(&wlr_xdg_activation->events.request_activate,
                   &xdg_activation_activate);
@@ -662,10 +674,6 @@ Server::Server(Config *config) : config(config) {
 
         // set token for toplevel
         toplevel->xdg_activation_token = token;
-
-        // yeah idk
-        if (token->seat)
-            toplevel->focus();
     };
     wl_signal_add(&wlr_xdg_activation->events.new_token,
                   &xdg_activation_new_token);

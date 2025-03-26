@@ -636,47 +636,21 @@ Server::Server(Config *config) : config(config) {
 
         // get toplevel associated with surface
         Toplevel *toplevel = server->get_toplevel(event->surface);
-        if (!toplevel)
+        if (!toplevel || !toplevel->xdg_toplevel ||
+            !toplevel->xdg_toplevel->base->surface->mapped)
             return;
 
-        // ensure valid token
-        wlr_xdg_activation_token_v1 *token = event->token;
-        if (toplevel->xdg_activation_token != token)
-            return;
+        // set workspace to toplevel's workspace
+        Workspace *workspace = server->get_workspace(toplevel);
+        Output *output = workspace->output;
+        if (output->get_active() != workspace)
+            output->set_workspace(workspace->num);
 
-        // activate toplevel
-        if (token->seat) {
-            if (token->seat != server->seat)
-                return;
-
-            // set workspace to toplevel's workspace
-            Workspace *workspace = server->get_workspace(toplevel);
-            Output *output = workspace->output;
-            if (output->get_active() != workspace)
-                output->set_workspace(workspace->num);
-
-            // focus toplevel
-            toplevel->focus();
-        }
+        // focus toplevel
+        toplevel->focus();
     };
     wl_signal_add(&wlr_xdg_activation->events.request_activate,
                   &xdg_activation_activate);
-
-    xdg_activation_new_token.notify = [](wl_listener *listener, void *data) {
-        Server *server =
-            wl_container_of(listener, server, xdg_activation_activate);
-        const auto token = static_cast<wlr_xdg_activation_token_v1 *>(data);
-
-        // try to find a toplevel associated with the surface
-        Toplevel *toplevel = server->get_toplevel(token->surface);
-        if (!toplevel)
-            return;
-
-        // set token for toplevel
-        toplevel->xdg_activation_token = token;
-    };
-    wl_signal_add(&wlr_xdg_activation->events.new_token,
-                  &xdg_activation_new_token);
 
     // viewporter
     wlr_viewporter = wlr_viewporter_create(display);
@@ -888,7 +862,6 @@ Server::~Server() {
     wl_list_remove(&new_virtual_keyboard.link);
     wl_list_remove(&new_pointer_constraint.link);
     wl_list_remove(&xdg_activation_activate.link);
-    wl_list_remove(&xdg_activation_new_token.link);
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

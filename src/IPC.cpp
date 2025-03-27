@@ -22,6 +22,9 @@ IPC::IPC(Server *server) : server(server) {
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
 
+    // set environment variable
+    setenv("AWM_SOCKET", addr.sun_path, 1);
+
     // bind socket
     if (bind(fd, reinterpret_cast<struct sockaddr *>(&addr),
              sizeof(struct sockaddr_un)) == -1) {

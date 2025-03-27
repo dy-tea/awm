@@ -3,4 +3,4 @@ Name=awm
 Comment=Start an awm session
 Exec=awm
 Type=Application
-DesktopNames=awm
+DesktopNames=awm;wlroots

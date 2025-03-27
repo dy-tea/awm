@@ -331,7 +331,8 @@ void Workspace::tile() {
         // start with width and height being the full output area
         int width = box.width;
         int height = box.height;
-        int x = 0, y = 0;
+        int x = output->layout_geometry.x + box.x;
+        int y = output->layout_geometry.y + box.y;
 
         // 1 toplevel means that it should take up the full screen
         if (tiled.size() != 1)

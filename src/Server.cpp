@@ -566,9 +566,12 @@ Server::Server(Config *config) : config(config) {
         if (!drag->icon)
             return;
 
+        // create a drag icon in the scene
         drag->icon->data =
             &wlr_scene_drag_icon_create(server->layers.drag_icon, drag->icon)
                  ->node;
+
+        // set up destroy listener
         server->destroy_drag_icon.notify = [](wl_listener *listener,
                                               [[maybe_unused]] void *data) {
             Server *server =
@@ -605,8 +608,16 @@ Server::Server(Config *config) : config(config) {
             wl_container_of(listener, server, new_virtual_keyboard);
 
         auto *virtual_keyboard = static_cast<wlr_virtual_keyboard_v1 *>(data);
+        Keyboard *keyboard = new Keyboard(server, &virtual_keyboard->keyboard);
 
-        new Keyboard(server, virtual_keyboard);
+        // set up destroy listener
+        keyboard->destroy.notify = [](wl_listener *listener,
+                                      [[maybe_unused]] void *data) {
+            Keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
+            delete keyboard;
+        };
+        wl_signal_add(&virtual_keyboard->keyboard.base.events.destroy,
+                      &keyboard->destroy);
     };
     wl_signal_add(&virtual_keyboard_manager->events.new_virtual_keyboard,
                   &new_virtual_keyboard);
@@ -731,8 +742,10 @@ Server::Server(Config *config) : config(config) {
                                    [[maybe_unused]] void *data) {
             Server *server = wl_container_of(listener, server, xwayland_ready);
 
+            // connect to server seat
             wlr_xwayland_set_seat(server->xwayland, server->seat);
 
+            // set xcursor
             wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
                 server->cursor->cursor_mgr, "default", 1);
             if (xcursor) {
@@ -750,9 +763,8 @@ Server::Server(Config *config) : config(config) {
             Server *server =
                 wl_container_of(listener, server, new_xwayland_surface);
 
-            wlr_xwayland_surface *surface =
-                static_cast<wlr_xwayland_surface *>(data);
-            new Toplevel(server, surface);
+            // toplevels are managed by workspaces
+            new Toplevel(server, static_cast<wlr_xwayland_surface *>(data));
         };
         wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
 

@@ -157,17 +157,9 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
         }
     };
     wl_signal_add(&wlr_keyboard->events.key, &key);
-}
 
-Keyboard::Keyboard(Server *server, wlr_virtual_keyboard_v1 *virtual_keyboard)
-    : server(server), wlr_keyboard(&virtual_keyboard->keyboard) {
-    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
-        Keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
-        delete keyboard;
-    };
-    wl_signal_add(&virtual_keyboard->keyboard.base.events.destroy, &destroy);
-
-    new (this) Keyboard(server, &virtual_keyboard->keyboard);
+    // destroy for keyboards is set in server constructor because it differs
+    // between virtual and non-virtual keyboards
 }
 
 Keyboard::~Keyboard() {

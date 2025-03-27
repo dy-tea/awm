@@ -103,8 +103,7 @@ Cursor::Cursor(Server *server) : server(server) {
             LayerSurface *layer_surface = server->layer_surface_at(
                 cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
             if (layer_surface && surface && surface->mapped)
-                if (layer_surface->should_focus())
-                    layer_surface->handle_focus();
+                layer_surface->handle_focus();
 
             // toplevel focus
             Toplevel *toplevel = server->toplevel_at(

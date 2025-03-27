@@ -6,14 +6,12 @@ struct Keyboard {
     wl_list link;
     Server *server;
     struct wlr_keyboard *wlr_keyboard;
-    wlr_virtual_keyboard_v1 *virtual_keyboard{nullptr};
 
     wl_listener modifiers;
     wl_listener key;
     wl_listener destroy;
 
     Keyboard(Server *server, struct wlr_keyboard *keyboard);
-    Keyboard(Server *server, wlr_virtual_keyboard_v1 *virtual_keyboard);
     ~Keyboard();
 
     void update_config() const;

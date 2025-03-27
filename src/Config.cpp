@@ -6,11 +6,11 @@
 
 // get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(const std::string &modifier) {
-
     for (int i = 0; i != 8; ++i)
         if (modifier == MODIFIERS[i])
             return 1 << i;
 
+    // invalid modifier
     return 69420;
 }
 

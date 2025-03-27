@@ -245,12 +245,6 @@ Workspace *Output::get_active() const {
 bool Output::set_workspace(const uint32_t n) {
     Workspace *requested = get_workspace(n);
 
-    // notify clients
-    if (server->ipc) {
-        server->ipc->notify_clients(IPC_OUTPUT_LIST);
-        server->ipc->notify_clients(IPC_WORKSPACE_LIST);
-    }
-
     // workspace does not exist
     if (requested == nullptr)
         return false;
@@ -266,6 +260,12 @@ bool Output::set_workspace(const uint32_t n) {
     // unhide active workspace and focus it
     requested->set_hidden(false);
     requested->focus();
+
+    // notify clients
+    if (server->ipc) {
+        server->ipc->notify_clients(IPC_OUTPUT_LIST);
+        server->ipc->notify_clients(IPC_WORKSPACE_LIST);
+    }
 
     return true;
 }

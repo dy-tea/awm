@@ -422,7 +422,8 @@ bool Config::load() {
         config_file.table->getTable("tiling");
     if (tiling_table) {
         // method
-        const std::string method_values[] = {"none", "grid", "dwindle"};
+        const std::string method_values[] = {"none", "grid", "master",
+                                             "dwindle"};
         auto method = tiling_table->getString("method");
         if (method.first)
             for (int i = 0; i != TILE_DWINDLE + 1; ++i)

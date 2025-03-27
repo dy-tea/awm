@@ -809,6 +809,15 @@ Server::Server(Config *config) : config(config) {
            ("/usr/share/icons:~/.local/share/icons" + xcursor_path_str).c_str(),
            true);
 
+    // set envvars from config
+    for (const auto &[key, value] : config->startup_env)
+        setenv(key.c_str(), value.c_str(), true);
+
+    // run startup commands from config
+    for (const std::string &command : config->startup_commands)
+        if (fork() == 0)
+            execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
+
     // set systemd user environment
     const std::string systemd_user_env[] = {
         "systemctl --user set-environment XDG_CURRENT_DESKTOP=awm",
@@ -817,15 +826,6 @@ Server::Server(Config *config) : config(config) {
         "dbus-update-activation-environment WAYLAND_DISPLAY DISPLAY "
         "XDG_CURRENT_DESKTOP AWM_SOCKET XCURSOR_SIZE XCURSOR_THEME"};
     for (const std::string &command : systemd_user_env)
-        if (fork() == 0)
-            execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
-
-    // set envvars from config
-    for (const auto &[key, value] : config->startup_env)
-        setenv(key.c_str(), value.c_str(), true);
-
-    // run startup commands from config
-    for (const std::string &command : config->startup_commands)
         if (fork() == 0)
             execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 

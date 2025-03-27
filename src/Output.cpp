@@ -44,8 +44,6 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
         timespec now{};
         clock_gettime(CLOCK_MONOTONIC, &now);
         wlr_scene_output_send_frame_done(scene_output, &now);
-
-        // output->arrange_layers();
     };
     wl_signal_add(&wlr_output->events.frame, &frame);
 
@@ -169,8 +167,6 @@ void Output::arrange_layers() {
         if (topmost)
             break;
     }
-
-    // TODO update keyboard focus
 }
 
 // arrange a surface layer
@@ -215,10 +211,8 @@ Workspace *Output::new_workspace() {
     Workspace *workspace = new Workspace(this, max_workspace++);
     wl_list_insert(&workspaces, &workspace->link);
 
-    if (server->ipc) {
-        server->ipc->notify_clients(IPC_OUTPUT_LIST);
-        server->ipc->notify_clients(IPC_WORKSPACE_LIST);
-    }
+    if (server->ipc)
+        server->ipc->notify_clients({IPC_OUTPUT_LIST, IPC_WORKSPACE_LIST});
 
     return workspace;
 }

@@ -291,15 +291,14 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         // max output post-increments so we subtract 1
         j["max"] = output->max_workspace - 1;
 
+        // get active workspace
+        j["active"] = output->get_active()->num;
+
         // find the active workspace and count toplevels
         int toplevel_count = 0;
         Workspace *workspace, *tmp;
-        wl_list_for_each_safe(workspace, tmp, &output->workspaces, link) {
-            if (workspace == output->get_active())
-                j["active"] = workspace->num;
-
+        wl_list_for_each_safe(workspace, tmp, &output->workspaces, link)
             toplevel_count += wl_list_length(&workspace->toplevels);
-        }
 
         j["toplevels"] = toplevel_count;
         break;
@@ -318,7 +317,8 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             server->focused_output()->set_workspace(n);
         } catch (std::invalid_argument &e) {
             // if your script is incorrect it is better to notify the user
-            notify_send("IPC", "invalid workspace number `%s`", data.c_str());
+            notify_send("IPC", "invalid workspace number `%s`: %s",
+                        data.c_str(), e.what());
         }
 
         // we do not set any json
@@ -555,6 +555,11 @@ void IPC::notify_clients(const IPCMessage message) {
         else
             ++it;
     }
+}
+
+void IPC::notify_clients(const std::vector<IPCMessage> &messages) {
+    for (const IPCMessage &message : messages)
+        notify_clients(message);
 }
 
 void IPC::stop() {

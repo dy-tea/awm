@@ -97,10 +97,8 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
         }
 
         // notify clients
-        if (IPC *ipc = toplevel->server->ipc) {
-            ipc->notify_clients(IPC_TOPLEVEL_LIST);
-            ipc->notify_clients(IPC_WORKSPACE_LIST);
-        }
+        if (IPC *ipc = toplevel->server->ipc)
+            ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
 
         return true;
     }
@@ -207,11 +205,15 @@ void Workspace::focus() {
                             : wl_container_of(toplevels.prev, toplevel, link);
         active_toplevel = toplevel;
         toplevel->focus();
-
-        // notify clients
-        if (IPC *ipc = active_toplevel->server->ipc)
-            ipc->notify_clients(IPC_WORKSPACE_LIST);
     }
+
+    Server *server = Server::get();
+
+    // server can be null as workspaces can be focused before server init
+    if (server)
+        // notify clients
+        if (IPC *ipc = server->ipc)
+            ipc->notify_clients(IPC_WORKSPACE_LIST);
 }
 
 // focus the passed toplevel

@@ -335,7 +335,6 @@ Server::Server(Config *config) : config(config) {
         Server *server = wl_container_of(listener, server, new_xdg_toplevel);
 
         // toplevels are managed by workspaces
-
         new Toplevel(server, static_cast<wlr_xdg_toplevel *>(data));
     };
     wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);

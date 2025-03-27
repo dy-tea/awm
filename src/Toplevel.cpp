@@ -642,10 +642,8 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     geometry = wlr_box{static_cast<int>(x), static_cast<int>(y), width, height};
 
     // notify clients
-    if (IPC *ipc = server->ipc) {
-        ipc->notify_clients(IPC_TOPLEVEL_LIST);
-        ipc->notify_clients(IPC_WORKSPACE_LIST);
-    }
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
 }
 
 void Toplevel::set_position_size(const wlr_box &geometry) {
@@ -689,7 +687,7 @@ void Toplevel::set_hidden(const bool hidden) {
 #endif
 
     if (IPC *ipc = server->ipc)
-        ipc->notify_clients(IPC_TOPLEVEL_LIST);
+        ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
 }
 
 // returns true if the toplevel is maximized

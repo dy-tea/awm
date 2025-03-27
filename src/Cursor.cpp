@@ -1,7 +1,5 @@
 #include "Server.h"
 #include "pixman.h"
-#include "wlr.h"
-#include "wlr/util/box.h"
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor

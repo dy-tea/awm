@@ -41,10 +41,8 @@ void Keyboard::update_config() const {
                                  server->config->repeat_delay);
 
     // notify clients
-    if (server->ipc) {
-        server->ipc->notify_clients(IPC_KEYBOARD_LIST);
-        server->ipc->notify_clients(IPC_DEVICE_CURRENT);
-    }
+    if (server->ipc)
+        server->ipc->notify_clients({IPC_KEYBOARD_LIST, IPC_DEVICE_CURRENT});
 }
 
 // get keysyms without modifiers applied
@@ -179,9 +177,7 @@ Keyboard::~Keyboard() {
     wl_list_remove(&destroy.link);
 
     // notify clients
-    if (IPC *ipc = server->ipc) {
-        ipc->notify_clients(IPC_KEYBOARD_LIST);
-        ipc->notify_clients(IPC_DEVICE_LIST);
-        ipc->notify_clients(IPC_DEVICE_CURRENT);
-    }
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients(
+            {IPC_KEYBOARD_LIST, IPC_DEVICE_LIST, IPC_DEVICE_CURRENT});
 }

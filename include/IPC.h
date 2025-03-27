@@ -48,5 +48,7 @@ struct IPC {
     std::string parse_command(const std::string &command, const int client_fd,
                               const bool continuous);
     void notify_clients(const IPCMessage message);
+    void notify_clients(const std::vector<IPCMessage> &messages);
+
     void stop();
 };

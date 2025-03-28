@@ -142,11 +142,12 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
                         Bind{BIND_NONE, modifiers, syms_translated[i]});
 
             // mouse buttons
-            if (server->cursor->pressed_button)
-                handled = server->handle_bind(Bind{
-                    BIND_NONE, modifiers,
-                    static_cast<xkb_keysym_t>(server->cursor->pressed_button +
-                                              0x20000000 + 271)});
+            if (server->cursor->pressed_buttons)
+                for (uint32_t i = 0; i < 5; ++i)
+                    if (server->cursor->pressed_buttons & (1 << i))
+                        handled = server->handle_bind(Bind{
+                            BIND_NONE, modifiers,
+                            static_cast<xkb_keysym_t>(i + 0x20000000 + 272)});
         }
 
         if (!handled) {

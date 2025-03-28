@@ -112,9 +112,8 @@ Cursor::Cursor(Server *server) : server(server) {
                 server->focused_output()->get_active()->focus_toplevel(
                     toplevel);
 
-            // set pressed button
-            cursor->pressed_button =
-                static_cast<CursorButton>(event->button - 271);
+            // add to pressed buttons
+            cursor->pressed_buttons |= 1 << (event->button - 272);
         }
 
         // emit a keyboard event for the pressed button
@@ -162,6 +161,9 @@ Cursor::Cursor(Server *server) : server(server) {
 
     // constraint
     wl_list_init(&constraint_commit.link);
+
+    // center cursor
+    wlr_cursor_warp_closest(cursor, nullptr, cursor->x, cursor->y);
 }
 
 Cursor::~Cursor() {
@@ -179,7 +181,7 @@ Cursor::~Cursor() {
 // deactivate cursor
 void Cursor::reset_mode() {
     cursor_mode = CURSORMODE_PASSTHROUGH;
-    pressed_button = CURSOR_BUTTON_NONE;
+    pressed_buttons = 0;
     server->grabbed_toplevel = nullptr;
 }
 

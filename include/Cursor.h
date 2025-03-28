@@ -10,16 +10,15 @@ enum CursorMode {
 };
 
 enum CursorButton {
-    CURSOR_BUTTON_NONE,
-    CURSOR_BUTTON_LEFT,
-    CURSOR_BUTTON_MIDDLE,
-    CURSOR_BUTTON_RIGHT,
-    CURSOR_BUTTON_BACK,
-    CURSOR_BUTTON_FORWARD,
+    CURSOR_BUTTON_LEFT = 1 << 0,
+    CURSOR_BUTTON_RIGHT = 1 << 1,
+    CURSOR_BUTTON_MIDDLE = 1 << 2,
+    CURSOR_BUTTON_BACK = 1 << 3,
+    CURSOR_BUTTON_FORWARD = 1 << 4,
 };
 
 struct Cursor {
-    Server *server;
+    struct Server *server;
     wlr_cursor *cursor;
     wlr_xcursor_manager *cursor_mgr;
     wlr_cursor_shape_manager_v1 *cursor_shape_mgr;
@@ -30,7 +29,7 @@ struct Cursor {
     double grab_x, grab_y;
     wlr_box grab_geobox;
     uint32_t resize_edges;
-    CursorButton pressed_button{CURSOR_BUTTON_NONE};
+    uint32_t pressed_buttons{0};
 
     wl_listener motion;
     wl_listener motion_absolute;

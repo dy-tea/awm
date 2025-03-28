@@ -518,14 +518,11 @@ Server::Server(Config *config) : config(config) {
     request_cursor.notify = [](wl_listener *listener, void *data) {
         // client-provided cursor image
         Server *server = wl_container_of(listener, server, request_cursor);
-
         const auto *event =
             static_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
-        wlr_seat_client *focused_client =
-            server->seat->pointer_state.focused_client;
 
         // only obey focused client
-        if (focused_client == event->seat_client)
+        if (server->seat->pointer_state.focused_client == event->seat_client)
             wlr_cursor_set_surface(server->cursor->cursor, event->surface,
                                    event->hotspot_x, event->hotspot_y);
     };

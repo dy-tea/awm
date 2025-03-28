@@ -13,4 +13,6 @@ struct SessionLock {
 
     SessionLock(Server *server, wlr_session_lock_v1 *session_lock);
     ~SessionLock();
+
+    void destroy_unlock(const bool unlock);
 };

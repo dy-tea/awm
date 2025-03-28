@@ -85,6 +85,7 @@ struct Server {
     wlr_session_lock_manager_v1 *wlr_session_lock_manager;
     wlr_session_lock_v1 *current_session_lock;
     wl_listener new_session_lock;
+    wlr_scene_rect *lock_background;
     bool locked{false};
 
     wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;

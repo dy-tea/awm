@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -440,6 +441,8 @@ Server::Server(Config *config) : config(config) {
         Server *server = wl_container_of(listener, server, new_session_lock);
         auto session_lock = static_cast<wlr_session_lock_v1 *>(data);
 
+        wlr_scene_node_set_enabled(&server->lock_background->node, true);
+
         if (server->current_session_lock) {
             wlr_session_lock_v1_destroy(session_lock);
             return;
@@ -449,6 +452,13 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&wlr_session_lock_manager->events.new_lock,
                   &new_session_lock);
+
+    // lock background
+    const wlr_box full_box = output_manager->full_geometry();
+    const float color[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    lock_background = wlr_scene_rect_create(layers.lock, full_box.width,
+                                            full_box.height, color);
+    wlr_scene_node_set_enabled(&lock_background->node, false);
 
     // relative pointer
     wlr_relative_pointer_manager =

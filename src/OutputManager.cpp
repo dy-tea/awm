@@ -1,4 +1,6 @@
+#include "OutputManager.h"
 #include "Server.h"
+#include "wlr.h"
 #include <map>
 
 OutputManager::OutputManager(Server *server) : server(server) {
@@ -170,6 +172,7 @@ Output *OutputManager::output_at(const double x, const double y) {
 
 // arrange layer shell layers on each output
 void OutputManager::arrange() const {
+    // arrange each output
     Output *output, *tmp;
     wl_list_for_each_safe(output, tmp, &outputs, link) {
         // tell outputs to update their positions
@@ -189,4 +192,16 @@ void OutputManager::arrange() const {
                                     output->layout_geometry.x,
                                     output->layout_geometry.y);
     }
+
+    // update lock background
+    const wlr_box full = full_geometry();
+    wlr_scene_node_set_position(&server->lock_background->node, full.x, full.y);
+    wlr_scene_rect_set_size(server->lock_background, full.width, full.height);
+}
+
+// get the full geometry of all outputs
+wlr_box OutputManager::full_geometry() const {
+    wlr_box box{};
+    wlr_output_layout_get_box(layout, nullptr, &box);
+    return box;
 }

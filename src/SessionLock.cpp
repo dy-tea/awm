@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
     : server(server), session_lock(session_lock) {
@@ -68,29 +69,13 @@ SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
 
     unlock.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         SessionLock *lock = wl_container_of(listener, lock, unlock);
-        Server *server = lock->server;
-
-        // destroy lock
-        wlr_scene_node_destroy(&lock->scene_tree->node);
-        server->current_session_lock = nullptr;
-
-        // unlock
-        server->locked = false;
-
-        // clear keyboard focus
-        wlr_seat_keyboard_notify_clear_focus(server->seat);
-
-        // focus the active workspace
-        if (Workspace *workspace = server->focused_output()->get_active())
-            workspace->focus();
-
-        delete lock;
+        lock->destroy_unlock(true);
     };
     wl_signal_add(&session_lock->events.unlock, &unlock);
 
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         SessionLock *lock = wl_container_of(listener, lock, destroy);
-        delete lock;
+        lock->destroy_unlock(false);
     };
     wl_signal_add(&session_lock->events.destroy, &destroy);
 
@@ -103,4 +88,24 @@ SessionLock::~SessionLock() {
     wl_list_remove(&new_surface.link);
     wl_list_remove(&unlock.link);
     wl_list_remove(&destroy.link);
+
+    wlr_scene_node_destroy(&scene_tree->node);
+    server->current_session_lock = nullptr;
+}
+
+void SessionLock::destroy_unlock(const bool unlock) {
+    // clear keyboard focus
+    wlr_seat_keyboard_notify_clear_focus(server->seat);
+
+    // unlock session if requested
+    if (!(server->locked = !unlock)) {
+        // disable lock background
+        wlr_scene_node_set_enabled(&server->lock_background->node, false);
+
+        // focus the active workspace
+        if (Workspace *workspace = server->focused_output()->get_active())
+            workspace->focus();
+    }
+
+    delete this;
 }

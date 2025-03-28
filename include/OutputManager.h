@@ -3,7 +3,7 @@
 #include "wlr.h"
 
 struct OutputManager {
-    Server *server;
+    struct Server *server;
 
     wl_list outputs;
     wlr_output_layout *layout;
@@ -24,8 +24,9 @@ struct OutputManager {
 
     void apply_config(wlr_output_configuration_v1 *cfg, bool test_only) const;
 
-    Output *get_output(const wlr_output *wlr_output);
-    Output *output_at(double x, double y);
+    struct Output *get_output(const wlr_output *wlr_output);
+    struct Output *output_at(double x, double y);
 
     void arrange() const;
+    wlr_box full_geometry() const;
 };

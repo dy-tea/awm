@@ -69,3 +69,11 @@ sudo meson install -C build/
 
 An example configuration can be found in [config.toml](config.toml).
 You can copy this file to `~/.config/awm/config.toml` and modify it to your liking.
+
+### FIXME
+
+Current issues that need fixing:
+
+- pixman renderer is not working, crash cites drm syncobj
+- session lock appears to be broken (tested with swaylock and hyprlock)
+- workspace list run with continuous flag does not update on non-empty workspaces

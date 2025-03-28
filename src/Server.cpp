@@ -473,13 +473,7 @@ Server::Server(Config *config) : config(config) {
             Keyboard *keyboard =
                 new Keyboard(server, wlr_keyboard_from_input_device(device));
 
-            // handle_destroy
-            keyboard->destroy.notify = [](wl_listener *listener,
-                                          [[maybe_unused]] void *data) {
-                Keyboard *keyboard =
-                    wl_container_of(listener, keyboard, destroy);
-                delete keyboard;
-            };
+            // set destroy listener
             wl_signal_add(&device->events.destroy, &keyboard->destroy);
             break;
         }
@@ -611,11 +605,6 @@ Server::Server(Config *config) : config(config) {
         Keyboard *keyboard = new Keyboard(server, &virtual_keyboard->keyboard);
 
         // set up destroy listener
-        keyboard->destroy.notify = [](wl_listener *listener,
-                                      [[maybe_unused]] void *data) {
-            Keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
-            delete keyboard;
-        };
         wl_signal_add(&virtual_keyboard->keyboard.base.events.destroy,
                       &keyboard->destroy);
     };

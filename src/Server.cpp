@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -658,18 +657,6 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_xdg_activation->events.request_activate,
                   &xdg_activation_activate);
 
-    // viewporter
-    wlr_viewporter = wlr_viewporter_create(display);
-
-    // presentation
-    wlr_presentation = wlr_presentation_create(display, backend, 2);
-
-    // export dmabuf manager
-    wlr_export_dmabuf_manager = wlr_export_dmabuf_manager_v1_create(display);
-
-    // screencopy manager
-    wlr_screencopy_manager = wlr_screencopy_manager_v1_create(display);
-
     // foreign toplevel list
     wlr_foreign_toplevel_list =
         wlr_ext_foreign_toplevel_list_v1_create(display, 1);
@@ -678,31 +665,39 @@ Server::Server(Config *config) : config(config) {
     wlr_foreign_toplevel_manager =
         wlr_foreign_toplevel_manager_v1_create(display);
 
+    // idle notifier
+    wlr_idle_notifier = wlr_idle_notifier_v1_create(display);
+
+    // viewporter
+    wlr_viewporter_create(display);
+
+    // presentation
+    wlr_presentation_create(display, backend, 2);
+
+    // export dmabuf manager
+    wlr_export_dmabuf_manager_v1_create(display);
+
+    // screencopy manager
+    wlr_screencopy_manager_v1_create(display);
+
     // data control manager
-    wlr_data_control_manager = wlr_data_control_manager_v1_create(display);
+    wlr_data_control_manager_v1_create(display);
 
     // gamma control manager
-    wlr_gamma_control_manager = wlr_gamma_control_manager_v1_create(display);
-    wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager);
+    wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager_v1_create(display));
 
     // image copy capture manager
-    ext_image_copy_capture_manager =
-        wlr_ext_image_copy_capture_manager_v1_create(display, 1);
+    wlr_ext_image_copy_capture_manager_v1_create(display, 1);
     wlr_ext_output_image_capture_source_manager_v1_create(display, 1);
 
     // fractional scale manager
-    wlr_fractional_scale_manager =
-        wlr_fractional_scale_manager_v1_create(display, 1);
+    wlr_fractional_scale_manager_v1_create(display, 1);
 
     // alpha modifier
-    wlr_alpha_modifier = wlr_alpha_modifier_v1_create(display);
+    wlr_alpha_modifier_v1_create(display);
 
     // single pixel buffer
-    wlr_single_pixel_buffer_manager =
-        wlr_single_pixel_buffer_manager_v1_create(display);
-
-    // idle notifier
-    wlr_idle_notifier = wlr_idle_notifier_v1_create(display);
+    wlr_single_pixel_buffer_manager_v1_create(display);
 
     // primary selection
     wlr_primary_selection_v1_device_manager_create(display);

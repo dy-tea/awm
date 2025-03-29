@@ -100,18 +100,8 @@ struct Server {
     wlr_xdg_activation_v1 *wlr_xdg_activation;
     wl_listener xdg_activation_activate;
 
-    struct wlr_viewporter *wlr_viewporter;
-    struct wlr_presentation *wlr_presentation;
-    wlr_export_dmabuf_manager_v1 *wlr_export_dmabuf_manager;
-    wlr_screencopy_manager_v1 *wlr_screencopy_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
-    wlr_data_control_manager_v1 *wlr_data_control_manager;
-    wlr_gamma_control_manager_v1 *wlr_gamma_control_manager;
-    wlr_ext_image_copy_capture_manager_v1 *ext_image_copy_capture_manager;
-    wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager;
-    wlr_alpha_modifier_v1 *wlr_alpha_modifier;
-    wlr_single_pixel_buffer_manager_v1 *wlr_single_pixel_buffer_manager;
     wlr_idle_notifier_v1 *wlr_idle_notifier;
 
 #ifdef XWAYLAND

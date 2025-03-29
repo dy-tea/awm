@@ -77,6 +77,7 @@ extern "C" {
 #include <wlr/types/wlr_virtual_pointer_v1.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <wlr/types/wlr_primary_selection_v1.h>
 
 // XWayland
 #ifdef XWAYLAND

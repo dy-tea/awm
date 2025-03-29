@@ -704,6 +704,9 @@ Server::Server(Config *config) : config(config) {
     // idle notifier
     wlr_idle_notifier = wlr_idle_notifier_v1_create(display);
 
+    // primary selection
+    wlr_primary_selection_v1_device_manager_create(display);
+
     // avoid using "wayland-0" as display socket
     std::string socket;
     for (unsigned int i = 1; i <= 32; i++) {

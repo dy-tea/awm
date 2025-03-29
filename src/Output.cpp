@@ -238,26 +238,25 @@ Workspace *Output::get_active() const {
 // change the focused workspace to workspace n
 bool Output::set_workspace(const uint32_t n) {
     Workspace *requested = get_workspace(n);
+    Workspace *previous = get_active();
 
     // workspace does not exist
     if (!requested)
         return false;
 
+    // workspace is already active, we should still consume the bind
+    if (requested == previous)
+        return true;
+
     // hide workspace we are moving from
-    if (Workspace *previous = get_active())
-        previous->set_hidden(true);
+    previous->set_hidden(true);
 
     // set new workspace to the active one
     wl_list_remove(&requested->link);
     wl_list_insert(&workspaces, &requested->link);
 
-    // unhide active workspace and focus it
-    requested->set_hidden(false);
+    // focus new workspace
     requested->focus();
-
-    // notify clients
-    if (server->ipc)
-        server->ipc->notify_clients({IPC_OUTPUT_LIST, IPC_WORKSPACE_LIST});
 
     return true;
 }

@@ -207,13 +207,9 @@ void Workspace::focus() {
         toplevel->focus();
     }
 
-    Server *server = Server::get();
-
-    // server can be null as workspaces can be focused before server init
-    if (server)
-        // notify clients
-        if (IPC *ipc = server->ipc)
-            ipc->notify_clients(IPC_WORKSPACE_LIST);
+    // notify clients
+    if (IPC *ipc = output->server->ipc)
+        ipc->notify_clients({IPC_OUTPUT_LIST, IPC_WORKSPACE_LIST});
 }
 
 // focus the passed toplevel

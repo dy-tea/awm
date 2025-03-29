@@ -530,6 +530,9 @@ void IPC::notify_clients(const IPCMessage message) {
                 json j = handle_command(message, m.second);
                 std::string data = j.dump();
 
+                wlr_log(WLR_INFO, "notifying client `%d` of message `%d`",
+                        it->first, message);
+
                 // write to client
                 if (send(client_fd, data.c_str(), data.size(), MSG_NOSIGNAL) ==
                     -1) {
@@ -541,7 +544,6 @@ void IPC::notify_clients(const IPCMessage message) {
                             client_fd, path.c_str());
                     close(client_fd);
                     disconnected = true;
-                    break;
                 }
 
                 // a client should not receive the same message twice

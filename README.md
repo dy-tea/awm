@@ -77,4 +77,3 @@ You can copy this file to `~/.config/awm/config.toml` and modify it to your liki
 Current issues that need fixing:
 
 - session lock appears to be broken (tested with swaylock and hyprlock)
-- workspace list run with continuous flag does not update on non-empty workspaces

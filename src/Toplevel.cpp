@@ -687,7 +687,7 @@ void Toplevel::set_hidden(const bool hidden) {
 #endif
 
     if (IPC *ipc = server->ipc)
-        ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
+        ipc->notify_clients(IPC_TOPLEVEL_LIST);
 }
 
 // returns true if the toplevel is maximized

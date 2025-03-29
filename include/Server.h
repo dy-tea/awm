@@ -40,7 +40,7 @@ struct Server {
     wlr_scene *scene;
     wlr_scene_output_layout *scene_layout;
 
-    wlr_linux_dmabuf_v1 *wlr_linux_dmabuf;
+    wlr_linux_dmabuf_v1 *wlr_linux_dmabuf{nullptr};
 
     wl_listener renderer_lost;
 

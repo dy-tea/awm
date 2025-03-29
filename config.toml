@@ -5,7 +5,7 @@
 
 [startup]
 exec = ["hyprpaper"] # list of commands to run on startup
-renderer = "pixman"  # "gles2", "pixman", "vulkan"
+renderer = "auto"    # "gles2", "pixman", "vulkan"
 
 # env variables to set on startup
 [[startup.env]]

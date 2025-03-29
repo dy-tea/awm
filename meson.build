@@ -110,6 +110,7 @@ executable(
     'src/OutputManager.cpp',
     'src/PointerConstraint.cpp',
     'src/SessionLock.cpp',
+    'src/TextInput.cpp',
     'src/IPC.cpp',
     protocol_sources,
     protocol_code,

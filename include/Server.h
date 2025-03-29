@@ -14,6 +14,7 @@
 #include "PointerConstraint.h"
 #include "Popup.h"
 #include "SessionLock.h"
+#include "TextInput.h"
 #include "Toplevel.h"
 #include "Workspace.h"
 
@@ -100,6 +101,10 @@ struct Server {
     wlr_xdg_activation_v1 *wlr_xdg_activation;
     wl_listener xdg_activation_activate;
 
+    wlr_text_input_manager_v3 *wlr_text_input_manager;
+    wl_listener new_text_input;
+
+    wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
     wlr_idle_notifier_v1 *wlr_idle_notifier;

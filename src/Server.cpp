@@ -657,6 +657,15 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_xdg_activation->events.request_activate,
                   &xdg_activation_activate);
 
+    // text input
+    wlr_text_input_manager = wlr_text_input_manager_v3_create(display);
+
+    new_text_input.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_text_input);
+        new TextInput(server, static_cast<wlr_text_input_v3 *>(data));
+    };
+    wl_signal_add(&wlr_text_input_manager->events.text_input, &new_text_input);
+
     // foreign toplevel list
     wlr_foreign_toplevel_list =
         wlr_ext_foreign_toplevel_list_v1_create(display, 1);
@@ -664,6 +673,9 @@ Server::Server(Config *config) : config(config) {
     // foreign toplevel manager
     wlr_foreign_toplevel_manager =
         wlr_foreign_toplevel_manager_v1_create(display);
+
+    // input method
+    wlr_input_method_manager = wlr_input_method_manager_v2_create(display);
 
     // idle notifier
     wlr_idle_notifier = wlr_idle_notifier_v1_create(display);
@@ -684,7 +696,8 @@ Server::Server(Config *config) : config(config) {
     wlr_data_control_manager_v1_create(display);
 
     // gamma control manager
-    wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager_v1_create(display));
+    wlr_scene_set_gamma_control_manager_v1(
+        scene, wlr_gamma_control_manager_v1_create(display));
 
     // image copy capture manager
     wlr_ext_image_copy_capture_manager_v1_create(display, 1);
@@ -878,6 +891,7 @@ Server::~Server() {
     wl_list_remove(&new_virtual_keyboard.link);
     wl_list_remove(&new_pointer_constraint.link);
     wl_list_remove(&xdg_activation_activate.link);
+    wl_list_remove(&new_text_input.link);
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

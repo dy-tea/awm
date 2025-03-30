@@ -36,6 +36,7 @@ protocols = [
   wl_protocols_dir / 'staging' / 'ext-image-capture-source' / 'ext-image-capture-source-v1.xml',
   wl_protocols_dir / 'staging' / 'ext-image-copy-capture' / 'ext-image-copy-capture-v1.xml',
   wl_protocols_dir / 'staging' / 'cursor-shape' / 'cursor-shape-v1.xml',
+  wl_protocols_dir / 'staging' / 'color-management' / 'color-management-v1.xml',
   wl_protocols_dir / 'unstable' / 'xdg-output' / 'xdg-output-unstable-v1.xml',
   wl_protocols_dir / 'unstable' / 'linux-dmabuf' / 'linux-dmabuf-unstable-v1.xml',
   wl_protocols_dir / 'unstable' / 'pointer-constraints' / 'pointer-constraints-unstable-v1.xml',

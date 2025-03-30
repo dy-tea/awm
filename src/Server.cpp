@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -732,6 +733,35 @@ Server::Server(Config *config) : config(config) {
 
     // primary selection
     wlr_primary_selection_v1_device_manager_create(display);
+
+    // color manager
+    const struct wlr_color_manager_v1_features color_manager_features = {
+        false, true, false, false, false, true, false, false};
+    const enum wp_color_manager_v1_render_intent
+        color_manager_render_intents[] = {
+            WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
+        };
+    const enum wp_color_manager_v1_transfer_function
+        color_manager_transfer_functions[] = {
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
+        };
+    const enum wp_color_manager_v1_primaries color_manager_primaries[] = {
+        WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+        WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
+    };
+    const wlr_color_manager_v1_options color_manager_options = {
+        color_manager_features,
+        color_manager_render_intents,
+        sizeof(color_manager_render_intents) /
+            sizeof(color_manager_render_intents[0]),
+        color_manager_transfer_functions,
+        sizeof(color_manager_transfer_functions) /
+            sizeof(color_manager_transfer_functions[0]),
+        color_manager_primaries,
+        sizeof(color_manager_primaries) / sizeof(color_manager_primaries[0]),
+    };
+    wlr_color_manager_v1_create(display, 1, &color_manager_options);
 
     // avoid using "wayland-0" as display socket
     std::string socket;

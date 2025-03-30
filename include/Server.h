@@ -126,6 +126,8 @@ struct Server {
 
     void exit() const;
 
+    void spawn(const std::string &command) const;
+
     Output *get_output(const wlr_output *wlr_output) const;
     Workspace *get_workspace(Toplevel *toplevel) const;
     Toplevel *get_toplevel(wlr_surface *surface) const;

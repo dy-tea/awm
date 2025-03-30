@@ -1,5 +1,5 @@
 #include "Server.h"
-#include "pixman.h"
+#include <pixman.h>
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor

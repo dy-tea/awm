@@ -253,17 +253,22 @@ bool Server::handle_bind(Bind bind) {
     default: {
         // handle user-defined binds
         for (const auto &[cmd_bind, cmd] : config->commands)
-            if (cmd_bind == bind)
-                if (fork() == 0) {
-                    execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), nullptr);
-                    return true;
-                }
+            if (cmd_bind == bind) {
+                spawn(cmd);
+                return true;
+            }
 
         return false;
     }
     }
 
     return true;
+}
+
+// run a command with sh
+void Server::spawn(const std::string &command) const {
+    if (fork() == 0)
+        execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 }
 
 Server::Server(Config *config) : config(config) {
@@ -822,8 +827,7 @@ Server::Server(Config *config) : config(config) {
 
     // run startup commands from config
     for (const std::string &command : config->startup_commands)
-        if (fork() == 0)
-            execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
+        spawn(command);
 
     // set systemd user environment
     const std::string systemd_user_env[] = {
@@ -833,8 +837,7 @@ Server::Server(Config *config) : config(config) {
         "dbus-update-activation-environment WAYLAND_DISPLAY DISPLAY "
         "XDG_CURRENT_DESKTOP AWM_SOCKET XCURSOR_SIZE XCURSOR_THEME"};
     for (const std::string &command : systemd_user_env)
-        if (fork() == 0)
-            execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
+        spawn(command);
 
     // run thread for config updater
     config_thread = std::thread([&]() {
@@ -853,13 +856,13 @@ Server::Server(Config *config) : config(config) {
     wl_display_run(display);
 }
 
+// stop server and run exit commands
 void Server::exit() const {
     wl_display_terminate(display);
 
     // run exit commands
     for (const std::string &command : config->exit_commands)
-        if (fork() == 0)
-            execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
+        spawn(command);
 
     // stop IPC
     if (ipc)

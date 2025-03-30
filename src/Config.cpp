@@ -1,8 +1,7 @@
 #include "Server.h"
-#include "tomlcpp.hpp"
-#include <algorithm>
 #include <libinput.h>
 #include <sstream>
+#include <tomlcpp.hpp>
 
 // get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(const std::string &modifier) {

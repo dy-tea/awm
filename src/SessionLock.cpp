@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
     : server(server), session_lock(session_lock) {

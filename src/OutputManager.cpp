@@ -1,6 +1,4 @@
-#include "OutputManager.h"
 #include "Server.h"
-#include "wlr.h"
 #include <map>
 
 OutputManager::OutputManager(Server *server) : server(server) {

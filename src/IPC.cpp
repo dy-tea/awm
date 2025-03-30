@@ -1,7 +1,6 @@
 #include "Server.h"
 #include <string>
 #include <sys/socket.h>
-#include <xkbcommon/xkbcommon-keysyms.h>
 using json = nlohmann::json;
 
 IPC::IPC(Server *server) : server(server) {
@@ -212,8 +211,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     case IPC_SPAWN:
         if (server->config->ipc.spawn)
-            if (fork() == 0)
-                execl("/bin/sh", "/bin/sh", "-c", data.c_str(), nullptr);
+            server->spawn(data);
         break;
     case IPC_OUTPUT_LIST: {
         Output *output, *tmp;

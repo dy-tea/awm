@@ -84,7 +84,7 @@ struct Server {
     wl_listener new_shell_surface;
 
     wlr_session_lock_manager_v1 *wlr_session_lock_manager;
-    wlr_session_lock_v1 *current_session_lock;
+    wlr_session_lock_v1 *current_session_lock{nullptr};
     wl_listener new_session_lock;
     wlr_scene_rect *lock_background;
     bool locked{false};

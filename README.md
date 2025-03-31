@@ -73,9 +73,3 @@ sudo meson install -C build/
 
 An example configuration can be found in [config.toml](config.toml).
 You can copy this file to `~/.config/awm/config.toml` and modify it to your liking.
-
-### FIXME
-
-Current issues that need fixing:
-
-- session lock appears to be broken (tested with swaylock and hyprlock)

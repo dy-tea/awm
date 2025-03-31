@@ -153,6 +153,7 @@ struct Config {
 
     struct {
         bool focus_on_hover{false};
+        std::string system_bell{""};
     } general;
 
     struct {

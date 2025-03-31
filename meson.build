@@ -22,7 +22,7 @@ endif
 wayland_scanner = find_program('wayland-scanner')
 
 # wayland dirs
-wl_protocols_dep = dependency('wayland-protocols')
+wl_protocols_dep = dependency('wayland-protocols', version: '>=1.41', default_options: ['tests=false'])
 wl_protocols_dir = wl_protocols_dep.get_variable(pkgconfig: 'pkgdatadir')
 
 protocol_sources = []
@@ -72,6 +72,15 @@ tomlcpp_proj = subproject('tomlcpp')
 tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
 nlohmann_json = dependency('nlohmann_json')
 
+wlroots_version = ['>=0.19.0', '<0.20.0']
+subproject(
+	'wlroots',
+	default_options: ['examples=false'],
+	required: false,
+	version: wlroots_version,
+)
+wlroots = dependency('wlroots-0.19', version: wlroots_version, fallback: 'wlroots')
+
 # includes
 include = include_directories(
   'include',
@@ -80,13 +89,13 @@ include = include_directories(
 # libs
 libs = [
   dependency('wayland-server'),
-  dependency('wlroots-0.19'),
   dependency('pixman-1'),
   dependency('xkbcommon'),
   dependency('libinput'),
   dependency('xcb'),
   tomlcpp_dep,
   nlohmann_json,
+  wlroots
 ]
 
 # xwayland

@@ -675,15 +675,17 @@ Server::Server(Config *config) : config(config) {
     // system bell
     // wlr_xdg_system_bell = wlr_xdg_system_bell_v1_create(display, 1);
 
-    // run_system_bell.notify = [](wl_listener *listener, void *data) {
-    //     Server *server = wl_container_of(listener, server, run_system_bell);
+    // ring_system_bell.notify = [](wl_listener *listener, void *data) {
+    //     Server *server = wl_container_of(listener, server, ring_system_bell);
     //     [[maybe_unused]] const auto event =
     //         static_cast<wlr_xdg_system_bell_v1_ring_event *>(data);
 
-    //    server->spawn("ffplay -nodisp -autoexit "
-    //                  "/usr/share/sounds/freedesktop/stereo/bell.oga");
-    //};
-    // wl_signal_add(&wlr_xdg_system_bell->events.ring, &run_system_bell);
+    //     // play system bell sound if provided
+    //     if (!server->config->general.system_bell.empty())
+    //         server->spawn("ffplay -nodisp -autoexit " +
+    //                       server->config->general.system_bell);
+    // };
+    // wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
 
     // foreign toplevel list
     wlr_foreign_toplevel_list =
@@ -938,7 +940,7 @@ Server::~Server() {
     wl_list_remove(&new_pointer_constraint.link);
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&new_text_input.link);
-    // wl_list_remove(&run_system_bell.link);
+    // wl_list_remove(&ring_system_bell.link);
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

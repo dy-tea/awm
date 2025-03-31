@@ -414,6 +414,9 @@ bool Config::load() {
         // focus on hover
         connect(general_table->getBool("focus_on_hover"),
                 &general.focus_on_hover);
+
+        // system bell
+        connect(general_table->getString("system_bell"), &general.system_bell);
     }
 
     // tiling

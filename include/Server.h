@@ -105,7 +105,7 @@ struct Server {
     wl_listener new_text_input;
 
     // wlr_xdg_system_bell_v1 *wlr_xdg_system_bell;
-    // wl_listener run_system_bell;
+    // wl_listener ring_system_bell;
 
     wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;

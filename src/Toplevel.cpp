@@ -14,7 +14,7 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         wlr_fractional_scale_v1_notify_scale(xdg_toplevel->base->surface,
                                              scale);
         wlr_surface_set_preferred_buffer_scale(xdg_toplevel->base->surface,
-                                               ceil(scale));
+                                               scale);
 
         // get usable area of the output
         wlr_box usable_area = output->usable_area;

@@ -79,6 +79,37 @@ template <typename T> void connect(const std::pair<bool, T> &pair, T *target) {
         *target = pair.second;
 }
 
+template <typename T>
+void set_option(std::string name, const std::vector<std::string> &options_src,
+                const std::vector<T> &options_dst,
+                const std::pair<bool, std::string> &source, T *target) {
+    // sizes should be equal
+    assert(options_src.size() == options_dst.size());
+
+    // source needs to be set
+    if (!source.first)
+        return;
+
+    // find option in src and set dst
+    for (size_t i = 0; i != options_src.size(); ++i)
+        if (options_src[i] == source.second) {
+            *target = options_dst[i];
+            return;
+        }
+
+    // option was not found
+    std::string options = "";
+    for (const std::string &option : options_src)
+        options += option + "', '";
+
+    // remove trailing "', '"
+    options = options.substr(0, options.size() - 4);
+
+    // send notification
+    notify_send("Config", "No such option in %s ['%s']: %s", name.c_str(),
+                options.c_str(), source.second.c_str());
+}
+
 Config::Config() {
     path = "";
     last_write_time = std::filesystem::file_time_type::min();
@@ -222,25 +253,6 @@ bool Config::load() {
             connect(xcursor_table->getInt("size"), &cursor.xcursor.size);
         }
 
-        // used for both mouse and touchpad
-        auto pointer_profile = [&](toml::Table *table,
-                                   libinput_config_accel_profile *dest,
-                                   std::string name) {
-            if (auto [fst, snd] = table->getString("profile"); fst) {
-                if (snd == "none")
-                    *dest = LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
-                else if (snd == "flat")
-                    *dest = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
-                else if (snd == "adaptive")
-                    *dest = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
-                else
-                    notify_send("Config",
-                                "No such option in pointer.%s.profile ['none', "
-                                "'flat', 'adaptive']: %s",
-                                name.c_str(), snd.c_str());
-            }
-        };
-
         // mouse
         std::unique_ptr<toml::Table> mouse = pointer->getTable("mouse");
         if (mouse) {
@@ -252,7 +264,11 @@ bool Config::load() {
             connect(mouse->getBool("left_handed"), &cursor.mouse.left_handed);
 
             // profile
-            pointer_profile(mouse.get(), &cursor.mouse.profile, "mouse");
+            set_option("pointer.mouse.profile", {"none", "flat", "adaptive"},
+                       {LIBINPUT_CONFIG_ACCEL_PROFILE_NONE,
+                        LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT,
+                        LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE},
+                       mouse->getString("profile"), &cursor.mouse.profile);
 
             // accel speed
             connect(mouse->getDouble("accel_speed"), &cursor.mouse.accel_speed);
@@ -262,66 +278,41 @@ bool Config::load() {
         std::unique_ptr<toml::Table> touchpad = pointer->getTable("touchpad");
         if (touchpad) {
             // tap to click
-            auto tap_to_click = touchpad->getBool("tap_to_click");
-            if (tap_to_click.first)
+            if (auto tap_to_click = touchpad->getBool("tap_to_click");
+                tap_to_click.first)
                 cursor.touchpad.tap_to_click =
                     static_cast<libinput_config_tap_state>(tap_to_click.second);
 
             // tap and drag
-            auto tap_and_drag = touchpad->getBool("tap_and_drag");
-            if (tap_and_drag.first)
+            if (auto tap_and_drag = touchpad->getBool("tap_and_drag");
+                tap_and_drag.first)
                 cursor.touchpad.tap_and_drag =
                     static_cast<libinput_config_drag_state>(
                         tap_and_drag.second);
 
             // drag lock
-            auto drag_lock = touchpad->getString("drag_lock");
-            if (drag_lock.first) {
-                if (drag_lock.second == "none")
-                    cursor.touchpad.drag_lock =
-                        LIBINPUT_CONFIG_DRAG_LOCK_DISABLED;
-                else if (drag_lock.second == "timeout")
-                    cursor.touchpad.drag_lock =
-                        LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_TIMEOUT;
-                else if (drag_lock.second == "enabled")
-                    cursor.touchpad.drag_lock =
-                        LIBINPUT_CONFIG_DRAG_LOCK_ENABLED;
-                else if (drag_lock.second == "sticky")
-                    cursor.touchpad.drag_lock =
-                        LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY;
-                else
-                    notify_send(
-                        "Config",
-                        "No such option in pointer.touchpad.drag_lock ['none', "
-                        "'timeout', 'enabled', 'sticky']: %s",
-                        drag_lock.second.c_str());
-            }
+            set_option(
+                "pointer.touchpad.drag_lock", {"none", "timeout", "sticky"},
+                {LIBINPUT_CONFIG_DRAG_LOCK_DISABLED,
+                 LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_TIMEOUT,
+                 LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY},
+                touchpad->getString("drag_lock"), &cursor.touchpad.drag_lock);
 
             // tap button map
-            auto tap_button_map = touchpad->getString("tap_button_map");
-            if (tap_button_map.first) {
-                if (tap_button_map.second == "lrm")
-                    cursor.touchpad.tap_button_map =
-                        LIBINPUT_CONFIG_TAP_MAP_LRM;
-                else if (tap_button_map.second == "lmr")
-                    cursor.touchpad.tap_button_map =
-                        LIBINPUT_CONFIG_TAP_MAP_LMR;
-                else
-                    notify_send(
-                        "Config",
-                        "No such option in pointer.tap_button_map ['lrm', "
-                        "'lmr']: %s",
-                        tap_button_map.second.c_str());
-            }
+            set_option(
+                "pointer.touchpad.tap_button_map", {"lrm", "lmr"},
+                {LIBINPUT_CONFIG_TAP_MAP_LRM, LIBINPUT_CONFIG_TAP_MAP_LMR},
+                touchpad->getString("tap_button_map"),
+                &cursor.touchpad.tap_button_map);
 
             // natural scroll
             connect(touchpad->getBool("natural_scroll"),
                     &cursor.touchpad.natural_scroll);
 
             // disable while typing
-            auto disable_while_typing =
-                touchpad->getBool("disable_while_typing");
-            if (disable_while_typing.first)
+            if (auto disable_while_typing =
+                    touchpad->getBool("disable_while_typing");
+                disable_while_typing.first)
                 cursor.touchpad.disable_while_typing =
                     static_cast<libinput_config_dwt_state>(
                         disable_while_typing.second);
@@ -331,75 +322,46 @@ bool Config::load() {
                     &cursor.touchpad.left_handed);
 
             // middle emulation
-            auto middle_emulation = touchpad->getBool("middle_emulation");
-            if (middle_emulation.first)
+            if (auto middle_emulation = touchpad->getBool("middle_emulation");
+                middle_emulation.first)
                 cursor.touchpad.middle_emulation =
                     static_cast<libinput_config_middle_emulation_state>(
                         middle_emulation.second);
 
             // scroll method
-            auto scroll_method = touchpad->getString("scroll_method");
-            if (scroll_method.first) {
-                if (scroll_method.second == "none")
-                    cursor.touchpad.scroll_method =
-                        LIBINPUT_CONFIG_SCROLL_NO_SCROLL;
-                else if (scroll_method.second == "2fg")
-                    cursor.touchpad.scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
-                else if (scroll_method.second == "edge")
-                    cursor.touchpad.scroll_method = LIBINPUT_CONFIG_SCROLL_EDGE;
-                else if (scroll_method.second == "button")
-                    cursor.touchpad.scroll_method =
-                        LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
-                else
-                    notify_send("Config",
-                                "No such option in "
-                                "pointer.touchpad.scroll_method ['none', "
-                                "'2fg', 'edge', 'button']: %s",
-                                scroll_method.second.c_str());
-            }
+            set_option("pointer.touchpad.scroll_method",
+                       {"none", "2fg", "edge", "button"},
+                       {LIBINPUT_CONFIG_SCROLL_NO_SCROLL,
+                        LIBINPUT_CONFIG_SCROLL_2FG, LIBINPUT_CONFIG_SCROLL_EDGE,
+                        LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN},
+                       touchpad->getString("scroll_method"),
+                       &cursor.touchpad.scroll_method);
 
             // click method
-            auto click_method = touchpad->getString("click_method");
-            if (click_method.first) {
-                if (click_method.second == "none")
-                    cursor.touchpad.click_method =
-                        LIBINPUT_CONFIG_CLICK_METHOD_NONE;
-                else if (click_method.second == "buttonareas")
-                    cursor.touchpad.click_method =
-                        LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
-                else if (click_method.second == "clickfinger")
-                    cursor.touchpad.click_method =
-                        LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER;
-                else
-                    notify_send("Config",
-                                "No such option in "
-                                "pointer.touchpad.click_method ['none', "
-                                "'buttonareas', 'clickfinger']: %s",
-                                click_method.second.c_str());
-            }
+            set_option("pointer.touchpad.click_method",
+                       {"none", "buttonareas", "clickfinger"},
+                       {LIBINPUT_CONFIG_CLICK_METHOD_NONE,
+                        LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS,
+                        LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER},
+                       touchpad->getString("click_method"),
+                       &cursor.touchpad.click_method);
 
             // event mode
-            if (auto [fst, snd] = touchpad->getString("event_mode"); fst) {
-                if (snd == "enabled")
-                    cursor.touchpad.event_mode =
-                        LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
-                else if (snd == "disabled")
-                    cursor.touchpad.event_mode =
-                        LIBINPUT_CONFIG_SEND_EVENTS_DISABLED;
-                else if (snd == "mousedisabled")
-                    cursor.touchpad.event_mode =
-                        LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
-                else
-                    notify_send("Config",
-                                "No such option in pointer.touchpad.event_mode "
-                                "['enabled', "
-                                "'disabled', 'mousedisabled']: %s",
-                                snd.c_str());
-            }
+            set_option("pointer.touchpad.event_mode",
+                       {"enabled", "disabled", "mousedisabled"},
+                       {LIBINPUT_CONFIG_SEND_EVENTS_ENABLED,
+                        LIBINPUT_CONFIG_SEND_EVENTS_DISABLED,
+                        LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE},
+                       touchpad->getString("event_mode"),
+                       &cursor.touchpad.event_mode);
 
             // profile
-            pointer_profile(touchpad.get(), &cursor.touchpad.profile,
-                            "touchpad");
+            set_option("pointer.touchpad.profile", {"none", "flat", "adaptive"},
+                       {LIBINPUT_CONFIG_ACCEL_PROFILE_NONE,
+                        LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT,
+                        LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE},
+                       touchpad->getString("profile"),
+                       &cursor.touchpad.profile);
 
             // accel speed
             connect(touchpad->getDouble("accel_speed"),
@@ -424,15 +386,9 @@ bool Config::load() {
         config_file.table->getTable("tiling");
     if (tiling_table) {
         // method
-        const std::string method_values[] = {"none", "grid", "master",
-                                             "dwindle"};
-        auto method = tiling_table->getString("method");
-        if (method.first)
-            for (int i = 0; i != TILE_DWINDLE + 1; ++i)
-                if (method_values[i] == method.second) {
-                    tiling.method = static_cast<TileMethod>(i);
-                    break;
-                }
+        set_option("tiling.method", {"none", "grid", "master", "dwindle"},
+                   {TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE},
+                   tiling_table->getString("method"), &tiling.method);
     }
 
     // get awm binds
@@ -571,15 +527,16 @@ bool Config::load() {
 
                 // transform
                 auto transform = table.getString("transform");
-                std::string transform_values[] = {
-                    "none", "90", "180", "270", "f", "f90", "f180", "f270"};
-                if (transform.first)
-                    for (int i = 0; i != WL_OUTPUT_TRANSFORM_FLIPPED_270 + 1;
-                         ++i)
-                        if (transform.second == transform_values[i]) {
-                            oc->transform = static_cast<wl_output_transform>(i);
-                            break;
-                        }
+                set_option(
+                    "monitors.transform",
+                    {"none", "90", "180", "270", "f", "f90", "f180", "f270"},
+                    {WL_OUTPUT_TRANSFORM_NORMAL, WL_OUTPUT_TRANSFORM_90,
+                     WL_OUTPUT_TRANSFORM_180, WL_OUTPUT_TRANSFORM_270,
+                     WL_OUTPUT_TRANSFORM_FLIPPED,
+                     WL_OUTPUT_TRANSFORM_FLIPPED_90,
+                     WL_OUTPUT_TRANSFORM_FLIPPED_180,
+                     WL_OUTPUT_TRANSFORM_FLIPPED_270},
+                    table.getString("transform"), &oc->transform);
 
                 // scale
                 connect<float>(table.getDouble("scale"), &oc->scale);

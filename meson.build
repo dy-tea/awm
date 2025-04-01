@@ -169,10 +169,27 @@ install_data(
 
 # tests
 if get_option('tests')
-  # tests
-  executable(
-    'awmtest',
-    ['awmtest/main.cpp'],
-    dependencies: nlohmann_json,
-  )
+  # dependencies
+  find_program('alacritty')
+  find_program('tmatrix')
+  find_program('waybar')
+
+  tests = [
+    'fullscreen_10.cpp',
+    'fullscreen_size.cpp',
+    'maximize_10.cpp',
+    'maximize_size.cpp',
+    'maximize_waybar.cpp',
+    'workspaces_10.cpp',
+  ]
+
+  foreach t : tests
+    name = 'test_@0@'.format(t.strip('.cpp'))
+    test = executable(
+      name,
+      ['awmtest' / 'tests' / t],
+      dependencies: nlohmann_json,
+    )
+    test(name, test, is_parallel: false, timeout: 0)
+  endforeach
 endif

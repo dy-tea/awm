@@ -2,6 +2,7 @@ project(
   'awm',
   'cpp',
   'c',
+  license: 'GPL-3.0-or-later',
   default_options: [
     'warning_level=3',
     'optimization=3',
@@ -75,10 +76,10 @@ nlohmann_json = dependency('nlohmann_json')
 wlroots_version = ['>=0.19.0', '<0.20.0']
 if get_option('wlroots')
   wlroots = subproject(
-  	'wlroots',
-  	default_options: ['examples=false'],
-  	required: false,
-  	version: wlroots_version,
+    'wlroots',
+    default_options: ['examples=false'],
+    required: false,
+    version: wlroots_version,
   ).get_variable('wlroots')
 endif
 wlroots = dependency('wlroots-0.19', version: wlroots_version, fallback: 'wlroots')
@@ -97,7 +98,7 @@ libs = [
   dependency('xcb'),
   tomlcpp_dep,
   nlohmann_json,
-  wlroots
+  wlroots,
 ]
 
 # xwayland

@@ -673,19 +673,24 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_text_input_manager->events.text_input, &new_text_input);
 
     // system bell
-    // wlr_xdg_system_bell = wlr_xdg_system_bell_v1_create(display, 1);
+    wlr_xdg_system_bell = wlr_xdg_system_bell_v1_create(display, 1);
 
-    // ring_system_bell.notify = [](wl_listener *listener, void *data) {
-    //     Server *server = wl_container_of(listener, server, ring_system_bell);
-    //     [[maybe_unused]] const auto event =
-    //         static_cast<wlr_xdg_system_bell_v1_ring_event *>(data);
+    ring_system_bell.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, ring_system_bell);
+        const auto event =
+            static_cast<wlr_xdg_system_bell_v1_ring_event *>(data);
 
-    //     // play system bell sound if provided
-    //     if (!server->config->general.system_bell.empty())
-    //         server->spawn("ffplay -nodisp -autoexit " +
-    //                       server->config->general.system_bell);
-    // };
-    // wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
+        if (!event->client) {
+            wlr_log(WLR_DEBUG, "%s", "system bell client is NULL");
+            return;
+        }
+
+        // play system bell sound if provided
+        if (!server->config->general.system_bell.empty())
+            server->spawn("ffplay -nodisp -autoexit " +
+                          server->config->general.system_bell);
+    };
+    wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
 
     // foreign toplevel list
     wlr_foreign_toplevel_list =
@@ -940,7 +945,7 @@ Server::~Server() {
     wl_list_remove(&new_pointer_constraint.link);
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&new_text_input.link);
-    // wl_list_remove(&ring_system_bell.link);
+    wl_list_remove(&ring_system_bell.link);
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

@@ -1,2 +1,3 @@
-option('XWAYLAND', type: 'boolean')
-option('tests', type: 'boolean')
+option('XWAYLAND', type: 'boolean', description: 'enable xwayland support')
+option('tests', type: 'boolean', description: 'build awmtest')
+option('wlroots', type: 'boolean', value: false, description: 'use cloned wloots instead of system wlroots' )

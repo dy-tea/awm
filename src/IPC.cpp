@@ -11,9 +11,22 @@ IPC::IPC(Server *server) : server(server) {
         return;
     }
 
-    // unlink old socket
-    if (!unlink(path.c_str()))
-        wlr_log(WLR_ERROR, "unlinked old socket on path `%s`", path.c_str());
+    // find an available socket path
+    for (int i = 0; i != 255; ++i) {
+        std::string current_path = "/tmp/awm-" + std::to_string(i) + ".sock";
+        if (access(current_path.c_str(), F_OK)) {
+            path = current_path;
+            break;
+        }
+    }
+
+    // no path found
+    if (path.empty()) {
+        wlr_log(WLR_ERROR, "%s",
+                "failed to find an available IPC socket path, clear your /tmp "
+                "or something");
+        return;
+    }
 
     wlr_log(WLR_INFO, "starting IPC with fd %d on path `%s`", fd, path.c_str());
 

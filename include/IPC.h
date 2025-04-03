@@ -33,7 +33,7 @@ struct IPC {
     struct Server *server;
     int fd;
     sockaddr_un addr{};
-    std::string path{"/tmp/awm.sock"};
+    std::string path{""};
     std::atomic<bool> running{true};
     std::thread thread;
 

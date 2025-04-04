@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -106,6 +105,16 @@ Toplevel *Server::get_toplevel(wlr_surface *surface) const {
                               toplevel->xwayland_surface->surface == surface)
 #endif
                               ) return toplevel;
+
+    return nullptr;
+}
+
+// get server decoration by wlr_surface
+ServerDecoration *Server::get_server_decoration(wlr_surface *surface) const {
+    ServerDecoration *decoration, *tmp;
+    wl_list_for_each_safe(decoration, tmp, &decorations,
+                          link) if (decoration->decoration->surface ==
+                                    surface) return decoration;
 
     return nullptr;
 }
@@ -692,6 +701,67 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
 
+    // server decoration
+    wlr_server_decoration_manager =
+        wlr_server_decoration_manager_create(display);
+    wlr_server_decoration_manager_set_default_mode(
+        wlr_server_decoration_manager,
+        WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
+
+    wl_list_init(&decorations);
+
+    new_server_decoration.notify = [](wl_listener *listener, void *data) {
+        Server *server =
+            wl_container_of(listener, server, new_server_decoration);
+
+        // create server decoration
+        auto *server_decoration = new ServerDecoration(
+            server, static_cast<wlr_server_decoration *>(data));
+        wl_list_insert(&server->decorations, &server_decoration->link);
+    };
+    wl_signal_add(&wlr_server_decoration_manager->events.new_decoration,
+                  &new_server_decoration);
+
+    // xdg decoration
+    xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(display);
+
+    new_decoration.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_decoration);
+        wlr_xdg_toplevel_decoration_v1 *decoration =
+            static_cast<wlr_xdg_toplevel_decoration_v1 *>(data);
+
+        // get associated toplevel
+        Toplevel *toplevel =
+            server->get_toplevel(decoration->toplevel->base->surface);
+        if (!toplevel)
+            return;
+
+        toplevel->xdg_decoration = decoration;
+
+        // request_mode
+        toplevel->set_decoration_mode.notify =
+            toplevel->request_decoration_mode;
+        wl_signal_add(&decoration->events.request_mode,
+                      &toplevel->set_decoration_mode);
+
+        // destroy
+        toplevel->destroy_decoration.notify = [](wl_listener *listener,
+                                                 [[maybe_unused]] void *data) {
+            Toplevel *toplevel =
+                wl_container_of(listener, toplevel, destroy_decoration);
+
+            wl_list_remove(&toplevel->destroy_decoration.link);
+            wl_list_remove(&toplevel->set_decoration_mode.link);
+        };
+        wl_signal_add(&decoration->events.destroy,
+                      &toplevel->destroy_decoration);
+
+        // send request
+        toplevel->request_decoration_mode(listener, decoration);
+    };
+    wl_signal_add(&xdg_decoration_manager->events.new_toplevel_decoration,
+                  &new_decoration);
+
     // foreign toplevel list
     wlr_foreign_toplevel_list =
         wlr_ext_foreign_toplevel_list_v1_create(display, 1);
@@ -946,6 +1016,8 @@ Server::~Server() {
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&new_text_input.link);
     wl_list_remove(&ring_system_bell.link);
+    wl_list_remove(&new_server_decoration.link);
+    wl_list_remove(&new_decoration.link);
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

@@ -13,6 +13,7 @@
 #include "OutputManager.h"
 #include "PointerConstraint.h"
 #include "Popup.h"
+#include "ServerDecoration.h"
 #include "SessionLock.h"
 #include "TextInput.h"
 #include "Toplevel.h"
@@ -107,6 +108,13 @@ struct Server {
     wlr_xdg_system_bell_v1 *wlr_xdg_system_bell;
     wl_listener ring_system_bell;
 
+    struct wlr_server_decoration_manager *wlr_server_decoration_manager;
+    wl_listener new_server_decoration;
+
+    wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
+    wl_listener new_decoration;
+    wl_list decorations;
+
     wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
@@ -134,6 +142,7 @@ struct Server {
     Output *get_output(const wlr_output *wlr_output) const;
     Workspace *get_workspace(Toplevel *toplevel) const;
     Toplevel *get_toplevel(wlr_surface *surface) const;
+    ServerDecoration *get_server_decoration(wlr_surface *surface) const;
 
     Output *focused_output() const;
 

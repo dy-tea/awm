@@ -125,6 +125,7 @@ executable(
     'src/SessionLock.cpp',
     'src/TextInput.cpp',
     'src/IPC.cpp',
+    'src/ServerDecoration.cpp',
     protocol_sources,
     protocol_code,
   ],

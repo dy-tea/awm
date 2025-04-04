@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cursor.h"
+#include <string>
 
 struct Toplevel {
     wl_list link;
@@ -49,7 +50,12 @@ struct Toplevel {
 
     wlr_xdg_activation_token_v1 *xdg_activation_token{nullptr};
 
+    wlr_xdg_toplevel_decoration_v1 *xdg_decoration{nullptr};
+    wl_listener set_decoration_mode;
+    wl_listener destroy_decoration;
+
     bool hidden{false};
+    bool using_csd{true};
 
     wlr_box geometry{};
     wlr_box saved_geometry{};
@@ -63,6 +69,7 @@ struct Toplevel {
 
     static void map_notify(wl_listener *listener, void *data);
     static void unmap_notify(wl_listener *listener, void *data);
+    static void request_decoration_mode(wl_listener *listener, void *data);
 
     void create_foreign();
 

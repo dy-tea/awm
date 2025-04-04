@@ -206,6 +206,9 @@ bool Config::load() {
     // ipc
     std::unique_ptr<toml::Table> ipc_table = config_file.table->getTable("ipc");
     if (ipc_table) {
+        // socket path
+        connect(ipc_table->getString("socket"), &ipc.path);
+
         // enabled
         connect(ipc_table->getBool("enabled"), &ipc.enabled);
 

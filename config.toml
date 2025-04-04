@@ -17,8 +17,9 @@ SDL_VIDEODRIVER = "wayland"              # set sdl apps to use wayland (e.g. osu
 exec = ["echo \"exiting awm\""] # list of commands to run on exit
 
 [ipc]
-enabled = true # enable ipc server, controllable with awmsg, enabled by default
-spawn = true   # enable ipc spawn command, enabled by default
+socket = "/tmp/awm.sock" # path to start ipc server on, sets AWM_SOCKET environment variable
+enabled = true           # enable ipc server, controllable with awmsg, enabled by default
+spawn = true             # enable ipc spawn command, enabled by default
 
 [keyboard] # default keyboard layout, optional
 layout = "us"

@@ -5,7 +5,7 @@ using json = nlohmann::json;
 
 // globals
 const std::string awm_executable = "./awm";
-const std::string awmsg_executable = "./awmsg";
+const std::string awmsg_executable = "./awmsg -s /tmp/awm.sock";
 const std::string terminal_executable = "alacritty -e tmatrix";
 const std::string awm_default = awm_executable + " -c ../config.toml";
 

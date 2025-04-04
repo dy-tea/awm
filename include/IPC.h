@@ -37,7 +37,7 @@ struct IPC {
     std::atomic<bool> running{true};
     std::thread thread;
 
-    IPC(Server *server);
+    IPC(Server *server, std::string sock_path);
 
     json handle_command(const IPCMessage message, const std::string &data);
 

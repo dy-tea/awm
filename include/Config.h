@@ -100,6 +100,7 @@ struct Config {
     std::vector<std::pair<Bind, std::string>> commands;
 
     struct {
+        std::string path{""};
         bool enabled{true};
         bool spawn{true};
     } ipc;

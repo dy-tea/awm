@@ -3,7 +3,8 @@
 #include <sys/socket.h>
 using json = nlohmann::json;
 
-IPC::IPC(Server *server) : server(server) {
+IPC::IPC(Server *server, std::string sock_path)
+    : server(server), path(sock_path) {
     // create file descriptor
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd == -1) {
@@ -12,13 +13,15 @@ IPC::IPC(Server *server) : server(server) {
     }
 
     // find an available socket path
-    for (int i = 0; i != 255; ++i) {
-        std::string current_path = "/tmp/awm-" + std::to_string(i) + ".sock";
-        if (access(current_path.c_str(), F_OK)) {
-            path = current_path;
-            break;
+    if (path.empty())
+        for (int i = 0; i != 255; ++i) {
+            std::string current_path =
+                "/tmp/awm-" + std::to_string(i) + ".sock";
+            if (access(current_path.c_str(), F_OK)) {
+                path = current_path;
+                break;
+            }
         }
-    }
 
     // no path found
     if (path.empty()) {
@@ -576,12 +579,6 @@ void IPC::notify_clients(const std::vector<IPCMessage> &messages) {
 }
 
 void IPC::stop() {
-    // stop thread
-    running = false;
-    pthread_cancel(thread.native_handle());
-    if (thread.joinable())
-        thread.join();
-
     // close
     close(fd);
 
@@ -589,6 +586,13 @@ void IPC::stop() {
     if (unlink(path.c_str()))
         wlr_log(WLR_ERROR, "failed to unlink IPC socket at path `%s`",
                 path.c_str());
+
+    // stop thread
+    running = false;
+
+    pthread_cancel(thread.native_handle());
+    if (thread.joinable())
+        thread.join();
 
     delete this;
 }

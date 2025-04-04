@@ -10,7 +10,8 @@ awmsg [<FLAGS>]... (bind) <BIND-OPTION>;
 
 <FLAGS> ::= (-h | --help) "show help"
           | (-c | --continuous) "keep writing updates until cancelled"
-          | (-1 | --1-line) "write on a single line";
+          | (-1 | --1-line) "write on a single line"
+          | (-s <PATH> | --socket <PATH>) "use socket path";
 
 <OUTPUT-OPTION> ::= (list) "list outputs"
                   | (modes) "list output modes";

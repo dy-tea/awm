@@ -22,6 +22,10 @@ __complgen_match () {
     fi
 }
 
+_awmsg_cmd_0 () {
+    compgen -A file "$1"
+}
+
 _awmsg () {
     if [[ $(type -t _get_comp_words_by_ref) != function ]]; then
         echo _get_comp_words_by_ref: function not defined.  Make sure the bash-candidates system package is installed
@@ -31,19 +35,19 @@ _awmsg () {
     local words cword
     _get_comp_words_by_ref -n "$COMP_WORDBREAKS" words cword
 
-    declare -a literals=(help exit spawn -h --help -c --continuous -1 --1-line output list modes workspace list set toplevel list keyboard list device list current bind list run display)
+    declare -a literals=(help exit spawn -h --help -c --continuous -1 --1-line -s --socket output list modes workspace list set toplevel list keyboard list device list current bind list run display)
     declare -a regexes=()
     declare -A literal_transitions=()
     declare -A nontail_transitions=()
-    literal_transitions[0]="([0]=1 [1]=1 [2]=2 [3]=3 [4]=3 [5]=3 [6]=3 [7]=3 [8]=3 [9]=4 [12]=5 [15]=6 [17]=7 [19]=8 [22]=9)"
-    literal_transitions[3]="([3]=3 [4]=3 [5]=3 [6]=3 [7]=3 [8]=3 [9]=4 [12]=5 [15]=6 [17]=7 [19]=8 [22]=9)"
-    literal_transitions[4]="([10]=1 [11]=1)"
-    literal_transitions[5]="([13]=1 [14]=11)"
-    literal_transitions[6]="([16]=1)"
+    literal_transitions[0]="([0]=1 [1]=1 [2]=2 [3]=3 [4]=3 [5]=3 [6]=3 [7]=3 [8]=3 [9]=4 [10]=4 [11]=5 [14]=6 [17]=7 [19]=8 [21]=9 [24]=10)"
+    literal_transitions[3]="([3]=3 [4]=3 [5]=3 [6]=3 [7]=3 [8]=3 [9]=4 [10]=4 [11]=5 [14]=6 [17]=7 [19]=8 [21]=9 [24]=10)"
+    literal_transitions[5]="([12]=1 [13]=1)"
+    literal_transitions[6]="([15]=1 [16]=11)"
     literal_transitions[7]="([18]=1)"
-    literal_transitions[8]="([20]=1 [21]=1)"
-    literal_transitions[9]="([23]=1 [24]=10 [25]=10)"
-    declare -A match_anything_transitions=([10]=1 [11]=1 [2]=1)
+    literal_transitions[8]="([20]=1)"
+    literal_transitions[9]="([22]=1 [23]=1)"
+    literal_transitions[10]="([25]=1 [26]=12 [27]=12)"
+    declare -A match_anything_transitions=([11]=1 [2]=1 [4]=3 [12]=1)
     declare -A subword_transitions
 
     local state=0
@@ -80,9 +84,9 @@ _awmsg () {
         return 1
     done
 
-    declare -A literal_transitions_level_0=([6]="16" [7]="18" [0]="0 1 2 3 4 5 6 7 8 9 12 15 17 19 22" [8]="20 21" [3]="3 4 5 6 7 8 9 12 15 17 19 22" [9]="23 24 25" [5]="13 14" [4]="10 11")
+    declare -A literal_transitions_level_0=([6]="15 16" [7]="18" [3]="3 4 5 6 7 8 9 10 11 14 17 19 21 24" [0]="0 1 2 3 4 5 6 7 8 9 10 11 14 17 19 21 24" [8]="20" [5]="12 13" [9]="22 23" [10]="25 26 27")
     declare -A subword_transitions_level_0=()
-    declare -A commands_level_0=()
+    declare -A commands_level_0=([4]="0")
 
     local -a candidates=()
     local -a matches=()

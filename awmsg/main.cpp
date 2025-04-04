@@ -27,6 +27,7 @@ void print_usage() {
                  "flags:\n"
                  "\t-c --continuous\n"
                  "\t-1 --1-line\n"
+                 "\t-s --socket <path>\n"
                  "groups:\n"
                  "\t[h]elp\n"
                  "\t[e]xit\n"
@@ -70,6 +71,7 @@ int main(int argc, char **argv) {
     std::string group = next(argc, argv), message = "";
     bool continuous = false;
     bool one_line = false;
+    std::string socket_path = "";
 
     // get continuous flag if present
     if (group == "-c" || group == "--continuous") {
@@ -80,6 +82,12 @@ int main(int argc, char **argv) {
     // get one_line flag if present
     if (group == "-1" || group == "--1-line") {
         one_line = true;
+        group = next(argc, argv);
+    }
+
+    // get socket path if present
+    if (group == "-s" || group == "--socket") {
+        socket_path = next(argc, argv);
         group = next(argc, argv);
     }
 
@@ -200,17 +208,18 @@ int main(int argc, char **argv) {
     }
 
     // get socket path
-    std::string sock_path = getenv("AWM_SOCKET");
+    if (socket_path.empty())
+        socket_path = getenv("AWM_SOCKET");
 
     // set socket address
     sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, sock_path.c_str(), sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, socket_path.c_str(), sizeof(addr.sun_path) - 1);
 
     // connect to ipc socket
     if (connect(fd, reinterpret_cast<struct sockaddr *>(&addr),
                 sizeof(struct sockaddr_un))) {
-        print_err("Failed to connect to IPC socket (is awm ipc running?)");
+        print_err("Failed to connect to IPC socket (is awm IPC running?)");
         return 2;
     }
 

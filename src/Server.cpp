@@ -843,7 +843,7 @@ Server::Server(Config *config) : config(config) {
 
     // start IPC
     if (config->ipc.enabled)
-        ipc = new IPC(this);
+        ipc = new IPC(this, config->ipc.path);
 
     // set up signal handler
     sa.sa_handler = [](int sig) {

@@ -1,5 +1,9 @@
 # awm
 
+A wayland compositor with high protocol support, simple customization and an IPC server.
+
+https://github.com/user-attachments/assets/c916d37b-eda9-4566-b6a0-1f7a748b1b77
+
 ### Supported protocols
 
 - [Presentation time](https://wayland.app/protocols/presentation-time)
@@ -71,5 +75,6 @@ sudo meson install -C build/
 
 ### Configuration
 
-An example configuration can be found in [config.toml](config.toml).
+An example configuration can be found in [config-minimal.toml](config-minimal.toml).
 You can copy this file to `~/.config/awm/config.toml` and modify it to your liking.
+All options are documented in [config.toml](config.toml) and many are explained in the wiki.

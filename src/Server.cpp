@@ -109,6 +109,7 @@ Toplevel *Server::get_toplevel(wlr_surface *surface) const {
     return nullptr;
 }
 
+#ifdef SERVER_DECORATION
 // get server decoration by wlr_surface
 ServerDecoration *Server::get_server_decoration(wlr_surface *surface) const {
     ServerDecoration *decoration, *tmp;
@@ -118,6 +119,7 @@ ServerDecoration *Server::get_server_decoration(wlr_surface *surface) const {
 
     return nullptr;
 }
+#endif
 
 // get the output under the cursor
 Output *Server::focused_output() const {
@@ -701,6 +703,7 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
 
+#ifdef SERVER_DECORATION
     // server decoration
     wlr_server_decoration_manager =
         wlr_server_decoration_manager_create(display);
@@ -761,6 +764,7 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&xdg_decoration_manager->events.new_toplevel_decoration,
                   &new_decoration);
+#endif
 
     // foreign toplevel list
     wlr_foreign_toplevel_list =
@@ -1016,8 +1020,11 @@ Server::~Server() {
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&new_text_input.link);
     wl_list_remove(&ring_system_bell.link);
+
+#ifdef SERVER_DECORATION
     wl_list_remove(&new_server_decoration.link);
     wl_list_remove(&new_decoration.link);
+#endif
 
     LayerSurface *surface, *tmp;
     wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;

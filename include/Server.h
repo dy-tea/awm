@@ -18,6 +18,7 @@
 #include "TextInput.h"
 #include "Toplevel.h"
 #include "Workspace.h"
+#include "wlr.h"
 
 struct Server {
     // singleton
@@ -108,12 +109,14 @@ struct Server {
     wlr_xdg_system_bell_v1 *wlr_xdg_system_bell;
     wl_listener ring_system_bell;
 
+#ifdef SERVER_DECORATION
     struct wlr_server_decoration_manager *wlr_server_decoration_manager;
     wl_listener new_server_decoration;
 
     wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
     wl_listener new_decoration;
     wl_list decorations;
+#endif
 
     wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
@@ -142,7 +145,9 @@ struct Server {
     Output *get_output(const wlr_output *wlr_output) const;
     Workspace *get_workspace(Toplevel *toplevel) const;
     Toplevel *get_toplevel(wlr_surface *surface) const;
+#ifdef SERVER_DECORATION
     ServerDecoration *get_server_decoration(wlr_surface *surface) const;
+#endif
 
     Output *focused_output() const;
 

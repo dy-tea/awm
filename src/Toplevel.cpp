@@ -141,6 +141,7 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
     toplevel->update_ext_foreign();
 
+#ifdef SERVER_DECORATION
     // handle decoration
     if (toplevel->xdg_decoration)
         // set decoration means we are using csd
@@ -165,6 +166,7 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             !decoration || decoration->decoration->mode ==
                                WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
     }
+#endif
 
     // notify clients
     if (toplevel->server->ipc) {
@@ -210,6 +212,7 @@ void Toplevel::unmap_notify(wl_listener *listener,
     }
 }
 
+#ifdef SERVER_DECORATION
 // set decorations to server side
 void Toplevel::request_decoration_mode(wl_listener *listener,
                                        [[maybe_unused]] void *data) {
@@ -226,6 +229,7 @@ void Toplevel::request_decoration_mode(wl_listener *listener,
                 ? WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE
                 : WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
 }
+#endif
 
 // Toplevel from xdg toplevel
 Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
@@ -259,10 +263,12 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
                 WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
                     WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE);
 
+#ifdef SERVER_DECORATION
             // request decoration mode
             if (toplevel->xdg_decoration)
                 toplevel->request_decoration_mode(listener,
                                                   toplevel->xdg_decoration);
+#endif
         }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);

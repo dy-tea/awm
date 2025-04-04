@@ -50,12 +50,16 @@ struct Toplevel {
 
     wlr_xdg_activation_token_v1 *xdg_activation_token{nullptr};
 
+#ifdef SERVER_DECORATION
     wlr_xdg_toplevel_decoration_v1 *xdg_decoration{nullptr};
     wl_listener set_decoration_mode;
     wl_listener destroy_decoration;
+#endif
 
     bool hidden{false};
+#ifdef SERVER_DECORATION
     bool using_csd{true};
+#endif
 
     wlr_box geometry{};
     wlr_box saved_geometry{};

@@ -1,5 +1,7 @@
 #include "Server.h"
 
+#ifdef SERVER_DECORATION
+
 ServerDecoration::ServerDecoration(Server *server,
                                    wlr_server_decoration *decoration)
     : server(server), decoration(decoration) {
@@ -32,3 +34,5 @@ ServerDecoration::~ServerDecoration() {
     wl_list_remove(&destroy.link);
     wl_list_remove(&link);
 }
+
+#endif

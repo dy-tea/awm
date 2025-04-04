@@ -2,6 +2,8 @@
 
 #include "Server.h"
 
+#ifdef SERVER_DECORATION
+
 struct ServerDecoration {
     wl_list link;
     Server *server;
@@ -12,3 +14,5 @@ struct ServerDecoration {
     ServerDecoration(Server *server, wlr_server_decoration *decoration);
     ~ServerDecoration();
 };
+
+#endif

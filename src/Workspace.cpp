@@ -318,9 +318,26 @@ void Workspace::tile() {
         break;
     }
     case TILE_MASTER:
-        // split into 4 halfway along either axis;
-        // for every additional toplevel, split again starting from the top
-        // left region
+        if (tiled.size() == 1)  {
+            // take up full screen
+            tiled[0]->set_position_size(box.x, box.y, box.width, box.height);
+        } else {
+            // set master toplevel geometry
+            int width = box.width / 2;
+            tiled[0]->set_position_size(box.x, box.y, width, box.height);
+
+            // calculate slave toplevel geometry
+            int count = tiled.size() - 1;
+            int height = box.height / count;
+
+            // x position is always half of the output width
+            int x = output->layout_geometry.x + box.x + width;
+            int y = output->layout_geometry.y + box.y;
+
+            // set slave toplevel geometry
+            for (int i = 0; i != count; ++i)
+                tiled[i + 1]->set_position_size(x, y + i * height, width, height);
+        }
 
         break;
     case TILE_DWINDLE: {

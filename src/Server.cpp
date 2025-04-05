@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -147,6 +146,13 @@ bool Server::handle_bind(Bind bind) {
         bind.sym = XKB_KEY_NoSymbol;
     }
 
+    // handle virtual terminal (tty) switch
+    if (bind.modifiers == (WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT) &&
+        bind.sym >= XKB_KEY_XF86Switch_VT_1 &&
+        bind.sym <= XKB_KEY_XF86Switch_VT_12 && session)
+        return wlr_session_change_vt(session,
+                                     (unsigned int)(bind.sym + 1 - XKB_KEY_XF86Switch_VT_1));
+
     // locate in wm binds
     for (Bind b : config->binds)
         if (b == bind) {
@@ -292,19 +298,67 @@ Server::Server(Config *config) : config(config) {
     display = wl_display_create();
 
     // backend
-    backend =
-        wlr_backend_autocreate(wl_display_get_event_loop(display), &session);
-    if (!backend) {
+    if (!(backend = wlr_backend_autocreate(wl_display_get_event_loop(display),
+                                           &session))) {
         wlr_log(WLR_ERROR, "%s", "failed to create wlr_backend");
         ::exit(1);
     }
 
     // renderer
-    renderer = wlr_renderer_autocreate(backend);
-    if (!renderer) {
+    if (!(renderer = wlr_renderer_autocreate(backend))) {
         wlr_log(WLR_ERROR, "%s", "failed to create wlr_renderer");
         ::exit(1);
     }
+
+    // renderer_lost
+    renderer_lost.notify = [](wl_listener *listener,
+                              [[maybe_unused]] void *data) {
+        // renderer recovery (thanks sway)
+        Server *server = wl_container_of(listener, server, renderer_lost);
+
+        wlr_log(WLR_INFO, "%s", "Re-creating renderer after GPU reset");
+
+        // create new renderer
+        wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
+        if (!renderer) {
+            wlr_log(WLR_ERROR, "%s", "Unable to create renderer");
+            return;
+        }
+
+        // create new allocator
+        wlr_allocator *allocator =
+            wlr_allocator_autocreate(server->backend, renderer);
+        if (!allocator) {
+            wlr_log(WLR_ERROR, "%s", "Unable to create allocator");
+            wlr_renderer_destroy(renderer);
+            return;
+        }
+
+        // replace old and renderer and allocator
+        wlr_renderer *old_renderer = server->renderer;
+        wlr_allocator *old_allocator = server->allocator;
+        server->renderer = renderer;
+        server->allocator = allocator;
+
+        // reset signal
+        wl_list_remove(&server->renderer_lost.link);
+        wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
+
+        // move compositor to new renderer
+        wlr_compositor_set_renderer(server->compositor, renderer);
+
+        // reinint outputs
+        Output *output, *tmp;
+        wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
+                              link)
+            wlr_output_init_render(output->wlr_output, server->allocator,
+                                   server->renderer);
+
+        // destroy old renderer and allocator
+        wlr_allocator_destroy(old_allocator);
+        wlr_renderer_destroy(old_renderer);
+    };
+    wl_signal_add(&renderer->events.lost, &renderer_lost);
 
     // wl_shm
     wlr_renderer_init_wl_shm(renderer, display);
@@ -322,8 +376,7 @@ Server::Server(Config *config) : config(config) {
         wlr_linux_drm_syncobj_manager_v1_create(display, 1, drm_fd);
 
     // render allocator
-    allocator = wlr_allocator_autocreate(backend, renderer);
-    if (!allocator) {
+    if (!(allocator = wlr_allocator_autocreate(backend, renderer))) {
         wlr_log(WLR_ERROR, "%s", "failed to create wlr_allocator");
         ::exit(1);
     }
@@ -400,56 +453,6 @@ Server::Server(Config *config) : config(config) {
         wl_list_insert(&server->layer_surfaces, &layer_surface->link);
     };
     wl_signal_add(&wlr_layer_shell->events.new_surface, &new_shell_surface);
-
-    // renderer_lost
-    renderer_lost.notify = [](wl_listener *listener,
-                              [[maybe_unused]] void *data) {
-        // renderer recovery (thanks sway)
-        Server *server = wl_container_of(listener, server, renderer_lost);
-
-        wlr_log(WLR_INFO, "%s", "Re-creating renderer after GPU reset");
-
-        // create new renderer
-        wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
-        if (!renderer) {
-            wlr_log(WLR_ERROR, "%s", "Unable to create renderer");
-            return;
-        }
-
-        // create new allocator
-        wlr_allocator *allocator =
-            wlr_allocator_autocreate(server->backend, renderer);
-        if (!allocator) {
-            wlr_log(WLR_ERROR, "%s", "Unable to create allocator");
-            wlr_renderer_destroy(renderer);
-            return;
-        }
-
-        // replace old and renderer and allocator
-        wlr_renderer *old_renderer = server->renderer;
-        wlr_allocator *old_allocator = server->allocator;
-        server->renderer = renderer;
-        server->allocator = allocator;
-
-        // reset signal
-        wl_list_remove(&server->renderer_lost.link);
-        wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
-
-        // move compositor to new renderer
-        wlr_compositor_set_renderer(server->compositor, renderer);
-
-        // reinint outputs
-        Output *output, *tmp;
-        wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
-                              link)
-            wlr_output_init_render(output->wlr_output, server->allocator,
-                                   server->renderer);
-
-        // destroy old renderer and allocator
-        wlr_allocator_destroy(old_allocator);
-        wlr_renderer_destroy(old_renderer);
-    };
-    wl_signal_add(&renderer->events.lost, &renderer_lost);
 
     // session lock
     wlr_session_lock_manager = wlr_session_lock_manager_v1_create(display);
@@ -951,6 +954,11 @@ Server::Server(Config *config) : config(config) {
     sigaction(SIGTERM, &sa, nullptr);
     sigaction(SIGPIPE, &sa, nullptr);
 
+    // set stdout to non-blocking
+    if (int flags = fcntl(STDOUT_FILENO, F_GETFL);
+        flags < 0 || fcntl(STDOUT_FILENO, F_SETFL, flags | O_NONBLOCK) < 0)
+        close(STDOUT_FILENO);
+
     // set wayland display to our socket
     setenv("WAYLAND_DISPLAY", socket.c_str(), true);
 
@@ -1019,6 +1027,8 @@ Server::~Server() {
 
     delete output_manager;
 
+    wl_list_remove(&renderer_lost.link);
+
     wl_list_remove(&new_xdg_toplevel.link);
 
     wl_list_remove(&new_input.link);
@@ -1027,8 +1037,6 @@ Server::~Server() {
     wl_list_remove(&request_set_primary_selection.link);
     wl_list_remove(&request_start_drag.link);
     wl_list_remove(&start_drag.link);
-
-    wl_list_remove(&renderer_lost.link);
 
     wl_list_remove(&new_shell_surface.link);
     wl_list_remove(&new_session_lock.link);
@@ -1053,12 +1061,12 @@ Server::~Server() {
     wlr_xwayland_destroy(xwayland);
 #endif
 
-    wlr_scene_node_destroy(&scene->tree.node);
-
     delete cursor;
 
     wlr_allocator_destroy(allocator);
     wlr_renderer_destroy(renderer);
     wlr_backend_destroy(backend);
     wl_display_destroy(display);
+
+    wlr_scene_node_destroy(&scene->tree.node);
 }

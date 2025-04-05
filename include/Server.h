@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cassert>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
@@ -35,7 +36,7 @@ struct Server {
     Config *config;
 
     wl_display *display;
-    wlr_session *session;
+    wlr_session *session{nullptr};
     wlr_backend *backend;
     wlr_renderer *renderer;
     wlr_allocator *allocator;

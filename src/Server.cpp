@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -557,6 +558,21 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
 
+    // request_set_primary_selection (seat)
+    request_set_primary_selection.notify = [](wl_listener *listener,
+                                              void *data) {
+        Server *server =
+            wl_container_of(listener, server, request_set_primary_selection);
+
+        const auto *event =
+            static_cast<wlr_seat_request_set_primary_selection_event *>(data);
+
+        wlr_seat_set_primary_selection(server->seat, event->source,
+                                       event->serial);
+    };
+    wl_signal_add(&seat->events.request_set_primary_selection,
+                  &request_set_primary_selection);
+
     // request_start_drag (seat)
     request_start_drag.notify = [](wl_listener *listener, void *data) {
         // start drag
@@ -595,6 +611,7 @@ Server::Server(Config *config) : config(config) {
                 wl_container_of(listener, server, destroy_drag_icon);
             wl_list_remove(&server->destroy_drag_icon.link);
         };
+        wl_signal_add(&drag->icon->events.destroy, &server->destroy_drag_icon);
     };
     wl_signal_add(&seat->events.start_drag, &start_drag);
 
@@ -1007,6 +1024,7 @@ Server::~Server() {
     wl_list_remove(&new_input.link);
     wl_list_remove(&request_cursor.link);
     wl_list_remove(&request_set_selection.link);
+    wl_list_remove(&request_set_primary_selection.link);
     wl_list_remove(&request_start_drag.link);
     wl_list_remove(&start_drag.link);
 

@@ -60,6 +60,7 @@ struct Server {
     wl_listener new_input;
     wl_listener request_cursor;
     wl_listener request_set_selection;
+    wl_listener request_set_primary_selection;
     wl_listener request_start_drag;
     wl_listener start_drag;
     wl_listener destroy_drag_icon;

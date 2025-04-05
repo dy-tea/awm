@@ -123,7 +123,7 @@ struct Config {
             libinput_config_accel_profile profile{
                 LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE};
             double accel_speed{0.0};
-            bool natural_scroll{true};
+            bool natural_scroll{false};
             bool left_handed{false};
         } mouse;
 

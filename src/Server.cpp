@@ -91,6 +91,8 @@ Toplevel *Server::get_toplevel(wlr_surface *surface) const {
     // check each toplevel in each workspace in each output
     // get the toplevel by the surface
     // optionally get xwayland toplevels
+    //
+    // O(n^3) search my beloved
     Output *output, *tmp;
     Workspace *workspace, *tmp1;
     Toplevel *toplevel, *tmp2;

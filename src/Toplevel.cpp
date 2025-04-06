@@ -169,10 +169,9 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 #endif
 
     // notify clients
-    if (toplevel->server->ipc) {
-        toplevel->server->ipc->notify_clients(IPC_TOPLEVEL_LIST);
-        toplevel->server->ipc->notify_clients(IPC_WORKSPACE_LIST);
-    }
+    if (toplevel->server->ipc)
+        toplevel->server->ipc->notify_clients(
+            {IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
 }
 
 void Toplevel::unmap_notify(wl_listener *listener,
@@ -206,10 +205,8 @@ void Toplevel::unmap_notify(wl_listener *listener,
     }
 
     // notify clients
-    if (IPC *ipc = server->ipc) {
-        ipc->notify_clients(IPC_TOPLEVEL_LIST);
-        ipc->notify_clients(IPC_WORKSPACE_LIST);
-    }
+    if (IPC *ipc = server->ipc)
+        ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
 }
 
 #ifdef SERVER_DECORATION
@@ -746,8 +743,8 @@ void Toplevel::set_hidden(const bool hidden) {
         wlr_scene_node_set_enabled(&scene_surface->buffer->node, !hidden);
 #endif
 
-    if (IPC *ipc = server->ipc)
-        ipc->notify_clients(IPC_TOPLEVEL_LIST);
+    if (server->ipc)
+        server->ipc->notify_clients(IPC_TOPLEVEL_LIST);
 }
 
 // returns true if the toplevel is maximized
@@ -781,7 +778,7 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
     const Output *output = server->focused_output();
 
     // get output geometry
-    wlr_box output_box = output->layout_geometry;
+    const wlr_box output_box = output->layout_geometry;
 
     // set toplevel window mode to fullscreen
     if (xdg_toplevel)

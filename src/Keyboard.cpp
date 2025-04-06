@@ -174,7 +174,7 @@ Keyboard::~Keyboard() {
     wl_list_remove(&destroy.link);
 
     // notify clients
-    if (IPC *ipc = server->ipc)
-        ipc->notify_clients(
+    if (server->ipc)
+        server->ipc->notify_clients(
             {IPC_KEYBOARD_LIST, IPC_DEVICE_LIST, IPC_DEVICE_CURRENT});
 }

@@ -83,6 +83,9 @@ template <typename T>
 void set_option(std::string name, const std::vector<std::string> &options_src,
                 const std::vector<T> &options_dst,
                 const std::pair<bool, std::string> &source, T *target) {
+    // sizes should be non zero
+    assert(options_src.size() && options_dst.size());
+
     // sizes should be equal
     assert(options_src.size() == options_dst.size());
 

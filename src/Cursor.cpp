@@ -1,5 +1,6 @@
 #include "Server.h"
 #include <pixman.h>
+#include <string.h>
 
 Cursor::Cursor(Server *server) : server(server) {
     // create wlr cursor and xcursor
@@ -395,8 +396,10 @@ void Cursor::process_resize() {
                                   new_height);
         wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
 #ifdef XWAYLAND
-    } else
-        wlr_xwayland_surface_configure(toplevel->xwayland_surface, new_x, new_y,
+    } else if (toplevel->xwayland_surface)
+        // I have no idea why but if I set the position here it breaks resizing
+        // from the top left corner
+        wlr_xwayland_surface_configure(toplevel->xwayland_surface, 0, 0,
                                        new_width, new_height);
 
     if (toplevel->xdg_toplevel) {
@@ -475,14 +478,15 @@ void Cursor::check_constraint_region() {
         double sy = cursor->y + toplevel->geometry.y;
 
         if (!pixman_region32_contains_point(region, floor(sx), floor(sy),
-                                            NULL)) {
+                                            nullptr)) {
             int count;
             pixman_box32_t *boxes = pixman_region32_rectangles(region, &count);
             if (count > 0) {
                 sx = (boxes[0].x1 + boxes[0].x2) / 2.0;
                 sy = (boxes[0].y1 + boxes[0].y2) / 2.0;
 
-                wlr_cursor_warp_closest(cursor, NULL, sx + toplevel->geometry.x,
+                wlr_cursor_warp_closest(cursor, nullptr,
+                                        sx + toplevel->geometry.x,
                                         sy + toplevel->geometry.y);
             }
         }
@@ -507,7 +511,7 @@ void Cursor::warp_to_constraint_hint() {
         double lx = sx - toplevel->geometry.x;
         double ly = sy - toplevel->geometry.y;
 
-        wlr_cursor_warp(cursor, NULL, lx, ly);
+        wlr_cursor_warp(cursor, nullptr, lx, ly);
         wlr_seat_pointer_warp(active_constraint->seat, sx, sy);
     }
 }
@@ -519,10 +523,8 @@ bool Cursor::is_touchpad(wlr_pointer *pointer) const {
         return false;
     }
 
-    struct libinput_device *libinput_device =
-        wlr_libinput_get_device_handle(&pointer->base);
-
-    return libinput_device_config_tap_get_finger_count(libinput_device) > 0;
+    return libinput_device_config_tap_get_finger_count(
+               wlr_libinput_get_device_handle(&pointer->base)) > 0;
 }
 
 // set the cursor libinput configuration

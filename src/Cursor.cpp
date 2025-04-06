@@ -2,7 +2,7 @@
 #include <pixman.h>
 #include <string.h>
 
-Cursor::Cursor(Server *server) : server(server) {
+Cursor::Cursor(Server *server) : server(server), seat(server->seat->wlr_seat) {
     // create wlr cursor and xcursor
     cursor = wlr_cursor_create();
     wlr_cursor_attach_output_layout(cursor, server->output_manager->layout);
@@ -29,8 +29,7 @@ Cursor::Cursor(Server *server) : server(server) {
         if (cursor->cursor_mode != CURSORMODE_PASSTHROUGH)
             return;
 
-        if (event->seat_client ==
-            cursor->server->seat->pointer_state.focused_client)
+        if (event->seat_client == cursor->seat->pointer_state.focused_client)
             wlr_cursor_set_xcursor(cursor->cursor, cursor->cursor_mgr,
                                    wlr_cursor_shape_v1_name(event->shape));
     };
@@ -84,10 +83,10 @@ Cursor::Cursor(Server *server) : server(server) {
 
         // notify activity
         wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier,
-                                             server->seat);
+                                             cursor->seat);
 
         // forward to seat
-        wlr_seat_pointer_notify_button(server->seat, event->time_msec,
+        wlr_seat_pointer_notify_button(cursor->seat, event->time_msec,
                                        event->button, event->state);
 
         if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
@@ -136,17 +135,15 @@ Cursor::Cursor(Server *server) : server(server) {
     axis.notify = [](wl_listener *listener, void *data) {
         // scroll wheel etc
         Cursor *cursor = wl_container_of(listener, cursor, axis);
-        Server *server = cursor->server;
-
         const auto *event = static_cast<wlr_pointer_axis_event *>(data);
 
         // notify activity
-        wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier,
-                                             server->seat);
+        wlr_idle_notifier_v1_notify_activity(cursor->server->wlr_idle_notifier,
+                                             cursor->seat);
 
         // forward to seat
         wlr_seat_pointer_notify_axis(
-            server->seat, event->time_msec, event->orientation, event->delta,
+            cursor->seat, event->time_msec, event->orientation, event->delta,
             event->delta_discrete, event->source, event->relative_direction);
     };
     wl_signal_add(&cursor->events.axis, &axis);
@@ -156,7 +153,7 @@ Cursor::Cursor(Server *server) : server(server) {
         Cursor *cursor = wl_container_of(listener, cursor, frame);
 
         // forward to seat
-        wlr_seat_pointer_notify_frame(cursor->server->seat);
+        wlr_seat_pointer_notify_frame(cursor->seat);
     };
     wl_signal_add(&cursor->events.frame, &frame);
 
@@ -183,7 +180,7 @@ Cursor::~Cursor() {
 void Cursor::reset_mode() {
     cursor_mode = CURSORMODE_PASSTHROUGH;
     pressed_buttons = 0;
-    server->grabbed_toplevel = nullptr;
+    server->seat->grabbed_toplevel = nullptr;
 }
 
 void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
@@ -191,7 +188,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
     if (time) {
         // send relative motion event
         wlr_relative_pointer_manager_v1_send_relative_motion(
-            server->wlr_relative_pointer_manager, server->seat,
+            server->wlr_relative_pointer_manager, seat,
             static_cast<uint64_t>(time) * 1000, dx, dy, unaccel_dx, unaccel_dy);
 
         // constrain cursor
@@ -208,7 +205,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
 
             // ensure toplevel is focused
             if (toplevel && active_constraint->surface ==
-                                server->seat->pointer_state.focused_surface) {
+                                seat->pointer_state.focused_surface) {
                 const wlr_box geo_box = toplevel->geometry;
 
                 // calculate constraint
@@ -238,8 +235,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
     wlr_cursor_move(cursor, device, dx, dy);
 
     // notify activity
-    wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier,
-                                         server->seat);
+    wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier, seat);
 
     // move or resize toplevel
     if (cursor_mode == CURSORMODE_MOVE) {
@@ -259,8 +255,8 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
         server->toplevel_at(cursor->x, cursor->y, &surface, &sx, &sy);
     if (toplevel && surface && surface->mapped) {
         // connect the seat to the toplevel
-        wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
-        wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
+        wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+        wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 
         // focus on hover
         if (server->config->general.focus_on_hover)
@@ -273,8 +269,8 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
         server->layer_surface_at(cursor->x, cursor->y, &surface, &sx, &sy);
     if (layer_surface && surface && surface->mapped) {
         // connect the seat to the layer surface
-        wlr_seat_pointer_notify_enter(server->seat, surface, sx, sy);
-        wlr_seat_pointer_notify_motion(server->seat, time, sx, sy);
+        wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+        wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 
         // focus on hover
         if (server->config->general.focus_on_hover)
@@ -284,13 +280,13 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
 
     // set default cursor mode
     wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
-    wlr_seat_pointer_clear_focus(server->seat);
+    wlr_seat_pointer_clear_focus(seat);
 }
 
 // move a toplevel
 void Cursor::process_move() {
     // grabbed toplevel
-    Toplevel *toplevel = server->grabbed_toplevel;
+    Toplevel *toplevel = server->seat->grabbed_toplevel;
 
     // do not move fullscreen toplevel
     if (toplevel->fullscreen())
@@ -338,7 +334,7 @@ void Cursor::process_move() {
 
 // resize a toplevel
 void Cursor::process_resize() {
-    Toplevel *toplevel = server->grabbed_toplevel;
+    Toplevel *toplevel = server->seat->grabbed_toplevel;
 
     // do not resize fullscreen toplevel
     if (toplevel->fullscreen())

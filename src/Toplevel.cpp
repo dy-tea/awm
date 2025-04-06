@@ -119,11 +119,12 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
                       &toplevel->xwayland_commit);
 
+        Server *server = toplevel->server;
+
         // set seat if requested
         if (wlr_xwayland_surface_override_redirect_wants_focus(
                 toplevel->xwayland_surface))
-            wlr_xwayland_set_seat(toplevel->server->xwayland,
-                                  toplevel->server->seat);
+            wlr_xwayland_set_seat(server->xwayland, server->seat->wlr_seat);
 
         // add to active workspace
         output->get_active()->add_toplevel(toplevel, true);
@@ -180,7 +181,7 @@ void Toplevel::unmap_notify(wl_listener *listener,
     Server *server = toplevel->server;
 
     // deactivate
-    if (toplevel == server->grabbed_toplevel)
+    if (toplevel == server->seat->grabbed_toplevel)
         server->cursor->reset_mode();
 
     // remove from workspace
@@ -523,7 +524,7 @@ void Toplevel::focus() const {
     if (server->locked)
         return;
 
-    wlr_seat *seat = server->seat;
+    wlr_seat *seat = server->seat->wlr_seat;
     wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
 
     if ((xdg_toplevel && xdg_toplevel->base && xdg_toplevel->base->surface)
@@ -597,7 +598,7 @@ void Toplevel::focus() const {
 
 // move or resize toplevel
 void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
-    server->grabbed_toplevel = this;
+    server->seat->grabbed_toplevel = this;
 
     Cursor *cursor = server->cursor;
     cursor->cursor_mode = mode;
@@ -874,7 +875,7 @@ void Toplevel::create_foreign() {
             wl_container_of(listener, toplevel, foreign_activate);
         const auto *event =
             static_cast<wlr_foreign_toplevel_handle_v1_activated_event *>(data);
-        if (event->seat == toplevel->server->seat)
+        if (event->seat == toplevel->server->seat->wlr_seat)
             toplevel->focus();
     };
     wl_signal_add(&foreign_handle->events.request_activate, &foreign_activate);

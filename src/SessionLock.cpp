@@ -28,6 +28,7 @@ SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
             Output *output =
                 wl_container_of(listener, output, destroy_lock_surface);
             Server *server = output->server;
+            wlr_seat *seat = server->seat->wlr_seat;
             wlr_session_lock_surface_v1 *surface = output->lock_surface;
 
             // clear the surface and its destroy event
@@ -35,8 +36,7 @@ SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
             wl_list_remove(&output->destroy_lock_surface.link);
 
             // surface must be focused
-            if (surface->surface !=
-                server->seat->keyboard_state.focused_surface)
+            if (surface->surface != seat->keyboard_state.focused_surface)
                 return;
 
             if (server->locked && server->current_session_lock &&
@@ -45,23 +45,23 @@ SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
                     server->current_session_lock->surfaces.next, surface, link);
 
                 // give the surface keyboard focus
-                wlr_keyboard *kb = wlr_seat_get_keyboard(server->seat);
-                wlr_seat_keyboard_notify_enter(server->seat, surface->surface,
+                wlr_keyboard *kb = wlr_seat_get_keyboard(seat);
+                wlr_seat_keyboard_notify_enter(seat, surface->surface,
                                                kb->keycodes, kb->num_keycodes,
                                                &kb->modifiers);
             } else if (!server->locked)
                 output->get_active()->focus();
             else
-                wlr_seat_keyboard_notify_clear_focus(server->seat);
+                wlr_seat_keyboard_notify_clear_focus(seat);
         };
         wl_signal_add(&surface->events.destroy, &output->destroy_lock_surface);
 
         // give keyboard focus to output
         if (server->focused_output() == output) {
-            wlr_keyboard *kb = wlr_seat_get_keyboard(server->seat);
-            wlr_seat_keyboard_notify_enter(server->seat, surface->surface,
-                                           kb->keycodes, kb->num_keycodes,
-                                           &kb->modifiers);
+            wlr_keyboard *kb = wlr_seat_get_keyboard(server->seat->wlr_seat);
+            wlr_seat_keyboard_notify_enter(server->seat->wlr_seat,
+                                           surface->surface, kb->keycodes,
+                                           kb->num_keycodes, &kb->modifiers);
         }
     };
     wl_signal_add(&session_lock->events.new_surface, &new_surface);
@@ -94,7 +94,7 @@ SessionLock::~SessionLock() {
 
 void SessionLock::destroy_unlock(const bool unlock) {
     // clear keyboard focus
-    wlr_seat_keyboard_notify_clear_focus(server->seat);
+    wlr_seat_keyboard_notify_clear_focus(server->seat->wlr_seat);
 
     // unlock session if requested
     if (!(server->locked = !unlock)) {

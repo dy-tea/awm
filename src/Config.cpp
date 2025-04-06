@@ -591,7 +591,8 @@ void Config::update(const Server *server) {
         return;
 
     // update keyboard config
-    const wlr_keyboard *wlr_keyboard = wlr_seat_get_keyboard(server->seat);
+    const wlr_keyboard *wlr_keyboard =
+        wlr_seat_get_keyboard(server->seat->wlr_seat);
     const auto *keyboard = static_cast<Keyboard *>(wlr_keyboard->data);
     keyboard->update_config();
 

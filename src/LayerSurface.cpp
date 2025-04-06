@@ -123,13 +123,14 @@ void LayerSurface::handle_focus() const {
 
     // receive keyboard
     wlr_surface *surface = wlr_layer_surface->surface;
-    const wlr_keyboard *keyboard = wlr_seat_get_keyboard(output->server->seat);
+    wlr_seat *seat = output->server->seat->wlr_seat;
+    const wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
 
     // notify keyboard enter
     if (keyboard)
-        wlr_seat_keyboard_notify_enter(
-            output->server->seat, surface, keyboard->keycodes,
-            keyboard->num_keycodes, &keyboard->modifiers);
+        wlr_seat_keyboard_notify_enter(seat, surface, keyboard->keycodes,
+                                       keyboard->num_keycodes,
+                                       &keyboard->modifiers);
 }
 
 // returns true if layer surface should be focusable

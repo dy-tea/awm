@@ -22,6 +22,7 @@ struct Cursor {
     wlr_cursor *cursor;
     wlr_xcursor_manager *cursor_mgr;
     wlr_cursor_shape_manager_v1 *cursor_shape_mgr;
+    wlr_seat *seat;
     CursorMode cursor_mode;
 
     std::vector<wlr_pointer *> pointers;

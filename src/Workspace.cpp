@@ -38,7 +38,8 @@ void Workspace::close(const Toplevel *toplevel) {
             active_toplevel = nullptr;
 
             // clear keyboard focus
-            wlr_seat_keyboard_notify_clear_focus(output->server->seat);
+            wlr_seat_keyboard_notify_clear_focus(
+                output->server->seat->wlr_seat);
         }
     }
 
@@ -318,7 +319,7 @@ void Workspace::tile() {
         break;
     }
     case TILE_MASTER:
-        if (tiled.size() == 1)  {
+        if (tiled.size() == 1) {
             // take up full screen
             tiled[0]->set_position_size(box.x, box.y, box.width, box.height);
         } else {
@@ -336,7 +337,8 @@ void Workspace::tile() {
 
             // set slave toplevel geometry
             for (int i = 0; i != count; ++i)
-                tiled[i + 1]->set_position_size(x, y + i * height, width, height);
+                tiled[i + 1]->set_position_size(x, y + i * height, width,
+                                                height);
         }
 
         break;

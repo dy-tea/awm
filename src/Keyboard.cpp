@@ -73,7 +73,7 @@ uint32_t Keyboard::keysyms_translated(const xkb_keycode_t keycode,
 Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
     : server(server), wlr_keyboard(keyboard) {
     // connect to seat
-    wlr_seat_set_keyboard(server->seat, keyboard);
+    wlr_seat_set_keyboard(server->seat->wlr_seat, keyboard);
 
     // add to keyboards list
     wl_list_insert(&server->keyboards, &link);
@@ -89,10 +89,11 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
         Keyboard *keyboard = wl_container_of(listener, keyboard, modifiers);
 
         // set seat keyboard
-        wlr_seat_set_keyboard(keyboard->server->seat, keyboard->wlr_keyboard);
+        wlr_seat_set_keyboard(keyboard->server->seat->wlr_seat,
+                              keyboard->wlr_keyboard);
 
         // send mods to seat
-        wlr_seat_keyboard_notify_modifiers(keyboard->server->seat,
+        wlr_seat_keyboard_notify_modifiers(keyboard->server->seat->wlr_seat,
                                            &keyboard->wlr_keyboard->modifiers);
         // TODO: Hacky way to detect layout switch in IPC
         // should be triggered on layout switch
@@ -107,7 +108,7 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
         Keyboard *keyboard = wl_container_of(listener, keyboard, key);
         Server *server = keyboard->server;
         const auto *event = static_cast<wlr_keyboard_key_event *>(data);
-        wlr_seat *seat = server->seat;
+        wlr_seat *seat = server->seat->wlr_seat;
 
         // notify activity
         wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier, seat);

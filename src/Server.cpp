@@ -486,175 +486,11 @@ Server::Server(Config *config) : config(config) {
     wlr_relative_pointer_manager =
         wlr_relative_pointer_manager_v1_create(display);
 
+    // seat
+    seat = new Seat(this);
+
     // cursor
     cursor = new Cursor(this);
-
-    // keyboards
-    wl_list_init(&keyboards);
-
-    // new_input
-    new_input.notify = [](wl_listener *listener, void *data) {
-        // create input device based on type
-        Server *server = wl_container_of(listener, server, new_input);
-
-        // handle device type
-        switch (auto *device = static_cast<wlr_input_device *>(data);
-                device->type) {
-        case WLR_INPUT_DEVICE_KEYBOARD: {
-            // create keyboard
-            Keyboard *keyboard =
-                new Keyboard(server, wlr_keyboard_from_input_device(device));
-
-            // set destroy listener
-            wl_signal_add(&device->events.destroy, &keyboard->destroy);
-            break;
-        }
-        case WLR_INPUT_DEVICE_POINTER: {
-            const auto pointer = reinterpret_cast<wlr_pointer *>(device);
-
-            // set the cursor configuration
-            server->cursor->set_config(pointer);
-
-            // attach to device
-            wlr_cursor_attach_input_device(server->cursor->cursor,
-                                           &pointer->base);
-            break;
-        }
-        default:
-            break;
-        }
-
-        // set input device capabilities
-        uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
-        if (!wl_list_empty(&server->keyboards))
-            caps |= WL_SEAT_CAPABILITY_KEYBOARD;
-
-        wlr_seat_set_capabilities(server->seat, caps);
-    };
-    wl_signal_add(&backend->events.new_input, &new_input);
-
-    // seat
-    seat = wlr_seat_create(display, "seat0");
-
-    // request_cursor (seat)
-    request_cursor.notify = [](wl_listener *listener, void *data) {
-        // client-provided cursor image
-        Server *server = wl_container_of(listener, server, request_cursor);
-        const auto *event =
-            static_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
-
-        // only obey focused client
-        if (server->seat->pointer_state.focused_client == event->seat_client)
-            wlr_cursor_set_surface(server->cursor->cursor, event->surface,
-                                   event->hotspot_x, event->hotspot_y);
-    };
-    wl_signal_add(&seat->events.request_set_cursor, &request_cursor);
-
-    // request_set_selection (seat)
-    request_set_selection.notify = [](wl_listener *listener, void *data) {
-        // user selection
-        Server *server =
-            wl_container_of(listener, server, request_set_selection);
-
-        const auto *event =
-            static_cast<wlr_seat_request_set_selection_event *>(data);
-
-        wlr_seat_set_selection(server->seat, event->source, event->serial);
-    };
-    wl_signal_add(&seat->events.request_set_selection, &request_set_selection);
-
-    // request_set_primary_selection (seat)
-    request_set_primary_selection.notify = [](wl_listener *listener,
-                                              void *data) {
-        Server *server =
-            wl_container_of(listener, server, request_set_primary_selection);
-
-        const auto *event =
-            static_cast<wlr_seat_request_set_primary_selection_event *>(data);
-
-        wlr_seat_set_primary_selection(server->seat, event->source,
-                                       event->serial);
-    };
-    wl_signal_add(&seat->events.request_set_primary_selection,
-                  &request_set_primary_selection);
-
-    // request_start_drag (seat)
-    request_start_drag.notify = [](wl_listener *listener, void *data) {
-        // start drag
-        Server *server = wl_container_of(listener, server, request_start_drag);
-
-        const auto *event =
-            static_cast<wlr_seat_request_start_drag_event *>(data);
-
-        if (wlr_seat_validate_pointer_grab_serial(server->seat, event->origin,
-                                                  event->serial))
-            wlr_seat_start_pointer_drag(server->seat, event->drag,
-                                        event->serial);
-        else
-            wlr_data_source_destroy(event->drag->source);
-    };
-    wl_signal_add(&seat->events.request_start_drag, &request_start_drag);
-
-    // start_drag (seat)
-    start_drag.notify = [](wl_listener *listener, void *data) {
-        // start drag
-        Server *server = wl_container_of(listener, server, start_drag);
-
-        const auto *drag = static_cast<wlr_drag *>(data);
-        if (!drag->icon)
-            return;
-
-        // create a drag icon in the scene
-        drag->icon->data =
-            &wlr_scene_drag_icon_create(server->layers.drag_icon, drag->icon)
-                 ->node;
-
-        // set up destroy listener
-        server->destroy_drag_icon.notify = [](wl_listener *listener,
-                                              [[maybe_unused]] void *data) {
-            Server *server =
-                wl_container_of(listener, server, destroy_drag_icon);
-            wl_list_remove(&server->destroy_drag_icon.link);
-        };
-        wl_signal_add(&drag->icon->events.destroy, &server->destroy_drag_icon);
-    };
-    wl_signal_add(&seat->events.start_drag, &start_drag);
-
-    // virtual pointer
-    virtual_pointer_mgr = wlr_virtual_pointer_manager_v1_create(display);
-
-    new_virtual_pointer.notify = [](wl_listener *listener, void *data) {
-        Server *server = wl_container_of(listener, server, new_virtual_pointer);
-
-        const auto *event =
-            static_cast<wlr_virtual_pointer_v1_new_pointer_event *>(data);
-        wlr_virtual_pointer_v1 *pointer = event->new_pointer;
-        wlr_input_device *device = &pointer->pointer.base;
-
-        wlr_cursor_attach_input_device(server->cursor->cursor, device);
-        if (event->suggested_output)
-            wlr_cursor_map_input_to_output(server->cursor->cursor, device,
-                                           event->suggested_output);
-    };
-    wl_signal_add(&virtual_pointer_mgr->events.new_virtual_pointer,
-                  &new_virtual_pointer);
-
-    // virtual keyboard
-    virtual_keyboard_manager = wlr_virtual_keyboard_manager_v1_create(display);
-
-    new_virtual_keyboard.notify = [](wl_listener *listener, void *data) {
-        Server *server =
-            wl_container_of(listener, server, new_virtual_keyboard);
-
-        auto *virtual_keyboard = static_cast<wlr_virtual_keyboard_v1 *>(data);
-        Keyboard *keyboard = new Keyboard(server, &virtual_keyboard->keyboard);
-
-        // set up destroy listener
-        wl_signal_add(&virtual_keyboard->keyboard.base.events.destroy,
-                      &keyboard->destroy);
-    };
-    wl_signal_add(&virtual_keyboard_manager->events.new_virtual_keyboard,
-                  &new_virtual_keyboard);
 
     // pointer constraints
     wlr_pointer_constraints = wlr_pointer_constraints_v1_create(display);
@@ -668,6 +504,9 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&wlr_pointer_constraints->events.new_constraint,
                   &new_pointer_constraint);
+
+    // keyboards
+    wl_list_init(&keyboards);
 
     // xdg activation
     wlr_xdg_activation = wlr_xdg_activation_v1_create(display);
@@ -714,14 +553,16 @@ Server::Server(Config *config) : config(config) {
             static_cast<wlr_xdg_system_bell_v1_ring_event *>(data);
 
         if (!event->client) {
-            wlr_log(WLR_DEBUG, "%s", "system bell client is NULL");
+            wlr_log(WLR_ERROR, "%s", "system bell client is NULL");
             return;
         }
 
+        // get bell sound defined in config
+        const std::string &sound = server->config->general.system_bell;
+
         // play system bell sound if provided
-        if (!server->config->general.system_bell.empty())
-            server->spawn("ffplay -nodisp -autoexit " +
-                          server->config->general.system_bell);
+        if (!sound.empty())
+            server->spawn("ffplay -nodisp -autoexit " + sound);
     };
     wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
 
@@ -901,7 +742,7 @@ Server::Server(Config *config) : config(config) {
             Server *server = wl_container_of(listener, server, xwayland_ready);
 
             // connect to server seat
-            wlr_xwayland_set_seat(server->xwayland, server->seat);
+            wlr_xwayland_set_seat(server->xwayland, server->seat->wlr_seat);
 
             // set xcursor
             wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
@@ -1027,24 +868,17 @@ Server::~Server() {
     if (config_thread.joinable())
         config_thread.join();
 
+    delete seat;
+    delete cursor;
     delete output_manager;
 
     wl_list_remove(&renderer_lost.link);
 
     wl_list_remove(&new_xdg_toplevel.link);
-
-    wl_list_remove(&new_input.link);
-    wl_list_remove(&request_cursor.link);
-    wl_list_remove(&request_set_selection.link);
-    wl_list_remove(&request_set_primary_selection.link);
-    wl_list_remove(&request_start_drag.link);
-    wl_list_remove(&start_drag.link);
-
     wl_list_remove(&new_shell_surface.link);
     wl_list_remove(&new_session_lock.link);
-    wl_list_remove(&new_virtual_pointer.link);
-    wl_list_remove(&new_virtual_keyboard.link);
     wl_list_remove(&new_pointer_constraint.link);
+
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&new_text_input.link);
     wl_list_remove(&ring_system_bell.link);
@@ -1062,8 +896,6 @@ Server::~Server() {
     wl_list_remove(&new_xwayland_surface.link);
     wlr_xwayland_destroy(xwayland);
 #endif
-
-    delete cursor;
 
     wlr_allocator_destroy(allocator);
     wlr_renderer_destroy(renderer);

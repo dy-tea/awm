@@ -45,7 +45,7 @@ struct Cursor {
     pixman_region32_t confine;
     wl_listener constraint_commit;
 
-    Cursor(Server *server);
+    Cursor(struct Seat *seat);
     ~Cursor();
 
     void reset_mode();

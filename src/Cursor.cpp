@@ -1,8 +1,7 @@
 #include "Server.h"
 #include <pixman.h>
-#include <string.h>
 
-Cursor::Cursor(Server *server) : server(server), seat(server->seat->wlr_seat) {
+Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
     // create wlr cursor and xcursor
     cursor = wlr_cursor_create();
     wlr_cursor_attach_output_layout(cursor, server->output_manager->layout);

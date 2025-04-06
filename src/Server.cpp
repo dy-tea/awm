@@ -490,7 +490,7 @@ Server::Server(Config *config) : config(config) {
     seat = new Seat(this);
 
     // cursor
-    cursor = new Cursor(this);
+    cursor = new Cursor(seat);
 
     // pointer constraints
     wlr_pointer_constraints = wlr_pointer_constraints_v1_create(display);

@@ -299,8 +299,11 @@ void Workspace::tile() {
             int br = (b->geometry.y - box.y) / height;
             int bc = (b->geometry.x - box.x) / width;
 
+            // if rows are equal compare columns
             if (ar == br)
                 return ac < bc;
+
+            // otherwise compare rows
             return ar < br;
         });
 
@@ -348,6 +351,17 @@ void Workspace::tile() {
         int height = box.height;
         int x = output->layout_geometry.x + box.x;
         int y = output->layout_geometry.y + box.y;
+
+        // sort by sum of x and y
+        std::sort(tiled.begin(), tiled.end(), [&](Toplevel *a, Toplevel *b) {
+            // with equal x values assume second toplevel is greater
+            if (a->geometry.x == b->geometry.x)
+                return true;
+
+            // otherwise compare sums
+            return a->geometry.x + a->geometry.y <
+                   b->geometry.x + b->geometry.y;
+        });
 
         // 1 toplevel means that it should take up the full screen
         if (tiled.size() != 1)

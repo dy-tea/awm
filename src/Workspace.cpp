@@ -116,16 +116,22 @@ void Workspace::set_hidden(const bool hidden) const {
         toplevel->set_hidden(hidden);
 }
 
-// swap the active toplevel geometry with other toplevel geometry
-void Workspace::swap(Toplevel *other) const {
+// swap the geometry of toplevel a and b
+void Workspace::swap(Toplevel *a, Toplevel *b) const {
+    if (!a || !b)
+        return;
+
     // get the geometry of both toplevels
-    const wlr_box active = active_toplevel->get_geometry();
-    const wlr_box swapped = other->get_geometry();
+    const wlr_box geo_a = a->get_geometry();
+    const wlr_box geo_b = b->get_geometry();
 
     // swap the geometry
-    active_toplevel->set_position_size(swapped);
-    other->set_position_size(active);
+    a->set_position_size(geo_b);
+    b->set_position_size(geo_a);
 }
+
+// swap the active toplevel geometry with other toplevel geometry
+void Workspace::swap(Toplevel *other) const { swap(active_toplevel, other); }
 
 // get the toplevel relative to the active one in the specified direction
 // returns nullptr if no toplevel matches query

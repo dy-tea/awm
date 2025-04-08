@@ -295,10 +295,10 @@ void Workspace::tile() {
 
         // sort by row and column order
         std::sort(tiled.begin(), tiled.end(), [&](Toplevel *a, Toplevel *b) {
-            int ar = (a->geometry.y - box.y) / height;
-            int ac = (a->geometry.x - box.x) / width;
-            int br = (b->geometry.y - box.y) / height;
-            int bc = (b->geometry.x - box.x) / width;
+            int ar = a->geometry.y / height;
+            int ac = a->geometry.x / width;
+            int br = b->geometry.y / height;
+            int bc = b->geometry.x / width;
 
             // if rows are equal compare columns
             if (ar == br)

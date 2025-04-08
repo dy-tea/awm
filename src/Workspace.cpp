@@ -1,4 +1,5 @@
 #include "Server.h"
+#include <algorithm>
 #include <climits>
 
 Workspace::Workspace(Output *output, const uint32_t num)
@@ -322,17 +323,36 @@ void Workspace::tile() {
         break;
     }
     case TILE_MASTER:
-        if (tiled.size() == 1) {
+        if (toplevel_count == 1) {
             // take up full screen
             tiled[0]->set_position_size(box.x, box.y, box.width, box.height);
         } else {
-            // set master toplevel geometry
-            int width = box.width / 2;
-            tiled[0]->set_position_size(box.x, box.y, width, box.height);
-
             // calculate slave toplevel geometry
-            int count = tiled.size() - 1;
+            int width = box.width / 2;
+            int count = toplevel_count - 1;
             int height = box.height / count;
+
+            // find master toplevel index
+            std::vector<Toplevel *>::iterator it = tiled.begin();
+            for (std::vector<Toplevel *>::iterator i = it + 1; i < tiled.end();
+                 ++i)
+                if ((*i)->geometry.x + (*i)->geometry.y <
+                    (*it)->geometry.x + (*it)->geometry.y)
+                    it = i;
+
+            // set master toplevel geometry
+            (*it)->set_position_size(box.x, box.y, width, box.height);
+
+            // remove from list
+            tiled.erase(it);
+
+            // sort by y
+            std::sort(tiled.begin(), tiled.end(),
+                      [&](Toplevel *a, Toplevel *b) {
+                          if (a->geometry.y == b->geometry.y)
+                              return true;
+                          return a->geometry.y < b->geometry.y;
+                      });
 
             // x position is always half of the output width
             int x = output->layout_geometry.x + box.x + width;
@@ -340,8 +360,7 @@ void Workspace::tile() {
 
             // set slave toplevel geometry
             for (int i = 0; i != count; ++i)
-                tiled[i + 1]->set_position_size(x, y + i * height, width,
-                                                height);
+                tiled[i]->set_position_size(x, y + i * height, width, height);
         }
 
         break;

@@ -59,7 +59,7 @@ focus_on_hover = false                                        # focus window on 
 system_bell = "/usr/share/sounds/freedesktop/stereo/bell.oga" # path to system bell sound, leave empty for no sound, empty by default
 
 [tiling]
-method = "grid" # "none", "grid", "master", "dwindle"
+method = "master" # "none", "grid", "master", "dwindle"
 
 [binds] # default binds which can be overwitten in your config
 exit = "Alt Escape"

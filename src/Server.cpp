@@ -733,6 +733,9 @@ Server::Server(Config *config) : config(config) {
         ::exit(1);
     }
 
+    // don't connect to parent X11 server
+    unsetenv("DISPLAY");
+
 #ifdef XWAYLAND
     // init xwayland
     if ((xwayland = wlr_xwayland_create(display, compositor, true))) {
@@ -766,9 +769,6 @@ Server::Server(Config *config) : config(config) {
             new Toplevel(server, static_cast<wlr_xwayland_surface *>(data));
         };
         wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
-
-        // don't connect to parent X11 server
-        unsetenv("DISPLAY");
 
         // set new display
         setenv("DISPLAY", xwayland->display_name, 1);

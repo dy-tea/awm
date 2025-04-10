@@ -527,7 +527,7 @@ Server::Server(Config *config) : config(config) {
         Workspace *workspace = server->get_workspace(toplevel);
         Output *output = workspace->output;
         if (output->get_active() != workspace)
-            output->set_workspace(workspace->num);
+            output->set_workspace(workspace);
 
         // focus toplevel
         toplevel->focus();

@@ -48,5 +48,6 @@ struct Output {
     struct Workspace *new_workspace();
     struct Workspace *get_active() const;
     struct Workspace *get_workspace(uint32_t n) const;
+    bool set_workspace(Workspace *workspace);
     bool set_workspace(uint32_t n);
 };

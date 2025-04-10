@@ -235,30 +235,34 @@ Workspace *Output::get_active() const {
     return active;
 }
 
-// change the focused workspace to workspace n
-bool Output::set_workspace(const uint32_t n) {
-    Workspace *requested = get_workspace(n);
+// change the focused workspace to passed workspace
+bool Output::set_workspace(Workspace *workspace) {
     Workspace *previous = get_active();
 
-    // workspace does not exist
-    if (!requested)
+    // invalid workspace
+    if (!workspace || !previous)
         return false;
 
     // workspace is already active, we should still consume the bind
-    if (requested == previous)
+    if (workspace == previous)
         return true;
 
     // hide workspace we are moving from
     previous->set_hidden(true);
 
     // set new workspace to the active one
-    wl_list_remove(&requested->link);
-    wl_list_insert(&workspaces, &requested->link);
+    wl_list_remove(&workspace->link);
+    wl_list_insert(&workspaces, &workspace->link);
 
     // focus new workspace
-    requested->focus();
+    workspace->focus();
 
     return true;
+}
+
+// change the focused workspace to workspace n
+bool Output::set_workspace(const uint32_t n) {
+    return set_workspace(get_workspace(n));
 }
 
 // update layout geometry

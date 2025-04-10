@@ -44,7 +44,7 @@ https://github.com/user-attachments/assets/c916d37b-eda9-4566-b6a0-1f7a748b1b77
 
 - `meson`
 - `ninja`
-- `wlroots` **0.19** (wlroots-git)
+- `wlroots-git` **0.19**
 - `xkbcommon`
 - `wayland-server`
 - `wayland-protocols`
@@ -67,11 +67,38 @@ ninja -C build/
 ./build/awm
 ```
 
-Additionally, you can install awm to your wayland-sessions using:
+**Install**
 
 ```sh
 sudo meson install -C build/
 ```
+
+**Xwayland support**
+
+Currently xwayland support is very unstable and might even be removed in the future, to remove support do:
+
+```sh
+meson setup build -DXWAYLAND=false
+```
+
+**Tests**
+
+You can build and run tests using:
+
+```sh
+meson setup build/ -Dtests=true
+meson test -C build/
+```
+
+Note that tests have additional dependencies.
+
+**Custom wlroots**
+
+```sh
+meson setup build/ -Dwlroots=true
+```
+
+This will clone wlroots to `subprojects/wlroots` and build using that instead of system wlroots. Note that `libwlroots-0.19.so` won't be installed to `/usr/lib` so you will have to copy it there if you want to run awm using the drm backend.
 
 ### Configuration
 

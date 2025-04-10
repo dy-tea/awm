@@ -315,7 +315,7 @@ void Workspace::tile() {
         });
 
         // loop through each toplevel
-        for (int i = 0; i != toplevel_count; ++i) {
+        for (int i = 0; i < toplevel_count - 1; ++i) {
             // calculate toplevel geometry
             int row = i / cols;
             int col = i % cols;
@@ -325,6 +325,20 @@ void Workspace::tile() {
             // set toplevel geometry
             tiled[i]->set_position_size(x, y, width, height);
         }
+
+        // calculate last toplevel geometry
+        int i = toplevel_count - 1;
+        int row = i / cols;
+        int col = i % cols;
+        int x = output->layout_geometry.x + box.x + (col * width);
+        int y = output->layout_geometry.y + box.y + (row * height);
+
+        // stretch width to fill remaining space
+        if (int area = cols * rows; area != toplevel_count)
+            width *= (1 + area - toplevel_count);
+
+        // set last toplevel geometry
+        tiled[i]->set_position_size(x, y, width, height);
 
         break;
     }

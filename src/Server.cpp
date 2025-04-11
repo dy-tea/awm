@@ -148,14 +148,6 @@ bool Server::handle_bind(Bind bind) {
         bind.sym = XKB_KEY_NoSymbol;
     }
 
-    // handle virtual terminal (tty) switch
-    // FIXME: doesn't appear to work
-    if (bind.modifiers == (WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT) &&
-        bind.sym >= XKB_KEY_XF86Switch_VT_1 &&
-        bind.sym <= XKB_KEY_XF86Switch_VT_12 && session)
-        return wlr_session_change_vt(
-            session, (unsigned int)(bind.sym + 1 - XKB_KEY_XF86Switch_VT_1));
-
     // locate in wm binds
     for (Bind b : config->binds)
         if (b == bind) {

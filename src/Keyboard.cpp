@@ -119,6 +119,26 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
         // handle binds
         bool handled = false;
 
+        // handle vt switch
+        auto handle_vt = [&](const xkb_keysym_t *keysyms, size_t len) {
+            for (size_t i = 0; i != len; ++i) {
+                xkb_keysym_t keysym = keysyms[i];
+
+                if (keysym >= XKB_KEY_XF86Switch_VT_1 &&
+                    keysym <= XKB_KEY_XF86Switch_VT_12) {
+                    if (server->session) {
+                        wlr_session_change_vt(
+                            server->session,
+                            (unsigned int)(keysym + 1 -
+                                           XKB_KEY_XF86Switch_VT_1));
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
         if (!server->locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
             // modifiers
             uint32_t modifiers = 0;
@@ -128,8 +148,10 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
             uint32_t nsyms_raw =
                 keyboard->keysyms_raw(keycode, &syms_raw, &modifiers);
 
+            handled |= handle_vt(syms_raw, nsyms_raw);
+
             for (uint32_t i = 0; i != nsyms_raw; ++i)
-                handled = server->handle_bind(
+                handled |= server->handle_bind(
                     Bind{BIND_NONE, modifiers, syms_raw[i]});
 
             // translated
@@ -137,16 +159,18 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
             uint32_t nsyms_translated = keyboard->keysyms_translated(
                 keycode, &syms_translated, &modifiers);
 
+            handled |= handle_vt(syms_translated, nsyms_raw);
+
             if (modifiers & (WLR_MODIFIER_SHIFT | WLR_MODIFIER_CAPS))
                 for (uint32_t i = 0; i != nsyms_translated; ++i)
-                    handled = server->handle_bind(
+                    handled |= server->handle_bind(
                         Bind{BIND_NONE, modifiers, syms_translated[i]});
 
             // mouse buttons
             if (server->cursor->pressed_buttons)
                 for (uint32_t i = 0; i < 5; ++i)
                     if (server->cursor->pressed_buttons & (1 << i))
-                        handled = server->handle_bind(Bind{
+                        handled |= server->handle_bind(Bind{
                             BIND_NONE, modifiers,
                             static_cast<xkb_keysym_t>(i + 0x20000000 + 272)});
         }

@@ -726,9 +726,6 @@ Server::Server(Config *config) : config(config) {
         ::exit(1);
     }
 
-    // don't connect to parent X11 server
-    unsetenv("DISPLAY");
-
 #ifdef XWAYLAND
     // init xwayland
     if ((xwayland = wlr_xwayland_create(display, compositor, true))) {
@@ -767,8 +764,10 @@ Server::Server(Config *config) : config(config) {
         setenv("DISPLAY", xwayland->display_name, 1);
         wlr_log(WLR_INFO, "started xwayland on $DISPLAY=%s",
                 xwayland->display_name);
-    } else
+    } else {
         wlr_log(WLR_ERROR, "%s", "failed to start xwayland");
+        unsetenv("DISPLAY");
+    }
 #endif
 
     // start IPC

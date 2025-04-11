@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "version.h"
 #include <wordexp.h>
 
 Server *Server::instance = nullptr;
@@ -10,11 +11,11 @@ int main(const int argc, char *argv[]) {
     // startup and config
     std::string startup_cmd, config_path;
     const std::string usage =
-        "Usage: %s [-s startup command] [-c config file path]\n";
+        "Usage: %s [-v] [-s startup command] [-c config file path]\n";
 
     // parse command line and set values if provided
     int c;
-    while ((c = getopt(argc, argv, "s:c:h")) != -1) {
+    while ((c = getopt(argc, argv, "s:c:h:v")) != -1) {
         switch (c) {
         case 's':
             startup_cmd = optarg;
@@ -22,6 +23,9 @@ int main(const int argc, char *argv[]) {
         case 'c':
             config_path = optarg;
             break;
+        case 'v':
+            printf("%s\n", AWM_VERSION);
+            return 0;
         default:
             printf(usage.c_str(), argv[0]);
             return 0;

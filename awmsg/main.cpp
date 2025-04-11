@@ -1,3 +1,4 @@
+#include "../include/version.h"
 #include <fcntl.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -25,6 +26,7 @@ bool is_number(const std::string &s) {
 void print_usage() {
     printf("%s", "Usage: awmsg [flags] [group] [subcommand]\n"
                  "flags:\n"
+                 "\t-v --version\n"
                  "\t-c --continuous\n"
                  "\t-1 --1-line\n"
                  "\t-s --socket <path>\n"
@@ -72,6 +74,12 @@ int main(int argc, char **argv) {
     bool continuous = false;
     bool one_line = false;
     std::string socket_path = "";
+
+    // print version and exit
+    if (group == "-v" || group == "--version") {
+        printf("%s\n", AWM_VERSION);
+        return 0;
+    }
 
     // get continuous flag if present
     if (group == "-c" || group == "--continuous") {

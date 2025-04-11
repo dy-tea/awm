@@ -35,19 +35,19 @@ _awmsg () {
     local words cword
     _get_comp_words_by_ref -n "$COMP_WORDBREAKS" words cword
 
-    declare -a literals=(help exit spawn -h --help -c --continuous -1 --1-line -s --socket output list modes workspace list set toplevel list keyboard list device list current bind list run display)
+    declare -a literals=(-h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list modes workspace list set toplevel list keyboard list device list current bind list run display)
     declare -a regexes=()
     declare -A literal_transitions=()
     declare -A nontail_transitions=()
-    literal_transitions[0]="([0]=1 [1]=1 [2]=2 [3]=3 [4]=3 [5]=3 [6]=3 [7]=3 [8]=3 [9]=4 [10]=4 [11]=5 [14]=6 [17]=7 [19]=8 [21]=9 [24]=10)"
-    literal_transitions[3]="([3]=3 [4]=3 [5]=3 [6]=3 [7]=3 [8]=3 [9]=4 [10]=4 [11]=5 [14]=6 [17]=7 [19]=8 [21]=9 [24]=10)"
-    literal_transitions[5]="([12]=1 [13]=1)"
-    literal_transitions[6]="([15]=1 [16]=11)"
-    literal_transitions[7]="([18]=1)"
-    literal_transitions[8]="([20]=1)"
-    literal_transitions[9]="([22]=1 [23]=1)"
-    literal_transitions[10]="([25]=1 [26]=12 [27]=12)"
-    declare -A match_anything_transitions=([11]=1 [2]=1 [4]=3 [12]=1)
+    literal_transitions[0]="([0]=1 [1]=1 [2]=1 [3]=1 [4]=1 [5]=2 [6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [15]=6 [18]=7 [20]=8 [22]=9 [25]=10)"
+    literal_transitions[3]="([6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [15]=6 [18]=7 [20]=8 [22]=9 [25]=10)"
+    literal_transitions[5]="([13]=1 [14]=1)"
+    literal_transitions[6]="([16]=1 [17]=12)"
+    literal_transitions[7]="([19]=1)"
+    literal_transitions[8]="([21]=1)"
+    literal_transitions[9]="([23]=1 [24]=1)"
+    literal_transitions[10]="([26]=1 [27]=11 [28]=11)"
+    declare -A match_anything_transitions=([4]=3 [2]=1 [11]=1 [12]=1)
     declare -A subword_transitions
 
     local state=0
@@ -84,7 +84,7 @@ _awmsg () {
         return 1
     done
 
-    declare -A literal_transitions_level_0=([6]="15 16" [7]="18" [3]="3 4 5 6 7 8 9 10 11 14 17 19 21 24" [0]="0 1 2 3 4 5 6 7 8 9 10 11 14 17 19 21 24" [8]="20" [5]="12 13" [9]="22 23" [10]="25 26 27")
+    declare -A literal_transitions_level_0=([6]="16 17" [7]="19" [0]="0 1 2 3 4 5 6 7 8 9 10 11 12 15 18 20 22 25" [8]="21" [3]="6 7 8 9 10 11 12 15 18 20 22 25" [5]="13 14" [9]="23 24" [10]="26 27 28")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=([4]="0")
 

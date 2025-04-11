@@ -56,7 +56,7 @@ jobs:
           meson setup -Dxwayland=enabled build/
           sudo ninja -C build/ install
 
-      - name: Build
+      - name: build
         run: |
           meson setup build/
           ninja -C build/

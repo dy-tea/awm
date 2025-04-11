@@ -5,44 +5,45 @@ _awmsg_cmd_0 () {
 }
 
 _awmsg () {
-    local -a literals=("help" "exit" "spawn" "-h" "--help" "-c" "--continuous" "-1" "--1-line" "-s" "--socket" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "display")
+    local -a literals=("-h" "--help" "-v" "--version" "exit" "spawn" "-c" "--continuous" "-1" "--1-line" "-s" "--socket" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "display")
 
     local -A descriptions
     descriptions[1]="show help"
-    descriptions[2]="exit awm"
-    descriptions[3]="spawn a command"
-    descriptions[4]="show help"
-    descriptions[5]="show help"
-    descriptions[6]="keep writing updates until cancelled"
+    descriptions[2]="show help"
+    descriptions[3]="show version"
+    descriptions[4]="show version"
+    descriptions[5]="exit awm"
+    descriptions[6]="spawn a command"
     descriptions[7]="keep writing updates until cancelled"
-    descriptions[8]="write on a single line"
+    descriptions[8]="keep writing updates until cancelled"
     descriptions[9]="write on a single line"
-    descriptions[10]="use socket path"
+    descriptions[10]="write on a single line"
     descriptions[11]="use socket path"
-    descriptions[13]="list outputs"
-    descriptions[14]="list output modes"
-    descriptions[16]="list workspaces"
-    descriptions[17]="set current workspace to num"
-    descriptions[19]="list toplevels"
-    descriptions[21]="list keyboards"
-    descriptions[23]="list devices"
-    descriptions[24]="show current device"
-    descriptions[26]="list key bindings"
-    descriptions[27]="run key binding for name"
-    descriptions[28]="display key binding for name"
+    descriptions[12]="use socket path"
+    descriptions[14]="list outputs"
+    descriptions[15]="list output modes"
+    descriptions[17]="list workspaces"
+    descriptions[18]="set current workspace to num"
+    descriptions[20]="list toplevels"
+    descriptions[22]="list keyboards"
+    descriptions[24]="list devices"
+    descriptions[25]="show current device"
+    descriptions[27]="list key bindings"
+    descriptions[28]="run key binding for name"
+    descriptions[29]="display key binding for name"
 
     local -A literal_transitions
-    literal_transitions[1]="([1]=2 [2]=2 [3]=3 [4]=4 [5]=4 [6]=4 [7]=4 [8]=4 [9]=4 [10]=5 [11]=5 [12]=6 [15]=7 [18]=8 [20]=9 [22]=10 [25]=11)"
-    literal_transitions[4]="([4]=4 [5]=4 [6]=4 [7]=4 [8]=4 [9]=4 [10]=5 [11]=5 [12]=6 [15]=7 [18]=8 [20]=9 [22]=10 [25]=11)"
-    literal_transitions[6]="([13]=2 [14]=2)"
-    literal_transitions[7]="([16]=2 [17]=12)"
-    literal_transitions[8]="([19]=2)"
-    literal_transitions[9]="([21]=2)"
-    literal_transitions[10]="([23]=2 [24]=2)"
-    literal_transitions[11]="([26]=2 [27]=13 [28]=13)"
+    literal_transitions[1]="([1]=2 [2]=2 [3]=2 [4]=2 [5]=2 [6]=3 [7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [16]=7 [19]=8 [21]=9 [23]=10 [26]=11)"
+    literal_transitions[4]="([7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [16]=7 [19]=8 [21]=9 [23]=10 [26]=11)"
+    literal_transitions[6]="([14]=2 [15]=2)"
+    literal_transitions[7]="([17]=2 [18]=13)"
+    literal_transitions[8]="([20]=2)"
+    literal_transitions[9]="([22]=2)"
+    literal_transitions[10]="([24]=2 [25]=2)"
+    literal_transitions[11]="([27]=2 [28]=12 [29]=12)"
 
     local -A match_anything_transitions
-    match_anything_transitions=([12]=2 [3]=2 [5]=4 [13]=2)
+    match_anything_transitions=([5]=4 [3]=2 [12]=2 [13]=2)
 
     declare -A subword_transitions
 
@@ -78,7 +79,7 @@ _awmsg () {
 
         return 1
     done
-    declare -A literal_transitions_level_0=([7]="16 17" [8]="19" [4]="4 5 6 7 8 9 10 11 12 15 18 20 22 25" [1]="1 2 3 4 5 6 7 8 9 10 11 12 15 18 20 22 25" [9]="21" [6]="13 14" [10]="23 24" [11]="26 27 28")
+    declare -A literal_transitions_level_0=([7]="17 18" [8]="20" [1]="1 2 3 4 5 6 7 8 9 10 11 12 13 16 19 21 23 26" [9]="22" [4]="7 8 9 10 11 12 13 16 19 21 23 26" [6]="14 15" [10]="24 25" [11]="27 28 29")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
     declare -A specialized_commands_level_0=([5]="0")

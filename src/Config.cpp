@@ -113,17 +113,13 @@ void set_option(std::string name, const std::vector<std::string> &options_src,
                 options.c_str(), source.second.c_str());
 }
 
-Config::Config() {
-    path = "";
-    last_write_time = std::filesystem::file_time_type::min();
+Config::Config()
+    : path(""), last_write_time(std::filesystem::file_time_type::min()) {
     notify_send("Config", "%s",
                 "no config loaded, press Alt+Escape to exit awm");
 }
 
-Config::Config(const std::string &path) {
-    // path
-    this->path = path;
-
+Config::Config(const std::string &path) : path(path) {
     // get last write time
     last_write_time = std::filesystem::last_write_time(path);
 
@@ -148,7 +144,6 @@ bool Config::load() {
         config_file.table->getTable("startup");
     if (startup) {
         // startup commands
-
         if (std::unique_ptr<toml::Array> exec = startup->getArray("exec")) {
             if (auto commands = exec->getStringVector()) {
                 // clear commands
@@ -382,6 +377,12 @@ bool Config::load() {
         // focus on hover
         connect(general_table->getBool("focus_on_hover"),
                 &general.focus_on_hover);
+
+        // focus on activation
+        set_option("general.focus_on_activation", {"none", "active", "any"},
+                   {FOWA_NONE, FOWA_ACTIVE, FOWA_ANY},
+                   general_table->getString("focus_on_activation"),
+                   &general.fowa);
 
         // system bell
         connect(general_table->getString("system_bell"), &general.system_bell);

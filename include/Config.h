@@ -88,6 +88,7 @@ struct OutputConfig {
 };
 
 enum TileMethod { TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE };
+enum FocusOnWindowActivation { FOWA_NONE, FOWA_ACTIVE, FOWA_ANY };
 
 struct Config {
     std::string path;
@@ -154,6 +155,7 @@ struct Config {
 
     struct {
         bool focus_on_hover{false};
+        FocusOnWindowActivation fowa{FOWA_ACTIVE};
         std::string system_bell{""};
     } general;
 

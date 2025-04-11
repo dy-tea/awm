@@ -88,6 +88,7 @@ struct Server {
 
     wlr_xdg_activation_v1 *wlr_xdg_activation;
     wl_listener xdg_activation_activate;
+    std::vector<std::pair<Toplevel *, time_t>> activation_times;
 
     wlr_text_input_manager_v3 *wlr_text_input_manager;
     wl_listener new_text_input;

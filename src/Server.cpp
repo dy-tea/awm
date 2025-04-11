@@ -516,6 +516,35 @@ Server::Server(Config *config) : config(config) {
             !toplevel->xdg_toplevel->base->surface->mapped)
             return;
 
+        // get current time
+        time_t curr_time = std::time(nullptr);
+
+        // only respect activation requests at least 5 seconds apart
+        bool found = false;
+        std::vector<std::pair<Toplevel *, time_t>>::iterator it =
+            server->activation_times.begin();
+        while (it != server->activation_times.end())
+            if (it->first == toplevel) {
+                // less than 5 seconds passed, ingore request
+                if (difftime(curr_time, it->second) < 5)
+                    return;
+                else
+                    // update with current time
+                    it->second = curr_time;
+                found = true;
+                ++it;
+            } else {
+                // remove if 5 seconds have passed
+                if (difftime(curr_time, it->second) < 5)
+                    it = server->activation_times.erase(it);
+                else
+                    ++it;
+            }
+
+        // add to activation times if not found
+        if (!found)
+            server->activation_times.push_back({toplevel, curr_time});
+
         // set workspace to toplevel's workspace
         Workspace *workspace = server->get_workspace(toplevel);
         Output *output = workspace->output;

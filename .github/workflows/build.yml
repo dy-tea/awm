@@ -10,10 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Install dependencies
+      - name: dependencies
         run: |
           sudo apt-get update
           sudo apt install --fix-missing meson wayland-protocols wayland-utils \
@@ -54,7 +56,7 @@ jobs:
           meson setup -Dxwayland=enabled build/
           sudo ninja -C build/ install
 
-      - name: Build the project
+      - name: Build
         run: |
           meson setup build/
           ninja -C build/

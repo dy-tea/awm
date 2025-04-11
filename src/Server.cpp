@@ -149,6 +149,7 @@ bool Server::handle_bind(Bind bind) {
     }
 
     // handle virtual terminal (tty) switch
+    // FIXME: doesn't appear to work
     if (bind.modifiers == (WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT) &&
         bind.sym >= XKB_KEY_XF86Switch_VT_1 &&
         bind.sym <= XKB_KEY_XF86Switch_VT_12 && session)

@@ -93,31 +93,15 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node, x,
                                     y);
 
+        // set initial geometry
+        toplevel->geometry.x = x;
+        toplevel->geometry.y = y;
+        toplevel->geometry.width = width;
+        toplevel->geometry.height = height;
+
         // add the toplevel to the scene tree
         toplevel->scene_surface->buffer->node.data = toplevel;
         toplevel->scene_tree->node.data = toplevel;
-
-        // xwayland commit
-        toplevel->xwayland_commit.notify = [](wl_listener *listener,
-                                              [[maybe_unused]] void *data) {
-            Toplevel *toplevel =
-                wl_container_of(listener, toplevel, xwayland_commit);
-            const wlr_surface_state *state =
-                &toplevel->xwayland_surface->surface->current;
-
-            wlr_box new_box{
-                0,
-                0,
-                state->width,
-                state->height,
-            };
-
-            if (new_box.width != toplevel->saved_geometry.width ||
-                new_box.height != toplevel->saved_geometry.height)
-                memcpy(&toplevel->saved_geometry, &new_box, sizeof(wlr_box));
-        };
-        wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
-                      &toplevel->xwayland_commit);
 
         Server *server = toplevel->server;
 
@@ -428,7 +412,6 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         // unmap
         wl_list_remove(&toplevel->map.link);
         wl_list_remove(&toplevel->unmap.link);
-        wl_list_remove(&toplevel->xwayland_commit.link);
     };
     wl_signal_add(&xwayland_surface->events.dissociate, &dissociate);
 
@@ -438,6 +421,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
 
         const auto *event =
             static_cast<wlr_xwayland_surface_configure_event *>(data);
+        wlr_xwayland_surface *xsurface = toplevel->xwayland_surface;
 
         // unconfigured
         if (!toplevel->xwayland_surface->surface ||
@@ -449,7 +433,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         }
 
         // unmanaged
-        if (toplevel->xwayland_surface->override_redirect) {
+        if (xsurface->override_redirect) {
             // set scene node position
             wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
                                         event->x, event->y);
@@ -756,8 +740,7 @@ bool Toplevel::maximized() const {
         return xdg_toplevel->current.maximized;
 #ifdef XWAYLAND
     else
-        return xwayland_surface->maximized_horz ||
-               xwayland_surface->maximized_vert;
+        return xwayland_maximized;
 #endif
 }
 
@@ -839,9 +822,11 @@ void Toplevel::set_maximized(const bool maximized) {
 #endif
         wlr_xdg_toplevel_set_maximized(xdg_toplevel, maximized);
 #ifdef XWAYLAND
-    else
+    else {
         wlr_xwayland_surface_set_maximized(xwayland_surface, maximized,
                                            maximized);
+        xwayland_maximized = maximized;
+    }
 #endif
 
     if (maximized) {
@@ -852,7 +837,7 @@ void Toplevel::set_maximized(const bool maximized) {
         set_position_size(usable_area.x + output_box.x,
                           usable_area.y + output_box.y, usable_area.width,
                           usable_area.height);
-    } else
+    } else {
         // handles edge case where toplevel starts maximized
         if (saved_geometry.width && saved_geometry.height)
             // set back to saved geometry
@@ -862,6 +847,7 @@ void Toplevel::set_maximized(const bool maximized) {
             // use half of output geometry
             set_position_size(output_box.x, output_box.y, output_box.width / 2,
                               output_box.height / 2);
+    }
 }
 
 // create foreign toplevel

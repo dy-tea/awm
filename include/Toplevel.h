@@ -28,12 +28,12 @@ struct Toplevel {
 
 #ifdef XWAYLAND
     wlr_xwayland_surface *xwayland_surface{nullptr};
+    bool xwayland_maximized{false};
 
     wl_listener activate;
     wl_listener associate;
     wl_listener dissociate;
     wl_listener configure;
-    wl_listener xwayland_commit;
     wl_listener xwayland_resize;
     wl_listener xwayland_move;
     wl_listener xwayland_maximize;

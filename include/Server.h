@@ -89,6 +89,9 @@ struct Server {
     wlr_xdg_activation_v1 *wlr_xdg_activation;
     wl_listener xdg_activation_activate;
 
+    wlr_xdg_wm_dialog_v1 *wlr_xdg_wm_dialog;
+    wl_listener new_xdg_dialog;
+
     wlr_text_input_manager_v3 *wlr_text_input_manager;
     wl_listener new_text_input;
 

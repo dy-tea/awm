@@ -546,6 +546,39 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_xdg_activation->events.request_activate,
                   &xdg_activation_activate);
 
+    // xdg dialog
+    wlr_xdg_wm_dialog = wlr_xdg_wm_dialog_v1_create(display, 1);
+
+    new_xdg_dialog.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_xdg_dialog);
+        wlr_xdg_dialog_v1 *dialog = static_cast<wlr_xdg_dialog_v1 *>(data);
+
+        // find toplevel associated with the dialog
+        Toplevel *toplevel =
+            server->get_toplevel(dialog->xdg_toplevel->base->surface);
+        if (!toplevel)
+            return;
+
+        // a toplevel should only have one dialog, technically I should raise
+        // error already_used but I'm unsure how to do this with wlroots
+        if (toplevel->wlr_xdg_dialog)
+            return;
+
+        // set dialog
+        toplevel->wlr_xdg_dialog = dialog;
+
+        // set destroy listener
+        toplevel->xdg_dialog_destroy.notify = [](wl_listener *listener,
+                                                 [[maybe_unused]] void *data) {
+            Toplevel *toplevel =
+                wl_container_of(listener, toplevel, xdg_dialog_destroy);
+            toplevel->wlr_xdg_dialog = nullptr;
+            wl_list_remove(&toplevel->xdg_dialog_destroy.link);
+        };
+        wl_signal_add(&dialog->events.destroy, &toplevel->xdg_dialog_destroy);
+    };
+    wl_signal_add(&wlr_xdg_wm_dialog->events.new_dialog, &new_xdg_dialog);
+
     // text input
     wlr_text_input_manager = wlr_text_input_manager_v3_create(display);
 
@@ -890,6 +923,7 @@ Server::~Server() {
     wl_list_remove(&new_pointer_constraint.link);
 
     wl_list_remove(&xdg_activation_activate.link);
+    wl_list_remove(&new_xdg_dialog.link);
     wl_list_remove(&new_text_input.link);
     wl_list_remove(&ring_system_bell.link);
 

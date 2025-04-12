@@ -48,7 +48,8 @@ struct Toplevel {
     wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_handle;
     wl_listener ext_foreign_destroy;
 
-    wlr_xdg_activation_token_v1 *xdg_activation_token{nullptr};
+    wlr_xdg_dialog_v1 *wlr_xdg_dialog{nullptr};
+    wl_listener xdg_dialog_destroy;
 
 #ifdef SERVER_DECORATION
     wlr_xdg_toplevel_decoration_v1 *xdg_decoration{nullptr};

@@ -21,6 +21,7 @@ https://github.com/user-attachments/assets/c916d37b-eda9-4566-b6a0-1f7a748b1b77
 - [Fractional scale](https://wayland.app/protocols/fractional-scale-v1)
 - [Cursor shape](https://wayland.app/protocols/cursor-shape-v1)
 - [Foreign toplevel list](https://wayland.app/protocols/ext-foreign-toplevel-list-v1)
+- [XDG dialog windows](https://wayland.app/protocols/xdg-dialog-v1)
 - [Alpha modifier protocol](https://wayland.app/protocols/alpha-modifier-v1)
 - [Data control protocol](https://wayland.app/protocols/ext-data-control-v1)
 - [XDG System bell](https://wayland.app/protocols/xdg-system-bell-v1)

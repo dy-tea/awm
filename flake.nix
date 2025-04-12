@@ -3,19 +3,21 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
+    chaotic-cx.url = "github:chaotic-cx/nyx";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nixpkgs-wayland }:
+  outputs = { self, nixpkgs, flake-utils, nixpkgs-wayland, chaotic-cx }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
         dependencies = with pkgs; [
           meson
           ninja
+          cmake
           wayland-scanner
           pixman
           wayland
-          wayland-protocols
+          xwayland
           pkg-config
           libxkbcommon
           xorg.libxcb
@@ -25,6 +27,7 @@
           xorg.xcbutilwm
         ] ++ [
           nixpkgs-wayland.packages.${system}.wlroots
+          chaotic-cx.packages.${system}.wayland-protocols_git
         ];
       in {
         packages.default = pkgs.stdenv.mkDerivation {

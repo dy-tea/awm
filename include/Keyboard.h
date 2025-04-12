@@ -15,9 +15,8 @@ struct Keyboard {
     ~Keyboard();
 
     void update_config() const;
-    uint32_t keysyms_raw(xkb_keycode_t keycode, const xkb_keysym_t **keysyms,
-                         uint32_t *modifiers) const;
+    uint32_t keysyms_raw(xkb_keycode_t keycode,
+                         const xkb_keysym_t **keysyms) const;
     uint32_t keysyms_translated(xkb_keycode_t keycode,
-                                const xkb_keysym_t **keysyms,
-                                uint32_t *modifiers) const;
+                                const xkb_keysym_t **keysyms) const;
 };

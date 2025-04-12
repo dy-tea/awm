@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Toplevel.h"
 #include "wlr.h"
 
 struct Workspace {
@@ -25,5 +26,7 @@ struct Workspace {
     void focus_toplevel(Toplevel *toplevel);
     void focus_next();
     void focus_prev();
+    void tile(std::vector<Toplevel *> sans_toplevels);
     void tile();
+    void tile_sans_active();
 };

@@ -47,10 +47,7 @@ void Keyboard::update_config() const {
 
 // get keysyms without modifiers applied
 uint32_t Keyboard::keysyms_raw(const xkb_keycode_t keycode,
-                               const xkb_keysym_t **keysyms,
-                               uint32_t *modifiers) const {
-    *modifiers = wlr_keyboard_get_modifiers(wlr_keyboard);
-
+                               const xkb_keysym_t **keysyms) const {
     const xkb_layout_index_t layout_index =
         xkb_state_key_get_layout(wlr_keyboard->xkb_state, keycode);
     return xkb_keymap_key_get_syms_by_level(wlr_keyboard->keymap, keycode,
@@ -59,14 +56,7 @@ uint32_t Keyboard::keysyms_raw(const xkb_keycode_t keycode,
 
 // get keysyms with modifiers applied
 uint32_t Keyboard::keysyms_translated(const xkb_keycode_t keycode,
-                                      const xkb_keysym_t **keysyms,
-                                      uint32_t *modifiers) const {
-    *modifiers = wlr_keyboard_get_modifiers(wlr_keyboard);
-
-    const xkb_mod_mask_t consumed = xkb_state_key_get_consumed_mods2(
-        wlr_keyboard->xkb_state, keycode, XKB_CONSUMED_MODE_XKB);
-    *modifiers &= ~consumed;
-
+                                      const xkb_keysym_t **keysyms) const {
     return xkb_state_key_get_syms(wlr_keyboard->xkb_state, keycode, keysyms);
 }
 
@@ -141,12 +131,12 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
 
         if (!server->locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
             // modifiers
-            uint32_t modifiers = 0;
+            uint32_t modifiers =
+                wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
 
             // raw
             const xkb_keysym_t *syms_raw;
-            uint32_t nsyms_raw =
-                keyboard->keysyms_raw(keycode, &syms_raw, &modifiers);
+            uint32_t nsyms_raw = keyboard->keysyms_raw(keycode, &syms_raw);
 
             handled |= handle_vt(syms_raw, nsyms_raw);
 
@@ -156,10 +146,10 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
 
             // translated
             const xkb_keysym_t *syms_translated;
-            uint32_t nsyms_translated = keyboard->keysyms_translated(
-                keycode, &syms_translated, &modifiers);
+            uint32_t nsyms_translated =
+                keyboard->keysyms_translated(keycode, &syms_translated);
 
-            handled |= handle_vt(syms_translated, nsyms_raw);
+            handled |= handle_vt(syms_translated, nsyms_translated);
 
             if (modifiers & (WLR_MODIFIER_SHIFT | WLR_MODIFIER_CAPS))
                 for (uint32_t i = 0; i != nsyms_translated; ++i)

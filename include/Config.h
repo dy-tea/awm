@@ -29,15 +29,16 @@ enum BindName {
     BIND_WINDOW_SWAP_LEFT,
     BIND_WINDOW_SWAP_RIGHT,
     BIND_WORKSPACE_TILE,
+    BIND_WORKSPACE_TILE_SANS,
     BIND_WORKSPACE_OPEN,
     BIND_WORKSPACE_WINDOW_TO,
 };
 
 const std::string BIND_NAMES[] = {
-    "none",       "exit",  "maximize", "fullscreen", "previous",
-    "next",       "move",  "up",       "down",       "left",
-    "right",      "close", "swap_up",  "swap_down",  "swap_left",
-    "swap_right", "tile",  "open",     "window_to",
+    "none",       "exit",  "maximize",  "fullscreen", "previous",
+    "next",       "move",  "up",        "down",       "left",
+    "right",      "close", "swap_up",   "swap_down",  "swap_left",
+    "swap_right", "tile",  "tile_sans", "open",       "window_to",
 };
 
 const std::string MOUSE_BUTTONS[] = {

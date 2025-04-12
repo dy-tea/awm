@@ -63,29 +63,31 @@ system_bell = "/usr/share/sounds/freedesktop/stereo/bell.oga" # path to system b
 method = "grid" # "none", "grid", "master", "dwindle"
 
 [binds] # default binds which can be overwitten in your config
-exit = "Alt Escape"
-window.maximize = "Alt w"
-window.fullscreen = "Alt f"
-window.previous = "Alt o"
-window.next = "Alt p"
-window.move = "Alt MouseLeft"
-window.up = "Alt k"
-window.down = "Alt j"
-window.left = "Alt h"
-window.right = "Alt l"
-window.swap.up = "Alt Shift K"
-window.swap.down = "Alt Shift J"
-window.swap.left = "Alt Shift H"
-window.swap.right = "Alt Shift L"
-window.close = "Alt q"
-workspace.tile = "Alt t"
-workspace.open = "Alt Number"
-workspace.window_to = "Alt Shift Number"
+exit = "Alt Escape"                      # exit the window manager
+window.maximize = "Alt w"                # maximize the active window
+window.fullscreen = "Alt f"              # fullscreen the active window
+window.previous = "Alt o"                # switch to previous window
+window.next = "Alt p"                    # switch to next window
+window.move = "Alt MouseLeft"            # move the active window
+window.up = "Alt k"                      # move the active window up
+window.down = "Alt j"                    # move the active window down
+window.left = "Alt h"                    # move the active window left
+window.right = "Alt l"                   # move the active window right
+window.swap.up = "Alt Shift K"           # swap the active window with the window above
+window.swap.down = "Alt Shift J"         # swap the active window with the window below
+window.swap.left = "Alt Shift H"         # swap the active window with the window on the left
+window.swap.right = "Alt Shift L"        # swap the active window with the window on the right
+window.close = "Alt q"                   # close the active window
+workspace.tile = "Alt t"                 # tile the active workspace
+workspace.tile_sans = "Alt Shift T"      # tile the active workspace without the active window
+workspace.open = "Alt Number"            # open workspace corresponding to the number pressed
+workspace.window_to = "Alt Shift Number" # move the active window to the workspace corresponding to the number pressed
 # modifiers: "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",
 # Number is a special token that will be replaced with the number key pressed
 
 # name, width, height and refresh are required fields
 # monitors do not need to be in the config to function
+# see output names with `awmsg output list`
 [[monitors]]
 name = "HDMI-A-1"
 enabled = true     # true by default

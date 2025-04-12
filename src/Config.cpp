@@ -470,6 +470,10 @@ bool Config::load() {
             // workspace_tile bind
             set_bind("tile", workspace_bind.get(), BIND_WORKSPACE_TILE);
 
+            // workspace_tile_sans bind
+            set_bind("tile_sans", workspace_bind.get(),
+                     BIND_WORKSPACE_TILE_SANS);
+
             // workspace_open bind
             set_bind("open", workspace_bind.get(), BIND_WORKSPACE_OPEN);
 

@@ -246,8 +246,12 @@ bool Server::handle_bind(Bind bind) {
             output->get_active()->swap(other);
         break;
     case BIND_WORKSPACE_TILE:
-        // set workspace to tile
+        // tile all toplevels in workspace
         output->get_active()->tile();
+        break;
+    case BIND_WORKSPACE_TILE_SANS:
+        // tile all toplevels in workspace sans active
+        output->get_active()->tile_sans_active();
         break;
     case BIND_WORKSPACE_OPEN:
         // open workspace n

@@ -264,7 +264,7 @@ void Workspace::focus_prev() {
 
 // auto-tile the toplevels of a workspace, not currently reversible or
 // any kind of special state
-void Workspace::tile() {
+void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
     // no toplevels to tile
     if (wl_list_empty(&toplevels))
         return;
@@ -282,6 +282,16 @@ void Workspace::tile() {
             --toplevel_count;
         else
             tiled.push_back(toplevel);
+    }
+
+    // remove sans_toplevels from tiled list
+    for (Toplevel *toplevel : sans_toplevels) {
+        std::vector<Toplevel *>::iterator it =
+            std::find(tiled.begin(), tiled.end(), toplevel);
+        if (it != tiled.end()) {
+            tiled.erase(it);
+            --toplevel_count;
+        }
     }
 
     // ensure there is a toplevel to tile
@@ -430,4 +440,13 @@ void Workspace::tile() {
     default:
         break;
     }
+}
+
+// no argument tile means tile all toplevels
+void Workspace::tile() { tile({}); }
+
+// tile without active toplevel
+void Workspace::tile_sans_active() {
+    if (active_toplevel)
+        tile({active_toplevel});
 }

@@ -1,6 +1,8 @@
 #include "Server.h"
 #include <algorithm>
 #include <climits>
+#include <limits>
+#include <stdexcept>
 
 Workspace::Workspace(Output *output, const uint32_t num)
     : num(num), output(output) {
@@ -122,8 +124,8 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
         return;
 
     // get the geometry of both toplevels
-    const wlr_box geo_a = a->get_geometry();
-    const wlr_box geo_b = b->get_geometry();
+    const wlr_box geo_a = a->geometry;
+    const wlr_box geo_b = b->geometry;
 
     // swap the geometry
     a->set_position_size(geo_b);
@@ -136,27 +138,28 @@ void Workspace::swap(Toplevel *other) const { swap(active_toplevel, other); }
 // get the toplevel relative to the active one in the specified direction
 // returns nullptr if no toplevel matches query
 Toplevel *Workspace::in_direction(const wlr_direction direction) const {
-    // no other toplevel to focus
-    if (wl_list_length(&toplevels) < 2)
+    // no other toplevel to focus or no active toplevel
+    if (wl_list_length(&toplevels) < 2 || !active_toplevel)
         return nullptr;
 
     // get the geometry of the active toplevel
-    const wlr_box active_geometry = active_toplevel->get_geometry();
+    const wlr_box &active_geometry = active_toplevel->geometry;
 
     // define a target
     Toplevel *curr, *tmp;
-    double min_distance = std::numeric_limits<double>::max();
-    double other = std::numeric_limits<double>::max();
+    int min_primary = std::numeric_limits<int>::max();
+    int min_secondary = std::numeric_limits<int>::max();
     Toplevel *target = nullptr;
 
     // find the smallest positive distance, absolute axis
-    auto validate = [&](const double distance, const double axis) {
+    auto process = [&](const int primary, const int secondary) {
         // note the greater or equals is needed for tiled windows since they
         // are placed perfectly on the same axis
-        if (distance > 0 && distance <= min_distance && axis < other) {
+        if (primary > 0 && primary <= min_primary &&
+            secondary <= min_secondary) {
             target = curr;
-            min_distance = distance;
-            other = axis;
+            min_primary = primary;
+            min_secondary = secondary;
         }
     };
 
@@ -165,32 +168,24 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
     // - find the smallest absolute difference in the other axis
     switch (direction) {
     case WLR_DIRECTION_UP:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
-            const wlr_box curr_geometry = curr->get_geometry();
-            validate(active_geometry.y - curr_geometry.y,
-                     std::abs(active_geometry.x - curr_geometry.x));
-        }
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            process(active_geometry.y - curr->geometry.y,
+                    std::abs(active_geometry.x - curr->geometry.x));
         break;
     case WLR_DIRECTION_DOWN:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
-            const wlr_box curr_geometry = curr->get_geometry();
-            validate(curr_geometry.y - active_geometry.y,
-                     std::abs(active_geometry.x - curr_geometry.x));
-        }
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            process(curr->geometry.y - active_geometry.y,
+                    std::abs(active_geometry.x - curr->geometry.x));
         break;
     case WLR_DIRECTION_LEFT:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
-            const wlr_box curr_geometry = curr->get_geometry();
-            validate(active_geometry.x - curr_geometry.x,
-                     std::abs(active_geometry.y - curr_geometry.y));
-        }
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            process(active_geometry.x - curr->geometry.x,
+                    std::abs(active_geometry.y - curr->geometry.y));
         break;
     case WLR_DIRECTION_RIGHT:
-        wl_list_for_each_safe(curr, tmp, &toplevels, link) {
-            const wlr_box curr_geometry = curr->get_geometry();
-            validate(curr_geometry.x - active_geometry.x,
-                     std::abs(active_geometry.y - curr_geometry.y));
-        }
+        wl_list_for_each_safe(curr, tmp, &toplevels, link)
+            process(curr->geometry.x - active_geometry.x,
+                    std::abs(active_geometry.y - curr->geometry.y));
         break;
     default:
         break;

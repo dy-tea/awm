@@ -116,12 +116,12 @@ Keyboard::Keyboard(Server *server, struct wlr_keyboard *keyboard)
 
                 if (keysym >= XKB_KEY_XF86Switch_VT_1 &&
                     keysym <= XKB_KEY_XF86Switch_VT_12) {
-                    if (server->session) {
+                    if (server->session)
+                        // change vt to the specified number
                         wlr_session_change_vt(
                             server->session,
                             (unsigned int)(keysym + 1 -
                                            XKB_KEY_XF86Switch_VT_1));
-                    }
                     return true;
                 }
             }

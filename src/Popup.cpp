@@ -11,12 +11,16 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
         Popup *popup = wl_container_of(listener, popup, commit);
         Output *output = popup->server->focused_output();
 
+        // output is required for popup positioning
         if (!output)
             return;
 
+        // get the coords of the parent tree's scene node
         int lx, ly;
         wlr_scene_node_coords(&popup->parent_tree->node.parent->node, &lx, &ly);
 
+        // calculate the geometry of the popup relative to the parent tree's
+        // scene node
         wlr_box box = {
             output->layout_geometry.x - lx,
             output->layout_geometry.y - ly,
@@ -24,8 +28,10 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
             output->layout_geometry.height,
         };
 
+        // unconstrain the popup from the relative box
         wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup, &box);
 
+        // schedule configure
         if (popup->xdg_popup->base->initial_commit)
             wlr_xdg_surface_schedule_configure(popup->xdg_popup->base);
     };

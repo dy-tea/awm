@@ -1,5 +1,6 @@
 #include "Server.h"
 
+// FIXME: missing a lot of implementation
 TextInput::TextInput(Server *server, wlr_text_input_v3 *wlr_text_input)
     : server(server), wlr_text_input(wlr_text_input) {
 

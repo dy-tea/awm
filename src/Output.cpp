@@ -286,19 +286,21 @@ bool Output::apply_config(const OutputConfig *config, const bool test_only) {
         if (config->width > 0 && config->height > 0 && config->refresh > 0) {
             // find matching mode
             wlr_output_mode *mode, *best_mode = nullptr;
-            wl_list_for_each(
-                mode, &wlr_output->modes,
-                link) if ((mode->width == config->width &&
-                           mode->height == config->height) &&
-                          (!best_mode ||
-                           (abs(static_cast<int>(mode->refresh / 1000.0 -
-                                                 config->refresh)) < 1.5 &&
-                            abs(static_cast<int>(mode->refresh / 1000.0 -
-                                                 config->refresh)) <
-                                abs(static_cast<int>(
-                                    best_mode->refresh / 1000.0 -
-                                    config->refresh))))) best_mode = mode;
+            wl_list_for_each(mode, &wlr_output->modes, link)
+                // find mode where width and height are equal to OutputConfig
+                // and refresh rate is within 1.5
+                if ((mode->width == config->width &&
+                     mode->height == config->height) &&
+                    (!best_mode ||
+                     (abs(static_cast<int>(mode->refresh / 1000.0 -
+                                           config->refresh)) < 1.5 &&
+                      abs(static_cast<int>(mode->refresh / 1000.0 -
+                                           config->refresh)) <
+                          abs(static_cast<int>(best_mode->refresh / 1000.0 -
+                                               config->refresh))))) best_mode =
+                    mode;
 
+            // set mode if found
             if (best_mode) {
                 wlr_output_state_set_mode(&state, best_mode);
                 mode_set = true;

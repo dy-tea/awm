@@ -386,6 +386,10 @@ bool Config::load() {
 
         // system bell
         connect(general_table->getString("system_bell"), &general.system_bell);
+
+        // minimize to workspace
+        connect(general_table->getInt("minimize_to_workspace"),
+                &general.minimize_to_workspace);
     }
 
     // tiling

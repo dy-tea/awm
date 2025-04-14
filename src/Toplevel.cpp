@@ -1,3 +1,4 @@
+#include "IPC.h"
 #include "Server.h"
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
@@ -322,13 +323,21 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
                                  [[maybe_unused]] void *data) {
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_minimize);
+        Server *server = toplevel->server;
 
-        // move toplevel to the bottom
-        wlr_scene_node_lower_to_bottom(&toplevel->scene_tree->node);
+        if (int64_t to = server->config->general.minimize_to_workspace) {
+            // move toplevel to workspace
+            if (Workspace *workspace = server->get_workspace(toplevel))
+                workspace->move_to(toplevel,
+                                   workspace->output->get_workspace(to));
+        } else {
+            // move toplevel to the bottom
+            wlr_scene_node_lower_to_bottom(&toplevel->scene_tree->node);
 
-        // focus the next toplevel in the workspace
-        if (Workspace *workspace = toplevel->server->get_workspace(toplevel))
-            workspace->focus_next();
+            // focus the next toplevel in the workspace
+            if (Workspace *workspace = server->get_workspace(toplevel))
+                workspace->focus_next();
+        }
     };
     wl_signal_add(&xdg_toplevel->events.request_minimize, &request_minimize);
 }

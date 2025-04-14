@@ -158,6 +158,7 @@ struct Config {
         bool focus_on_hover{false};
         FocusOnWindowActivation fowa{FOWA_ACTIVE};
         std::string system_bell{""};
+        int64_t minimize_to_workspace{0};
     } general;
 
     struct {

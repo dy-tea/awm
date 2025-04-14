@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <climits>
 #include <limits>
-#include <stdexcept>
 
 Workspace::Workspace(Output *output, const uint32_t num)
     : num(num), output(output) {

@@ -26,6 +26,7 @@ https://github.com/user-attachments/assets/c916d37b-eda9-4566-b6a0-1f7a748b1b77
 - [Data control protocol](https://wayland.app/protocols/ext-data-control-v1)
 - [XDG System bell](https://wayland.app/protocols/xdg-system-bell-v1)
 - [Color management](https://wayland.app/protocols/color-management-v1)
+- [Keyboard shortcuts inhibit](https://wayland.app/protocols/keyboard-shortcuts-inhibit-unstable-v1)
 - [Pointer constraints](https://wayland.app/protocols/pointer-constraints-unstable-v1)
 - [Primary Selection](https://wayland.app/protocols/primary-selection-unstable-v1)
 - [Relative pointer](https://wayland.app/protocols/relative-pointer-unstable-v1)

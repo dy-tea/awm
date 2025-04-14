@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "Config.h"
+#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -155,6 +156,16 @@ bool Server::handle_bind(Bind bind) {
             bind.name = b.name;
             break;
         }
+
+    // use bind exit as exit shortcuts inhibitor
+    if (active_keyboard_shortcuts_inhibitor) {
+        if (bind.name == BIND_EXIT) {
+            wlr_keyboard_shortcuts_inhibitor_v1_deactivate(
+                active_keyboard_shortcuts_inhibitor);
+            return true;
+        }
+        return false;
+    }
 
     switch (bind.name) {
     case BIND_EXIT:
@@ -614,6 +625,48 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
 
+    // keyboard shortcuts inhibitor
+    wlr_keyboard_shortcuts_inhibit_manager =
+        wlr_keyboard_shortcuts_inhibit_v1_create(display);
+
+    new_keyboard_shortcuts_inhibit.notify = [](wl_listener *listener,
+                                               void *data) {
+        Server *server =
+            wl_container_of(listener, server, new_keyboard_shortcuts_inhibit);
+        const auto inhibit =
+            static_cast<wlr_keyboard_shortcuts_inhibitor_v1 *>(data);
+
+        // do not activate if already active
+        if (server->active_keyboard_shortcuts_inhibitor)
+            return;
+
+        // set up destroy listener
+        server->destroy_keyboard_shortcuts_inhibitor.notify =
+            [](wl_listener *listener, [[maybe_unused]] void *data) {
+                Server *server = wl_container_of(
+                    listener, server, destroy_keyboard_shortcuts_inhibitor);
+
+                // deactivate
+                wlr_keyboard_shortcuts_inhibitor_v1_deactivate(
+                    server->active_keyboard_shortcuts_inhibitor);
+
+                // remove destroy listener
+                wl_list_remove(
+                    &server->destroy_keyboard_shortcuts_inhibitor.link);
+
+                // clear pointer
+                server->active_keyboard_shortcuts_inhibitor = nullptr;
+            };
+        wl_signal_add(&inhibit->events.destroy,
+                      &server->destroy_keyboard_shortcuts_inhibitor);
+
+        // activate shortcuts inhibitor
+        server->active_keyboard_shortcuts_inhibitor = inhibit;
+        wlr_keyboard_shortcuts_inhibitor_v1_activate(inhibit);
+    };
+    wl_signal_add(&wlr_keyboard_shortcuts_inhibit_manager->events.new_inhibitor,
+                  &new_keyboard_shortcuts_inhibit);
+
 #ifdef SERVER_DECORATION
     // server decoration
     wlr_server_decoration_manager =
@@ -929,6 +982,7 @@ Server::~Server() {
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&new_xdg_dialog.link);
     wl_list_remove(&new_text_input.link);
+    wl_list_remove(&new_keyboard_shortcuts_inhibit.link);
     wl_list_remove(&ring_system_bell.link);
 
 #ifdef SERVER_DECORATION

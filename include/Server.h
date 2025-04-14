@@ -92,11 +92,18 @@ struct Server {
     wlr_xdg_wm_dialog_v1 *wlr_xdg_wm_dialog;
     wl_listener new_xdg_dialog;
 
-    wlr_text_input_manager_v3 *wlr_text_input_manager;
-    wl_listener new_text_input;
-
     wlr_xdg_system_bell_v1 *wlr_xdg_system_bell;
     wl_listener ring_system_bell;
+
+    wlr_keyboard_shortcuts_inhibit_manager_v1
+        *wlr_keyboard_shortcuts_inhibit_manager;
+    wl_listener new_keyboard_shortcuts_inhibit;
+    wlr_keyboard_shortcuts_inhibitor_v1 *active_keyboard_shortcuts_inhibitor{
+        nullptr};
+    wl_listener destroy_keyboard_shortcuts_inhibitor;
+
+    wlr_text_input_manager_v3 *wlr_text_input_manager;
+    wl_listener new_text_input;
 
 #ifdef SERVER_DECORATION
     struct wlr_server_decoration_manager *wlr_server_decoration_manager;

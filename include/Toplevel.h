@@ -51,16 +51,14 @@ struct Toplevel {
     wlr_xdg_dialog_v1 *wlr_xdg_dialog{nullptr};
     wl_listener xdg_dialog_destroy;
 
-#ifdef SERVER_DECORATION
     wlr_xdg_toplevel_decoration_v1 *xdg_decoration{nullptr};
     wl_listener set_decoration_mode;
     wl_listener destroy_decoration;
-#endif
 
     bool hidden{false};
-#ifdef SERVER_DECORATION
+    wlr_server_decoration_manager_mode ssd_mode{
+        WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT};
     bool using_csd{true};
-#endif
 
     wlr_box geometry{};
     wlr_box saved_geometry{};
@@ -90,6 +88,7 @@ struct Toplevel {
     void begin_interactive(CursorMode mode, uint32_t edges);
     void set_position_size(double x, double y, int width, int height);
     void set_position_size(const wlr_box &geometry);
+    void set_ssd_mode(wlr_server_decoration_manager_mode mode);
     wlr_box get_geometry();
     void set_hidden(bool hidden);
     bool fullscreen() const;

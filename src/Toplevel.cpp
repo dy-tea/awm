@@ -195,14 +195,11 @@ void Toplevel::unmap_notify(wl_listener *listener,
         ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
 }
 
-#ifdef SERVER_DECORATION
 // set decorations to server side
 void Toplevel::request_decoration_mode(wl_listener *listener,
                                        [[maybe_unused]] void *data) {
     Toplevel *toplevel =
         wl_container_of(listener, toplevel, set_decoration_mode);
-
-    assert(toplevel->xdg_decoration);
 
     if (toplevel->xdg_toplevel->base->initialized)
         // notify of decoration mode
@@ -212,7 +209,6 @@ void Toplevel::request_decoration_mode(wl_listener *listener,
                 ? WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE
                 : WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
 }
-#endif
 
 // Toplevel from xdg toplevel
 Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
@@ -699,6 +695,15 @@ void Toplevel::set_position_size(const double x, const double y, int width,
 
 void Toplevel::set_position_size(const wlr_box &geometry) {
     set_position_size(geometry.x, geometry.y, geometry.width, geometry.height);
+}
+
+void Toplevel::set_ssd_mode(wlr_server_decoration_manager_mode mode) {
+    if (fullscreen())
+        return;
+
+    ssd_mode = mode;
+
+    // TODO
 }
 
 // get the geometry of the toplevel

@@ -968,6 +968,9 @@ Server::~Server() {
     if (config_thread.joinable())
         config_thread.join();
 
+    Keyboard *kb, *kbt;
+    wl_list_for_each_safe(kb, kbt, &keyboards, link) delete kb;
+
     delete seat;
     delete cursor;
     delete output_manager;
@@ -990,8 +993,8 @@ Server::~Server() {
     wl_list_remove(&new_decoration.link);
 #endif
 
-    LayerSurface *surface, *tmp;
-    wl_list_for_each_safe(surface, tmp, &layer_surfaces, link) delete surface;
+    LayerSurface *ls, *lst;
+    wl_list_for_each_safe(ls, lst, &layer_surfaces, link) delete ls;
 
 #ifdef XWAYLAND
     wl_list_remove(&xwayland_ready.link);

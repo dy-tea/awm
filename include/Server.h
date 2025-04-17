@@ -105,6 +105,9 @@ struct Server {
     wlr_text_input_manager_v3 *wlr_text_input_manager;
     wl_listener new_text_input;
 
+    wlr_drm_lease_v1_manager *wlr_drm_lease_manager;
+    wl_listener drm_lease_request;
+
 #ifdef SERVER_DECORATION
     struct wlr_server_decoration_manager *wlr_server_decoration_manager;
     wl_listener new_server_decoration;

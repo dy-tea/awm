@@ -667,6 +667,34 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_keyboard_shortcuts_inhibit_manager->events.new_inhibitor,
                   &new_keyboard_shortcuts_inhibit);
 
+    // drm lease
+    if ((wlr_drm_lease_manager =
+             wlr_drm_lease_v1_manager_create(display, backend))) {
+        drm_lease_request.notify = [](wl_listener *listener, void *data) {
+            Server *server =
+                wl_container_of(listener, server, drm_lease_request);
+            auto request = static_cast<wlr_drm_lease_request_v1 *>(data);
+
+            if (!request) {
+                wlr_drm_lease_request_v1_reject(request);
+                return;
+            }
+
+            for (size_t i = 0; i != request->n_connectors; ++i) {
+                auto output =
+                    static_cast<Output *>(request->connectors[i]->output->data);
+                if (!output)
+                    continue;
+
+                wlr_output_layout_remove(server->output_manager->layout,
+                                         output->wlr_output);
+                output->scene_output = nullptr;
+            }
+        };
+        wl_signal_add(&wlr_drm_lease_manager->events.request,
+                      &drm_lease_request);
+    }
+
 #ifdef SERVER_DECORATION
     // server decoration
     wlr_server_decoration_manager =
@@ -987,6 +1015,9 @@ Server::~Server() {
     wl_list_remove(&new_text_input.link);
     wl_list_remove(&new_keyboard_shortcuts_inhibit.link);
     wl_list_remove(&ring_system_bell.link);
+
+    if (wlr_drm_lease_manager)
+        wl_list_remove(&drm_lease_request.link);
 
 #ifdef SERVER_DECORATION
     wl_list_remove(&new_server_decoration.link);

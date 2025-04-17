@@ -77,6 +77,7 @@ All options are documented in [config.toml](config.toml) and many are explained 
 - [XDG shell](https://wayland.app/protocols/xdg-shell)
 - [Linux DMA-BUF](https://wayland.app/protocols/linux-dmabuf-v1)
 - [XDG activation](https://wayland.app/protocols/xdg-activation-v1)
+- [DRM lease](https://wayland.app/protocols/drm-lease-v1)
 - [DRM synchronization object](https://wayland.app/protocols/linux-drm-syncobj-v1)
 - [Session lock](https://wayland.app/protocols/ext-session-lock-v1)
 - [Single-pixel buffer](https://wayland.app/protocols/single-pixel-buffer-v1)

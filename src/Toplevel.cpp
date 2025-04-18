@@ -935,7 +935,7 @@ void Toplevel::save_geometry() {
         if (xdg_toplevel) {
             saved_geometry.width = geo.width;
             saved_geometry.height = geo.height;
-        } else {
+        } else if (xwayland_surface) {
             saved_geometry.width = xwayland_surface->surface->current.width;
             saved_geometry.height = xwayland_surface->surface->current.height;
         }

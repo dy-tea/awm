@@ -77,6 +77,7 @@ All options are documented in [config.toml](config.toml) and many are explained 
 - [DRM synchronization object](https://wayland.app/protocols/linux-drm-syncobj-v1)
 - [Session lock](https://wayland.app/protocols/ext-session-lock-v1)
 - [Single-pixel buffer](https://wayland.app/protocols/single-pixel-buffer-v1)
+- [Content type hint](https://wayland.app/protocols/content-type-v1)
 - [Idle notify](https://wayland.app/protocols/ext-idle-notify-v1)
 - [Image Capture Source](https://wayland.app/protocols/ext-image-capture-source-v1)
 - [Image Copy Capture](https://wayland.app/protocols/ext-image-copy-capture-v1)

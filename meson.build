@@ -34,6 +34,7 @@ protocol_code = []
 protocols = [
   wl_protocols_dir / 'stable' / 'xdg-shell' / 'xdg-shell.xml',
   wl_protocols_dir / 'stable' / 'tablet' / 'tablet-v2.xml',
+  wl_protocols_dir / 'staging' / 'content-type' / 'content-type-v1.xml',
   wl_protocols_dir / 'staging' / 'ext-foreign-toplevel-list' / 'ext-foreign-toplevel-list-v1.xml',
   wl_protocols_dir / 'staging' / 'ext-image-capture-source' / 'ext-image-capture-source-v1.xml',
   wl_protocols_dir / 'staging' / 'ext-image-copy-capture' / 'ext-image-copy-capture-v1.xml',

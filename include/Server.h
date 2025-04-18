@@ -121,6 +121,7 @@ struct Server {
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
     wlr_idle_notifier_v1 *wlr_idle_notifier;
+    wlr_content_type_manager_v1 *wlr_content_type_manager;
 
 #ifdef XWAYLAND
     wlr_xwayland *xwayland;

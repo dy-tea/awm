@@ -772,6 +772,9 @@ Server::Server(Config *config) : config(config) {
     // idle notifier
     wlr_idle_notifier = wlr_idle_notifier_v1_create(display);
 
+    // content type
+    wlr_content_type_manager = wlr_content_type_manager_v1_create(display, 1);
+
     // viewporter
     wlr_viewporter_create(display);
 

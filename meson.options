@@ -1,3 +1,2 @@
 option('XWAYLAND', type: 'boolean', description: 'enable xwayland support')
 option('tests', type: 'boolean', value: false, description: 'build tests')
-option('wlroots', type: 'boolean', value: false, description: 'use cloned wloots instead of system wlroots' )

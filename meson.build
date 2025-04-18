@@ -75,13 +75,15 @@ tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
 nlohmann_json = dependency('nlohmann_json')
 
 wlroots_version = ['>=0.19.0', '<0.20.0']
-if get_option('wlroots')
-  wlroots = subproject(
+if false
+  # this looks weird but it will use the wlroots in the subprojects directory
+  # if system wlroots is not found
+  subproject(
     'wlroots',
     default_options: ['examples=false'],
     required: false,
     version: wlroots_version,
-  ).get_variable('wlroots')
+  )
 endif
 wlroots = dependency('wlroots-0.19', version: wlroots_version, fallback: 'wlroots')
 

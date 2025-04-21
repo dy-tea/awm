@@ -49,7 +49,7 @@ IPC::IPC(Server *server, std::string sock_path)
     }
 
     // listen for connections
-    if (listen(fd, 5) == -1) {
+    if (listen(fd, 128) == -1) {
         wlr_log(WLR_ERROR,
                 "failed to listen on socket with fd `%d` on path `%s`", fd,
                 path.c_str());

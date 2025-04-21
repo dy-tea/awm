@@ -134,7 +134,7 @@ struct Config {
             libinput_config_drag_state tap_and_drag{
                 LIBINPUT_CONFIG_DRAG_ENABLED};
             libinput_config_drag_lock_state drag_lock{
-                LIBINPUT_CONFIG_DRAG_LOCK_DISABLED};
+                LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY};
             libinput_config_tap_button_map tap_button_map{
                 LIBINPUT_CONFIG_TAP_MAP_LRM};
             bool natural_scroll{true};

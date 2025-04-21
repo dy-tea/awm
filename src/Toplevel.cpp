@@ -1,4 +1,3 @@
-#include "IPC.h"
 #include "Server.h"
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {

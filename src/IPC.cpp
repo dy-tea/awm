@@ -57,6 +57,7 @@ IPC::IPC(Server *server, std::string sock_path)
     }
 
     // start thread
+    // FIXME: add to event loop
     thread = std::thread([&]() {
         while (running) {
             // accept connections

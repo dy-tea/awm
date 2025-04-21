@@ -962,7 +962,8 @@ Server::Server(Config *config) : config(config) {
     for (const std::string &command : systemd_user_env)
         spawn(command);
 
-    // run thread for config updater
+    // run thread for config updater,
+    // FIXME: add to event loop
     config_thread = std::thread([&]() {
         while (running) {
             // update config

@@ -79,6 +79,9 @@ template <typename T> void connect(const std::pair<bool, T> &pair, T *target) {
         *target = pair.second;
 }
 
+// set target pointer to source mapped from options_src to options_dst by index
+// if source first is true, print error message if source is not found in
+// options_src
 template <typename T>
 void set_option(std::string name, const std::vector<std::string> &options_src,
                 const std::vector<T> &options_dst,

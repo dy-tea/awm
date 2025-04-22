@@ -56,8 +56,6 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // xwayland surface
     else {
         // create scene surface
-        toplevel->scene_tree =
-            wlr_scene_tree_create(toplevel->server->layers.floating);
         toplevel->scene_surface = wlr_scene_surface_create(
             toplevel->scene_tree, toplevel->xwayland_surface->surface);
 
@@ -372,6 +370,9 @@ Toplevel::~Toplevel() {
 Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     : server(server), xwayland_surface(xwayland_surface) {
 
+    // create scene tree
+    scene_tree = wlr_scene_tree_create(server->layers.floating);
+
     // destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
@@ -638,6 +639,13 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 // set the position and size of a toplevel, send a configure
 void Toplevel::set_position_size(const double x, const double y, int width,
                                  int height) {
+    // xwayland surfaces can call fullscreen and maximize when unmapped so this
+    // check is necessary
+#ifdef XWAYLAND
+    if (!xwayland_surface || !xwayland_surface->surface->mapped)
+        return;
+#endif
+
     // enforce minimum size
     // if width and height are 0, it is likely a virtual output
     if (width && height

@@ -642,7 +642,7 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     // xwayland surfaces can call fullscreen and maximize when unmapped so this
     // check is necessary
 #ifdef XWAYLAND
-    if (!xwayland_surface || !xwayland_surface->surface->mapped)
+    if (xwayland_surface && !xwayland_surface->surface->mapped)
         return;
 #endif
 

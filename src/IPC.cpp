@@ -238,8 +238,11 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         Output *output, *tmp;
         wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
                               link) {
+            // shorter for convenience
+            wlr_output *o = output->wlr_output;
+
             // outputs are distinguished by name
-            j[output->wlr_output->name] = {
+            j[o->name] = {
                 {"layout",
                  {
                      {"x", output->layout_geometry.x},
@@ -254,31 +257,28 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                      {"width", output->usable_area.width},
                      {"height", output->usable_area.height},
                  }},
-                {"refresh", output->wlr_output->refresh / 1000.0},
-                {"scale", output->wlr_output->scale},
-                {"transform", output->wlr_output->transform},
-                {"adaptive", output->wlr_output->adaptive_sync_supported},
-                {"enabled", output->wlr_output->enabled},
+                {"refresh", o->refresh / 1000.0},
+                {"scale", o->scale},
+                {"transform", o->transform},
+                {"adaptive", o->adaptive_sync_supported},
+                {"enabled", o->enabled},
                 {"focused", output == server->focused_output()},
                 {"workspace", output->get_active()->num},
             };
 
             // below values may be null (e.g. virtual outputs)
             // they are generally set on physical displays though
-            if (output->wlr_output->description)
-                j[output->wlr_output->name]["description"] =
-                    output->wlr_output->description;
+            if (o->description)
+                j[o->name]["description"] = o->description;
 
-            if (output->wlr_output->make)
-                j[output->wlr_output->name]["make"] = output->wlr_output->make;
+            if (o->make)
+                j[o->name]["make"] = o->make;
 
-            if (output->wlr_output->model)
-                j[output->wlr_output->name]["model"] =
-                    output->wlr_output->model;
+            if (o->model)
+                j[o->name]["model"] = o->model;
 
-            if (output->wlr_output->serial)
-                j[output->wlr_output->name]["serial"] =
-                    output->wlr_output->serial;
+            if (o->serial)
+                j[o->name]["serial"] = o->serial;
         }
         break;
     }

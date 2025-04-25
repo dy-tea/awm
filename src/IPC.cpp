@@ -1,6 +1,7 @@
 #include "Server.h"
 #include <string>
 #include <sys/socket.h>
+#include <wayland-server-core.h>
 using json = nlohmann::json;
 
 IPC::IPC(Server *server, std::string sock_path)
@@ -56,18 +57,20 @@ IPC::IPC(Server *server, std::string sock_path)
         return;
     }
 
-    // start thread
-    // FIXME: add to event loop
-    thread = std::thread([&]() {
-        while (running) {
+    // add to event loop
+    update_timer = wl_event_loop_add_fd(
+        wl_display_get_event_loop(server->display), fd, WL_EVENT_READABLE,
+        +[](int fd, [[maybe_unused]] unsigned int mask, void *data) {
+            IPC *ipc = static_cast<IPC *>(data);
+
             // accept connections
             int client_fd = accept(fd, nullptr, nullptr);
             if (client_fd == -1) {
                 wlr_log(WLR_ERROR,
                         "failed to accept connection on socket with fd `%d` on "
                         "path `%s`",
-                        fd, path.c_str());
-                continue;
+                        fd, ipc->path.c_str());
+                return 0;
             }
 
             // read from client
@@ -76,9 +79,9 @@ IPC::IPC(Server *server, std::string sock_path)
             if (len == -1) {
                 wlr_log(WLR_ERROR,
                         "failed to read from client with fd `%d` on path `%s`",
-                        client_fd, path.c_str());
+                        client_fd, ipc->path.c_str());
                 close(client_fd);
-                continue;
+                return 0;
             }
 
             // parse client message
@@ -93,20 +96,21 @@ IPC::IPC(Server *server, std::string sock_path)
 
             // run command
             std::string response =
-                parse_command(message, client_fd, continuous);
+                ipc->parse_command(message, client_fd, continuous);
 
             // write response to client
             if (write(client_fd, response.c_str(), strlen(response.c_str())) ==
                 -1)
                 wlr_log(WLR_ERROR,
                         "failed to write to client with fd `%d` on path `%s`",
-                        client_fd, path.c_str());
+                        client_fd, ipc->path.c_str());
 
             // close connection
             if (!continuous)
                 close(client_fd);
-        }
-    });
+            return 0;
+        },
+        this);
 }
 
 // parse a command and return the response
@@ -587,13 +591,6 @@ void IPC::stop() {
     if (unlink(path.c_str()))
         wlr_log(WLR_ERROR, "failed to unlink IPC socket at path `%s`",
                 path.c_str());
-
-    // stop thread
-    running = false;
-
-    pthread_cancel(thread.native_handle());
-    if (thread.joinable())
-        thread.join();
 
     delete this;
 }

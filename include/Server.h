@@ -130,8 +130,7 @@ struct Server {
 #endif
 
     struct sigaction sa{};
-    std::thread config_thread;
-    std::atomic<bool> running{true};
+    wl_event_source *config_update_timer{nullptr};
 
     IPC *ipc{nullptr};
 

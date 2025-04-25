@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "Config.h"
 #include "wlr.h"
+#include <wayland-server-core.h>
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -962,17 +963,19 @@ Server::Server(Config *config) : config(config) {
     for (const std::string &command : systemd_user_env)
         spawn(command);
 
-    // run thread for config updater,
-    // FIXME: add to event loop
-    config_thread = std::thread([&]() {
-        while (running) {
-            // update config
-            config->update(this);
+    // add config updater to event loop
+    config_update_timer = wl_event_loop_add_timer(
+        wl_display_get_event_loop(display),
+        [](void *data) {
+            Server *server = static_cast<Server *>(data);
 
-            // sleep
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    });
+            server->config->update(server);
+
+            wl_event_source_timer_update(server->config_update_timer, 1000);
+            return 0;
+        },
+        this);
+    wl_event_source_timer_update(config_update_timer, 1000);
 
     // run event loop
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s",
@@ -995,10 +998,6 @@ void Server::exit() const {
 
 Server::~Server() {
     wl_display_destroy_clients(display);
-
-    running = false;
-    if (config_thread.joinable())
-        config_thread.join();
 
     Keyboard *kb, *kbt;
     wl_list_for_each_safe(kb, kbt, &keyboards, link) delete kb;

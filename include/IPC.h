@@ -1,13 +1,12 @@
 #pragma once
 
-#include <atomic>
+#include "wlr.h"
 #include <map>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <thread>
 #include <unistd.h>
 #include <vector>
 using json = nlohmann::json;
@@ -34,8 +33,7 @@ struct IPC {
     int fd;
     sockaddr_un addr{};
     std::string path{""};
-    std::atomic<bool> running{true};
-    std::thread thread;
+    wl_event_source *update_timer{nullptr};
 
     IPC(Server *server, std::string sock_path);
 

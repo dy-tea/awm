@@ -303,6 +303,10 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
         Toplevel *toplevel =
             wl_container_of(listener, toplevel, request_fullscreen);
 
+        // weston-simple-dmabuf-feedback aborts the server without this check
+        if (!toplevel->xdg_toplevel->base->initialized)
+            return;
+
         bool fullscreen = toplevel->xdg_toplevel->requested.fullscreen;
 
         if (toplevel->fullscreen() != fullscreen)

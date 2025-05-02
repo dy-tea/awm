@@ -2,6 +2,8 @@
 
 A wayland compositor with high protocol support, simple customization and an IPC server.
 
+[![Build](https://github.com/dy-tea/awm/actions/workflows/build.yml/badge.svg)](https://github.com/dy-tea/awm/actions/workflows/build.yml)
+
 https://github.com/user-attachments/assets/c916d37b-eda9-4566-b6a0-1f7a748b1b77
 
 ### Dependencies

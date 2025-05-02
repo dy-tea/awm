@@ -33,7 +33,7 @@ struct IPC {
     int fd;
     sockaddr_un addr{};
     std::string path{""};
-    wl_event_source *update_timer{nullptr};
+    wl_event_source *source{nullptr};
 
     IPC(Server *server, std::string sock_path);
 

@@ -58,7 +58,7 @@ IPC::IPC(Server *server, std::string sock_path)
     }
 
     // add to event loop
-    update_timer = wl_event_loop_add_fd(
+    source = wl_event_loop_add_fd(
         wl_display_get_event_loop(server->display), fd, WL_EVENT_READABLE,
         +[](int fd, [[maybe_unused]] unsigned int mask, void *data) {
             IPC *ipc = static_cast<IPC *>(data);

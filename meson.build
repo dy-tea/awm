@@ -143,6 +143,12 @@ executable(
 # desktop file
 install_data('awm.desktop', install_dir: '/usr/share/wayland-sessions')
 
+# portals file
+install_data(
+  'awm-portals.conf',
+  install_dir: get_option('datadir') / 'xdg-desktop-portal',
+)
+
 # ipc client
 executable(
   'awmsg',

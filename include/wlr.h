@@ -43,6 +43,9 @@ extern "C" {
 #include <wlr/util/region.h>
 #include <wlr/util/transform.h>
 
+// interfaces
+#include <wlr/interfaces/wlr_buffer.h>
+
 // types
 #include <wlr/types/wlr_alpha_modifier_v1.h>
 #include <wlr/types/wlr_buffer.h>
@@ -83,7 +86,6 @@ extern "C" {
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_seat.h>
-#include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_session_lock_v1.h>
 #include <wlr/types/wlr_single_pixel_buffer_v1.h>
 #include <wlr/types/wlr_subcompositor.h>

@@ -124,33 +124,6 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
     toplevel->update_ext_foreign();
 
-#ifdef SERVER_DECORATION
-    // handle decoration
-    if (toplevel->xdg_decoration)
-        // set decoration means we are using csd
-        toplevel->using_csd = toplevel->xdg_decoration->requested_mode ==
-                              WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
-    else {
-        // get the toplevel's surface
-#ifdef XWAYLAND
-        wlr_surface *surface = toplevel->xdg_toplevel
-                                   ? toplevel->xdg_toplevel->base->surface
-                                   : toplevel->xwayland_surface->surface;
-#else
-        wlr_surface *surface = toplevel->xdg_toplevel->base->surface;
-#endif
-
-        // get the matching server decoration
-        ServerDecoration *decoration =
-            toplevel->server->get_server_decoration(surface);
-
-        // set using_csd flag
-        toplevel->using_csd =
-            !decoration || decoration->decoration->mode ==
-                               WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
-    }
-#endif
-
     // notify clients
     if (toplevel->server->ipc)
         toplevel->server->ipc->notify_clients(
@@ -192,21 +165,6 @@ void Toplevel::unmap_notify(wl_listener *listener,
         ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
 }
 
-// set decorations to server side
-void Toplevel::request_decoration_mode(wl_listener *listener,
-                                       [[maybe_unused]] void *data) {
-    Toplevel *toplevel =
-        wl_container_of(listener, toplevel, set_decoration_mode);
-
-    if (toplevel->xdg_toplevel->base->initialized)
-        // notify of decoration mode
-        wlr_xdg_toplevel_decoration_v1_set_mode(
-            toplevel->xdg_decoration,
-            toplevel->using_csd
-                ? WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE
-                : WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-}
-
 // Toplevel from xdg toplevel
 Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     : server(server), xdg_toplevel(xdg_toplevel) {
@@ -214,7 +172,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
                                               xdg_toplevel->base);
     scene_tree->node.data = this;
-    xdg_toplevel->base->data = scene_tree;
+    xdg_toplevel->base->data = this;
 
     // xdg_toplevel_map
     map.notify = map_notify;
@@ -238,13 +196,6 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
                 toplevel->xdg_toplevel,
                 WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
                     WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE);
-
-#ifdef SERVER_DECORATION
-            // request decoration mode
-            if (toplevel->xdg_decoration)
-                toplevel->request_decoration_mode(listener,
-                                                  toplevel->xdg_decoration);
-#endif
         }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
@@ -365,6 +316,11 @@ Toplevel::~Toplevel() {
 #ifdef XWAYLAND
     }
 #endif
+
+    if (decoration) {
+        delete decoration;
+        decoration = nullptr;
+    }
 
     wl_list_remove(&destroy.link);
 }
@@ -708,13 +664,13 @@ void Toplevel::set_position_size(const wlr_box &geometry) {
     set_position_size(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
-void Toplevel::set_ssd_mode(wlr_server_decoration_manager_mode mode) {
-    if (fullscreen())
+void Toplevel::set_decoration_mode(wlr_xdg_toplevel_decoration_v1_mode mode) {
+    if (fullscreen()) {
+        decoration_mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE;
         return;
+    }
 
-    ssd_mode = mode;
-
-    // TODO
+    decoration_mode = mode;
 }
 
 // get the geometry of the toplevel

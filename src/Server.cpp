@@ -1,7 +1,5 @@
 #include "Server.h"
-#include "Config.h"
-#include "wlr.h"
-#include <wayland-server-core.h>
+#include "wlr/types/wlr_xdg_decoration_v1.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -113,18 +111,6 @@ Toplevel *Server::get_toplevel(wlr_surface *surface) const {
 
     return nullptr;
 }
-
-#ifdef SERVER_DECORATION
-// get server decoration by wlr_surface
-ServerDecoration *Server::get_server_decoration(wlr_surface *surface) const {
-    ServerDecoration *decoration, *tmp;
-    wl_list_for_each_safe(decoration, tmp, &decorations,
-                          link) if (decoration->decoration->surface ==
-                                    surface) return decoration;
-
-    return nullptr;
-}
-#endif
 
 // get the output under the cursor
 Output *Server::focused_output() const {
@@ -696,67 +682,28 @@ Server::Server(Config *config) : config(config) {
                       &drm_lease_request);
     }
 
-#ifdef SERVER_DECORATION
-    // server decoration
-    wlr_server_decoration_manager =
-        wlr_server_decoration_manager_create(display);
-    wlr_server_decoration_manager_set_default_mode(
-        wlr_server_decoration_manager,
-        WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
-
-    wl_list_init(&decorations);
-
-    new_server_decoration.notify = [](wl_listener *listener, void *data) {
-        Server *server =
-            wl_container_of(listener, server, new_server_decoration);
-
-        // create server decoration
-        auto *server_decoration = new ServerDecoration(
-            server, static_cast<wlr_server_decoration *>(data));
-        wl_list_insert(&server->decorations, &server_decoration->link);
-    };
-    wl_signal_add(&wlr_server_decoration_manager->events.new_decoration,
-                  &new_server_decoration);
-
     // xdg decoration
+#ifdef XDG_DECORATION
+    wl_list_init(&decorations);
     xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(display);
 
-    new_decoration.notify = [](wl_listener *listener, void *data) {
-        Server *server = wl_container_of(listener, server, new_decoration);
+    new_xdg_decoration.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_xdg_decoration);
         wlr_xdg_toplevel_decoration_v1 *decoration =
             static_cast<wlr_xdg_toplevel_decoration_v1 *>(data);
 
-        // get associated toplevel
-        Toplevel *toplevel =
-            server->get_toplevel(decoration->toplevel->base->surface);
-        if (!toplevel)
+        // must have valid surface
+        wlr_xdg_surface *surface = decoration->toplevel->base;
+        if (!surface || !surface->data) {
+            wlr_log(WLR_ERROR, "%s", "invalid surface for xdg decoration");
             return;
+        }
 
-        toplevel->xdg_decoration = decoration;
-
-        // request_mode
-        toplevel->set_decoration_mode.notify =
-            toplevel->request_decoration_mode;
-        wl_signal_add(&decoration->events.request_mode,
-                      &toplevel->set_decoration_mode);
-
-        // destroy
-        toplevel->destroy_decoration.notify = [](wl_listener *listener,
-                                                 [[maybe_unused]] void *data) {
-            Toplevel *toplevel =
-                wl_container_of(listener, toplevel, destroy_decoration);
-
-            wl_list_remove(&toplevel->destroy_decoration.link);
-            wl_list_remove(&toplevel->set_decoration_mode.link);
-        };
-        wl_signal_add(&decoration->events.destroy,
-                      &toplevel->destroy_decoration);
-
-        // send request
-        toplevel->request_decoration_mode(listener, decoration);
+        // create decoration
+        // new Decoration(server, decoration);
     };
     wl_signal_add(&xdg_decoration_manager->events.new_toplevel_decoration,
-                  &new_decoration);
+                  &new_xdg_decoration);
 #endif
 
     // foreign toplevel list
@@ -1022,9 +969,8 @@ Server::~Server() {
     if (wlr_drm_lease_manager)
         wl_list_remove(&drm_lease_request.link);
 
-#ifdef SERVER_DECORATION
-    wl_list_remove(&new_server_decoration.link);
-    wl_list_remove(&new_decoration.link);
+#ifdef XDG_DECORATION
+    wl_list_remove(&new_xdg_decoration.link);
 #endif
 
     LayerSurface *ls, *lst;

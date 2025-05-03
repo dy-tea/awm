@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cursor.h"
+#include "Decoration.h"
 #include <string>
 
 struct Toplevel {
@@ -51,14 +52,11 @@ struct Toplevel {
     wlr_xdg_dialog_v1 *wlr_xdg_dialog{nullptr};
     wl_listener xdg_dialog_destroy;
 
-    wlr_xdg_toplevel_decoration_v1 *xdg_decoration{nullptr};
-    wl_listener set_decoration_mode;
-    wl_listener destroy_decoration;
-
     bool hidden{false};
-    wlr_server_decoration_manager_mode ssd_mode{
-        WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT};
-    bool using_csd{true};
+
+    Decoration *decoration{nullptr};
+    wlr_xdg_toplevel_decoration_v1_mode decoration_mode{
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE};
 
     wlr_box geometry{};
     wlr_box saved_geometry{};
@@ -72,7 +70,6 @@ struct Toplevel {
 
     static void map_notify(wl_listener *listener, void *data);
     static void unmap_notify(wl_listener *listener, void *data);
-    static void request_decoration_mode(wl_listener *listener, void *data);
 
     void create_foreign();
 
@@ -88,7 +85,7 @@ struct Toplevel {
     void begin_interactive(CursorMode mode, uint32_t edges);
     void set_position_size(double x, double y, int width, int height);
     void set_position_size(const wlr_box &geometry);
-    void set_ssd_mode(wlr_server_decoration_manager_mode mode);
+    void set_decoration_mode(wlr_xdg_toplevel_decoration_v1_mode mode);
     wlr_box get_geometry();
     void set_hidden(bool hidden);
     bool fullscreen() const;

@@ -7,6 +7,7 @@
 #include <thread>
 #include <unistd.h>
 
+#include "Decoration.h"
 #include "IPC.h"
 #include "Keyboard.h"
 #include "LayerSurface.h"
@@ -15,12 +16,10 @@
 #include "PointerConstraint.h"
 #include "Popup.h"
 #include "Seat.h"
-#include "ServerDecoration.h"
 #include "SessionLock.h"
 #include "TextInput.h"
 #include "Toplevel.h"
 #include "Workspace.h"
-#include "wlr.h"
 
 struct Server {
     // singleton
@@ -108,14 +107,9 @@ struct Server {
     wlr_drm_lease_v1_manager *wlr_drm_lease_manager;
     wl_listener drm_lease_request;
 
-#ifdef SERVER_DECORATION
-    struct wlr_server_decoration_manager *wlr_server_decoration_manager;
-    wl_listener new_server_decoration;
-
     wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
-    wl_listener new_decoration;
+    wl_listener new_xdg_decoration;
     wl_list decorations;
-#endif
 
     wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
@@ -144,9 +138,6 @@ struct Server {
     Output *get_output(const wlr_output *wlr_output) const;
     Workspace *get_workspace(Toplevel *toplevel) const;
     Toplevel *get_toplevel(wlr_surface *surface) const;
-#ifdef SERVER_DECORATION
-    ServerDecoration *get_server_decoration(wlr_surface *surface) const;
-#endif
 
     Output *focused_output() const;
 

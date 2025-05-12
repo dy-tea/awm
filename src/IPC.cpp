@@ -194,6 +194,11 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
                     if (std::getline(ss, token, ' ')) {
                         data = token;
                         message = IPC_BIND_RUN;
+
+                        // some binds have extra data
+                        if (std::getline(ss, token, ' '))
+                            data += "," + token;
+
                         break;
                     }
                 } else if (token[0] == 'd') // bind display
@@ -481,12 +486,33 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     }
     case IPC_BIND_RUN: {
-        for (unsigned long i = 0; i != BIND_NAMES->length(); ++i) {
-            if (data == BIND_NAMES[i]) {
-                server->handle_bind(Bind{static_cast<BindName>(i), 0, 0});
-                break;
+        std::string bind_name;
+        xkb_keysym_t keysym = 0;
+
+        // parse bind name and keysym if applicable
+        std::string::size_type s = data.find(",");
+        if (s == std::string::npos)
+            bind_name = data;
+        else {
+            bind_name = data.substr(0, s);
+            try {
+                int digit = std::stoi(data.substr(s + 1));
+                if (digit < 1 || digit > 9)
+                    throw std::invalid_argument("out of range");
+
+                keysym = digit + XKB_KEY_0;
+            } catch (std::invalid_argument &e) {
+                notify_send("IPC", "invalid number `%s`: %s", data.c_str(),
+                            e.what());
             }
         }
+
+        // find bind name if present
+        for (unsigned long i = 0; i <= BIND_WORKSPACE_WINDOW_TO; ++i)
+            if (bind_name == BIND_NAMES[i]) {
+                server->handle_bind(Bind{static_cast<BindName>(i), 0, keysym});
+                break;
+            }
         break;
     }
     case IPC_BIND_DISPLAY: {

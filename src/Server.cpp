@@ -261,9 +261,7 @@ bool Server::handle_bind(Bind bind) {
         if (target == nullptr)
             return false;
 
-        if (current->active_toplevel)
-            current->move_to(current->active_toplevel, target);
-        break;
+        return current->move_to(current->active_toplevel, target);
     }
     case BIND_NONE:
     default: {

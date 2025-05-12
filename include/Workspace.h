@@ -14,7 +14,7 @@ struct Workspace {
     ~Workspace() = default;
 
     void add_toplevel(Toplevel *toplevel, bool focus);
-    void close(const Toplevel *toplevel);
+    void close(Toplevel *toplevel);
     void close_active();
     bool contains(const Toplevel *toplevel) const;
     bool move_to(Toplevel *toplevel, Workspace *workspace);

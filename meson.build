@@ -193,6 +193,7 @@ if get_option('tests')
     'maximize_size.cpp',
     'maximize_waybar.cpp',
     'workspaces_10.cpp',
+    'workspaces_misc.cpp',
   ]
 
   foreach t : tests

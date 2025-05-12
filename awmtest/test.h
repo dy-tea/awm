@@ -57,10 +57,10 @@ inline void DEFAULT() {
 
 inline void DEFAULT(uint32_t toplevels) {
     DEFAULT();
-    for (uint32_t i = 0; i != toplevels; ++i)
+    for (uint32_t i = 0; i != toplevels; ++i) {
         spawn(terminal_executable);
-
-    sleep(1);
+        sleep(1);
+    }
 }
 
 inline void EXIT() {

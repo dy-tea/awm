@@ -25,7 +25,7 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
 }
 
 // close a toplevel
-void Workspace::close(const Toplevel *toplevel) {
+void Workspace::close(Toplevel *toplevel) {
     if (!toplevel)
         return;
 
@@ -50,12 +50,7 @@ void Workspace::close(const Toplevel *toplevel) {
 }
 
 // close the active toplevel
-void Workspace::close_active() {
-    // get active toplevel
-    if (const Toplevel *active = active_toplevel)
-        // send close
-        close(active);
-}
+void Workspace::close_active() { close(active_toplevel); }
 
 // returns true if the workspace contains the passed toplevel
 bool Workspace::contains(const Toplevel *toplevel) const {
@@ -89,7 +84,7 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
         wl_list_remove(&toplevel->link);
         workspace->add_toplevel(toplevel, true);
 
-        // Update active_toplevel if necessary
+        // update active_toplevel if necessary
         if (toplevel == active_toplevel) {
             if (wl_list_length(&toplevels) > 1)
                 // focus the next toplevel
@@ -207,7 +202,8 @@ void Workspace::focus() {
                             : wl_container_of(toplevels.prev, toplevel, link);
         active_toplevel = toplevel;
         toplevel->focus();
-    }
+    } else
+        active_toplevel = nullptr;
 
     // notify clients
     if (IPC *ipc = output->server->ipc)

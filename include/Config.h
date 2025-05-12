@@ -31,7 +31,7 @@ enum BindName {
     BIND_WORKSPACE_TILE,
     BIND_WORKSPACE_TILE_SANS,
     BIND_WORKSPACE_OPEN,
-    BIND_WORKSPACE_WINDOW_TO,
+    BIND_WORKSPACE_WINDOW_TO, // change in IPC.cpp if extended
 };
 
 const std::string BIND_NAMES[] = {

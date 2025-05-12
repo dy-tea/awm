@@ -185,6 +185,10 @@ int main(int argc, char **argv) {
         } else if (group[0] == 'r') { // bind run
             group = next(argc, argv);
             message = "b r " + group;
+
+            if (arg_index < argc - 1)
+                message += " " + next(argc, argv);
+
             break;
         } else if (group[0] == 'd') { // bind display
             group = next(argc, argv);

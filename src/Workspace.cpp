@@ -1,6 +1,5 @@
 #include "Server.h"
 #include <algorithm>
-#include <climits>
 #include <limits>
 
 Workspace::Workspace(Output *output, const uint32_t num)
@@ -33,8 +32,9 @@ void Workspace::close(const Toplevel *toplevel) {
     // active toplevels need extra handling
     if (toplevel == active_toplevel) {
         if (wl_list_length(&toplevels) > 1)
-            // focus the next toplevel
-            focus_next();
+            // focus the previous toplevel (not next because it can cause
+            // additional toplevels to switch layer)
+            focus_prev();
         else {
             // no more active toplevel
             active_toplevel = nullptr;

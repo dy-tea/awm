@@ -1,10 +1,8 @@
 #pragma once
 
-#include <atomic>
 #include <cassert>
 #include <fcntl.h>
 #include <sys/wait.h>
-#include <thread>
 #include <unistd.h>
 
 #include "Decoration.h"
@@ -22,17 +20,7 @@
 #include "Workspace.h"
 
 struct Server {
-    // singleton
-    static Server *instance;
-    static Server *get(Config *config) {
-        if (!instance)
-            instance = new Server(config);
-        return instance;
-    }
-    static Server *get() { return instance; }
-    Server() = default;
-    Server(const Server &other) = delete;
-
+    static Server *instance; // singleton
     Config *config;
 
     wl_display *display;
@@ -128,6 +116,14 @@ struct Server {
 
     IPC *ipc{nullptr};
 
+    static Server *get(Config *config) {
+        if (!instance)
+            instance = new Server(config);
+        return instance;
+    }
+    static Server *get() { return instance; }
+    Server() = default;
+    Server(const Server &other) = delete;
     Server(Config *config);
     ~Server();
 

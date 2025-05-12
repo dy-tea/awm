@@ -6,23 +6,17 @@ int main() {
     DEFAULT(1);
 
     // maximize
-    awmsg("b r maximize", false);
-
-    sleep(1);
+    AWMSG("b r maximize");
 
     // get toplevel bounds
-    json toplevels = awmsg("t l", true);
+    AWMSG_J("t l", toplevels);
     json toplevel = *toplevels.begin();
-    std::cout << toplevel.dump(4) << std::endl;
-
-    sleep(1);
 
     // get output bounds
-    json outputs = awmsg("o l", true);
+    AWMSG_J("o l", outputs);
     json output = *outputs.begin();
-    std::cout << output.dump(4) << std::endl;
 
-    // ASSERTions
+    // assertions
     ASSERT(toplevel["maximized"] == true);
     ASSERT(output["usable"]["width"] == toplevel["width"]);
     ASSERT(output["usable"]["height"] == toplevel["height"]);

@@ -10,19 +10,15 @@ int main() {
     sleep(1);
 
     // maximize
-    awmsg("b r maximize", false);
-    sleep(1);
+    AWMSG("b r maximize");
 
     // get toplevel bounds
-    json toplevels = awmsg("t l", true);
+    AWMSG_J("t l", toplevels);
     json toplevel = *toplevels.begin();
 
-    sleep(1);
-
     // get output bounds
-    json outputs = awmsg("o l", true);
+    AWMSG_J("o l", outputs);
     json output = *outputs.begin();
-    std::cout << output.dump(4) << std::endl;
 
     // assertions
     ASSERT(toplevel["maximized"] == true);

@@ -36,19 +36,17 @@ inline void exec0(const std::string &cmd) {
 }
 
 // run awmsg command and get resulting json
-inline json awmsg(std::string command, bool data) {
-    if (data) {
-        std::string result = exec1(awmsg_executable + " " + command);
-        return json::parse(result);
-    }
-    exec0(awmsg_executable + " " + command);
-    return json();
+inline json awmsg(std::string command) {
+    std::string result = exec1(awmsg_executable + " " + command);
+    if (result.empty())
+        return json(false);
+    if (result == "null")
+        return json();
+    return json::parse(result);
 }
 
 // spawn a command
-inline void spawn(std::string command) {
-    awmsg("s \"" + command + "\"", false);
-}
+inline void spawn(std::string command) { awmsg("s \"" + command + "\""); }
 
 inline void DEFAULT() {
     exec0(awm_default);
@@ -64,9 +62,27 @@ inline void DEFAULT(uint32_t toplevels) {
 }
 
 inline void EXIT() {
-    awmsg("e", false);
+    awmsg("e");
     sleep(1);
 }
+
+#define AWMSG(x)                                                               \
+    {                                                                          \
+        if (awmsg(x) == json(false)) {                                         \
+            std::cerr << "Message did not get reply" << std::endl;             \
+            return 1;                                                          \
+        }                                                                      \
+        sleep(1);                                                              \
+    }
+
+#define AWMSG_J(x, j)                                                          \
+    json j = awmsg(x);                                                         \
+    if (j == json(false)) {                                                    \
+        std::cerr << "Message did not get reply" << std::endl;                 \
+        return 1;                                                              \
+    }                                                                          \
+    std::cout << j.dump(4) << std::endl;                                       \
+    sleep(1);
 
 #define ASSERT(x)                                                              \
     if (!(x)) {                                                                \

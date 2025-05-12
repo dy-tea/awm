@@ -5,18 +5,14 @@ int main() {
     DEFAULT(1);
 
     // get toplevel bounds
-    json toplevel = awmsg("t l", true);
+    AWMSG_J("t l", toplevel);
 
     // send maximize 10 times
-    for (int i = 0; i != 10; ++i) {
-        sleep(1);
-        awmsg("b r maximize", false);
-    }
-
-    sleep(1);
+    for (int i = 0; i != 10; ++i)
+        AWMSG("b r maximize");
 
     // get toplevel bounds
-    json toplevel1 = awmsg("t l", true);
+    AWMSG_J("t l", toplevel1);
 
     ASSERT(toplevel == toplevel1);
 

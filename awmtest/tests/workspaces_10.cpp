@@ -8,19 +8,16 @@ int main() {
         spawn(terminal_executable);
         sleep(1);
 
-        awmsg("w s " + std::to_string(i), false);
-        sleep(1);
+        AWMSG("w s " + std::to_string(i));
     }
     spawn(terminal_executable);
     sleep(1);
 
     // get toplevels
-    json toplevels = awmsg("t l", true);
-    sleep(1);
+    AWMSG_J("t l", toplevels);
 
     // get workspace info
-    json workspaces = awmsg("w l", true);
-    sleep(1);
+    AWMSG_J("w l", workspaces);
 
     // assertions
     ASSERT(toplevels.size() == 10);

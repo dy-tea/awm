@@ -72,7 +72,7 @@ function _awmsg
         set COMP_CWORD (count $COMP_WORDS)
     end
 
-    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list modes workspace list set toplevel list keyboard list device list current bind list run display
+    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list modes workspace list set toplevel list keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans open window_to display
 
     set descriptions
     set descriptions[1] "show help"
@@ -97,7 +97,30 @@ function _awmsg
     set descriptions[25] "show current device"
     set descriptions[27] "list key bindings"
     set descriptions[28] "run key binding for name"
-    set descriptions[29] "display key binding for name"
+    set descriptions[29] "do nothing"
+    set descriptions[30] "maximize the active window"
+    set descriptions[31] "fullscreen the active window"
+    set descriptions[32] "focus the previous window"
+    set descriptions[33] "focus the next window"
+    set descriptions[34] "start an interactive move with the active window"
+    set descriptions[35] "focus the window in the up direction"
+    set descriptions[36] "focus the window in the down direction"
+    set descriptions[37] "focus the window in the left direction"
+    set descriptions[38] "focus the window in the right direction"
+    set descriptions[39] "close the active window"
+    set descriptions[40] "swap the active window with the window in the up direction"
+    set descriptions[41] "swap the active window with the window in the down direction"
+    set descriptions[42] "swap the active window with the window in the left direction"
+    set descriptions[43] "swap the active window with the window in the right direction"
+    set descriptions[44] "half the active window in the up direction"
+    set descriptions[45] "half the active window in the down direction"
+    set descriptions[46] "half the active window in the left direction"
+    set descriptions[47] "half the active window in the right direction"
+    set descriptions[48] "tile all windows in the active workspace"
+    set descriptions[49] "tile all windows in the active workspace excluding the active one"
+    set descriptions[50] "focus workspace N"
+    set descriptions[51] "move the active window to workspace N"
+    set descriptions[52] "display key binding for name"
 
     set literal_transitions_inputs
     set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 11 12 13 16 19 21 23 26"
@@ -107,18 +130,20 @@ function _awmsg
     set literal_transitions_inputs[6] "14 15"
     set literal_transitions_tos[6] "2 2"
     set literal_transitions_inputs[7] "17 18"
-    set literal_transitions_tos[7] "2 13"
+    set literal_transitions_tos[7] "2 14"
     set literal_transitions_inputs[8] 20
     set literal_transitions_tos[8] 2
     set literal_transitions_inputs[9] 22
     set literal_transitions_tos[9] 2
     set literal_transitions_inputs[10] "24 25"
     set literal_transitions_tos[10] "2 2"
-    set literal_transitions_inputs[11] "27 28 29"
+    set literal_transitions_inputs[11] "27 28 52"
     set literal_transitions_tos[11] "2 12 12"
+    set literal_transitions_inputs[12] "5 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51"
+    set literal_transitions_tos[12] "2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 13 13"
 
-    set match_anything_transitions_from 5 3 12 13
-    set match_anything_transitions_to 4 2 2 2
+    set match_anything_transitions_from 3 5 13 14
+    set match_anything_transitions_to 2 4 2 2
 
     set state 1
     set word_index 2
@@ -148,8 +173,8 @@ function _awmsg
         return 1
     end
 
-    set literal_froms_level_0 7 8 1 9 4 6 10 11
-    set literal_inputs_level_0 "17 18|20|1 2 3 4 5 6 7 8 9 10 11 12 13 16 19 21 23 26|22|7 8 9 10 11 12 13 16 19 21 23 26|14 15|24 25|27 28 29"
+    set literal_froms_level_0 12 7 8 1 4 9 6 10 11
+    set literal_inputs_level_0 "5 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51|17 18|20|1 2 3 4 5 6 7 8 9 10 11 12 13 16 19 21 23 26|7 8 9 10 11 12 13 16 19 21 23 26|22|14 15|24 25|27 28 52"
     set command_froms_level_0 5
     set commands_level_0 "0"
 

@@ -25,6 +25,31 @@ awmsg [<FLAGS>]... (bind) <BIND-OPTION>;
 <DEVICE-OPTION> ::= (list) "list devices"
                   | (current) "show current device";
 
+<BIND_NAMES> ::= (none) "do nothing"
+               | (exit) "exit awm"
+               | (maximize) "maximize the active window"
+               | (fullscreen) "fullscreen the active window"
+               | (previous) "focus the previous window"
+               | (next) "focus the next window"
+               | (move) "start an interactive move with the active window"
+               | (up) "focus the window in the up direction"
+               | (down) "focus the window in the down direction"
+               | (left) "focus the window in the left direction"
+               | (right) "focus the window in the right direction"
+               | (close) "close the active window"
+               | (swap_up) "swap the active window with the window in the up direction"
+               | (swap_down) "swap the active window with the window in the down direction"
+               | (swap_left) "swap the active window with the window in the left direction"
+               | (swap_right) "swap the active window with the window in the right direction"
+               | (half_up) "half the active window in the up direction"
+               | (half_down) "half the active window in the down direction"
+               | (half_left) "half the active window in the left direction"
+               | (half_right) "half the active window in the right direction"
+               | (tile) "tile all windows in the active workspace"
+               | (tile_sans) "tile all windows in the active workspace excluding the active one"
+               | (open <N>) "focus workspace N"
+               | (window_to <N>) "move the active window to workspace N";
+
 <BIND-OPTION> ::= (list) "list key bindings"
-                | (run <NAME>) "run key binding for name"
-                | (display <NAME>) "display key binding for name";
+                | (run [<BIND_NAMES>]) "run key binding for name"
+                | (display [<BIND_NAMES>]) "display key binding for name";

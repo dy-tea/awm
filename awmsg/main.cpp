@@ -49,7 +49,7 @@ void print_usage() {
                  "\t\t- [c]urrent\n"
                  "\t[b]ind\n"
                  "\t\t- [l]ist\n"
-                 "\t\t- [r]un <name>\n"
+                 "\t\t- [r]un <name> <arg>\n"
                  "\t\t- [d]isplay <name>\n");
 }
 

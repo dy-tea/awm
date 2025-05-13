@@ -5,7 +5,7 @@ _awmsg_cmd_0 () {
 }
 
 _awmsg () {
-    local -a literals=("-h" "--help" "-v" "--version" "exit" "spawn" "-c" "--continuous" "-1" "--1-line" "-s" "--socket" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "display")
+    local -a literals=("-h" "--help" "-v" "--version" "exit" "spawn" "-c" "--continuous" "-1" "--1-line" "-s" "--socket" "output" "list" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "none" "maximize" "fullscreen" "previous" "next" "move" "up" "down" "left" "right" "close" "swap_up" "swap_down" "swap_left" "swap_right" "half_up" "half_down" "half_left" "half_right" "tile" "tile_sans" "open" "window_to" "display")
 
     local -A descriptions
     descriptions[1]="show help"
@@ -30,20 +30,44 @@ _awmsg () {
     descriptions[25]="show current device"
     descriptions[27]="list key bindings"
     descriptions[28]="run key binding for name"
-    descriptions[29]="display key binding for name"
+    descriptions[29]="do nothing"
+    descriptions[30]="maximize the active window"
+    descriptions[31]="fullscreen the active window"
+    descriptions[32]="focus the previous window"
+    descriptions[33]="focus the next window"
+    descriptions[34]="start an interactive move with the active window"
+    descriptions[35]="focus the window in the up direction"
+    descriptions[36]="focus the window in the down direction"
+    descriptions[37]="focus the window in the left direction"
+    descriptions[38]="focus the window in the right direction"
+    descriptions[39]="close the active window"
+    descriptions[40]="swap the active window with the window in the up direction"
+    descriptions[41]="swap the active window with the window in the down direction"
+    descriptions[42]="swap the active window with the window in the left direction"
+    descriptions[43]="swap the active window with the window in the right direction"
+    descriptions[44]="half the active window in the up direction"
+    descriptions[45]="half the active window in the down direction"
+    descriptions[46]="half the active window in the left direction"
+    descriptions[47]="half the active window in the right direction"
+    descriptions[48]="tile all windows in the active workspace"
+    descriptions[49]="tile all windows in the active workspace excluding the active one"
+    descriptions[50]="focus workspace N"
+    descriptions[51]="move the active window to workspace N"
+    descriptions[52]="display key binding for name"
 
     local -A literal_transitions
     literal_transitions[1]="([1]=2 [2]=2 [3]=2 [4]=2 [5]=2 [6]=3 [7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [16]=7 [19]=8 [21]=9 [23]=10 [26]=11)"
     literal_transitions[4]="([7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [16]=7 [19]=8 [21]=9 [23]=10 [26]=11)"
     literal_transitions[6]="([14]=2 [15]=2)"
-    literal_transitions[7]="([17]=2 [18]=13)"
+    literal_transitions[7]="([17]=2 [18]=14)"
     literal_transitions[8]="([20]=2)"
     literal_transitions[9]="([22]=2)"
     literal_transitions[10]="([24]=2 [25]=2)"
-    literal_transitions[11]="([27]=2 [28]=12 [29]=12)"
+    literal_transitions[11]="([27]=2 [28]=12 [52]=12)"
+    literal_transitions[12]="([5]=2 [29]=2 [30]=2 [31]=2 [32]=2 [33]=2 [34]=2 [35]=2 [36]=2 [37]=2 [38]=2 [39]=2 [40]=2 [41]=2 [42]=2 [43]=2 [44]=2 [45]=2 [46]=2 [47]=2 [48]=2 [49]=2 [50]=13 [51]=13)"
 
     local -A match_anything_transitions
-    match_anything_transitions=([5]=4 [3]=2 [12]=2 [13]=2)
+    match_anything_transitions=([3]=2 [5]=4 [13]=2 [14]=2)
 
     declare -A subword_transitions
 
@@ -79,7 +103,7 @@ _awmsg () {
 
         return 1
     done
-    declare -A literal_transitions_level_0=([7]="17 18" [8]="20" [1]="1 2 3 4 5 6 7 8 9 10 11 12 13 16 19 21 23 26" [9]="22" [4]="7 8 9 10 11 12 13 16 19 21 23 26" [6]="14 15" [10]="24 25" [11]="27 28 29")
+    declare -A literal_transitions_level_0=([12]="5 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51" [7]="17 18" [8]="20" [1]="1 2 3 4 5 6 7 8 9 10 11 12 13 16 19 21 23 26" [4]="7 8 9 10 11 12 13 16 19 21 23 26" [9]="22" [6]="14 15" [10]="24 25" [11]="27 28 52")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
     declare -A specialized_commands_level_0=([5]="0")

@@ -2,7 +2,7 @@ project(
   'awm',
   'cpp',
   'c',
-  version: '0.2.0',
+  version: '0.3.0',
   license: 'GPL-3.0-or-later',
   default_options: [
     'warning_level=3',
@@ -197,7 +197,7 @@ if get_option('tests')
   ]
 
   foreach t : tests
-    name = 'test_@0@'.format(t.strip('.cpp'))
+    name = 't_@0@'.format(t.strip('.cpp'))
     test = executable(
       name,
       ['awmtest' / 'tests' / t],

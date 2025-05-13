@@ -32,9 +32,8 @@ void Workspace::close(Toplevel *toplevel) {
     // active toplevels need extra handling
     if (toplevel == active_toplevel) {
         if (wl_list_length(&toplevels) > 1)
-            // focus the previous toplevel (not next because it can cause
-            // additional toplevels to switch layer)
-            focus_prev();
+            // focus the next toplevel
+            focus_next();
         else {
             // no more active toplevel
             active_toplevel = nullptr;

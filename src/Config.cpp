@@ -455,8 +455,8 @@ bool Config::load() {
             // window_close bind
             set_bind("close", window_bind.get(), BIND_WINDOW_CLOSE);
 
-            auto swap_bind = window_bind->getTable("swap");
-            if (swap_bind) {
+            // swap binds
+            if (auto swap_bind = window_bind->getTable("swap")) {
                 // window_swap_up bind
                 set_bind("up", swap_bind.get(), BIND_WINDOW_SWAP_UP);
 
@@ -469,11 +469,25 @@ bool Config::load() {
                 // window_swap_right bind
                 set_bind("right", swap_bind.get(), BIND_WINDOW_SWAP_RIGHT);
             }
+
+            // half binds
+            if (auto half_bind = window_bind->getTable("half")) {
+                // window_half_up bind
+                set_bind("up", half_bind.get(), BIND_WINDOW_HALF_UP);
+
+                // window_half_down bind
+                set_bind("down", half_bind.get(), BIND_WINDOW_HALF_DOWN);
+
+                // window_half_left bind
+                set_bind("left", half_bind.get(), BIND_WINDOW_HALF_LEFT);
+
+                // window_half_right bind
+                set_bind("right", half_bind.get(), BIND_WINDOW_HALF_RIGHT);
+            }
         }
 
         // workspace binds
-        auto workspace_bind = binds_table->getTable("workspace");
-        if (workspace_bind) {
+        if (auto workspace_bind = binds_table->getTable("workspace")) {
             // workspace_tile bind
             set_bind("tile", workspace_bind.get(), BIND_WORKSPACE_TILE);
 

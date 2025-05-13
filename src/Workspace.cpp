@@ -1,6 +1,8 @@
 #include "Server.h"
+#include "wlr.h"
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
 Workspace::Workspace(Output *output, const uint32_t num)
     : num(num), output(output) {
@@ -186,6 +188,35 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
 
     // this will be null if a toplevel is not found in the specified direction
     return target;
+}
+
+// set the toplevel to take up half the screen in the given direction
+void Workspace::set_half_in_direction(Toplevel *toplevel,
+                                      wlr_direction direction) {
+    int x = output->usable_area.x;
+    int y = output->usable_area.y;
+    int width = output->usable_area.width;
+    int height = output->usable_area.height;
+    switch (direction) {
+    case WLR_DIRECTION_UP:
+        height /= 2;
+        break;
+    case WLR_DIRECTION_DOWN:
+        height /= 2;
+        y += height;
+        break;
+    case WLR_DIRECTION_LEFT:
+        width /= 2;
+        break;
+    case WLR_DIRECTION_RIGHT:
+        width /= 2;
+        x += width;
+        break;
+    default:
+        throw std::runtime_error("invalid direction");
+        break;
+    }
+    toplevel->set_position_size(x, y, width, height);
 }
 
 // focus the workspace

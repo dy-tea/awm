@@ -22,6 +22,7 @@ struct Workspace {
     void swap(Toplevel *other) const;
     Toplevel *in_direction(wlr_direction direction) const;
     void set_hidden(bool hidden) const;
+    void set_half_in_direction(Toplevel *toplevel, wlr_direction direction);
     void focus();
     void focus_toplevel(Toplevel *toplevel);
     void focus_next();

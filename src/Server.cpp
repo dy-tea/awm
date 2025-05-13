@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "Config.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -192,56 +193,40 @@ bool Server::handle_bind(Bind bind) {
             active->begin_interactive(CURSORMODE_MOVE, 0);
         break;
     case BIND_WINDOW_UP:
-        // focus the toplevel in the up direction
-        if (Toplevel *up = output->get_active()->in_direction(WLR_DIRECTION_UP))
-            output->get_active()->focus_toplevel(up);
-        break;
     case BIND_WINDOW_DOWN:
-        // focus the toplevel in the down direction
-        if (Toplevel *down =
-                output->get_active()->in_direction(WLR_DIRECTION_DOWN))
-            output->get_active()->focus_toplevel(down);
-        break;
     case BIND_WINDOW_LEFT:
-        // focus the toplevel in the left direction
-        if (Toplevel *left =
-                output->get_active()->in_direction(WLR_DIRECTION_LEFT))
-            output->get_active()->focus_toplevel(left);
-        break;
     case BIND_WINDOW_RIGHT:
-        // focus the toplevel in the right direction
-        if (Toplevel *right =
-                output->get_active()->in_direction(WLR_DIRECTION_RIGHT))
-            output->get_active()->focus_toplevel(right);
+        // focus the toplevel in the specified direction
+        if (Toplevel *other = output->get_active()->in_direction(
+                static_cast<wlr_direction>(1 << (bind.name - BIND_WINDOW_UP))))
+            output->get_active()->focus_toplevel(other);
         break;
     case BIND_WINDOW_CLOSE:
         // close the active toplevel
         output->get_active()->close_active();
         break;
     case BIND_WINDOW_SWAP_UP:
-        // swap the active toplevel with the one above it
-        if (Toplevel *other =
-                output->get_active()->in_direction(WLR_DIRECTION_UP))
-            output->get_active()->swap(other);
-        break;
     case BIND_WINDOW_SWAP_DOWN:
-        // swap the active toplevel with the one below it
-        if (Toplevel *other =
-                output->get_active()->in_direction(WLR_DIRECTION_DOWN))
-            output->get_active()->swap(other);
-        break;
     case BIND_WINDOW_SWAP_LEFT:
-        // swap the active toplevel with the one to the left of it
-        if (Toplevel *other =
-                output->get_active()->in_direction(WLR_DIRECTION_LEFT))
-            output->get_active()->swap(other);
-        break;
     case BIND_WINDOW_SWAP_RIGHT:
-        // swap the active toplevel with the one to the right of it
+        // swap the active toplevel with the one in specified direction
         if (Toplevel *other =
-                output->get_active()->in_direction(WLR_DIRECTION_RIGHT))
+                output->get_active()->in_direction(static_cast<wlr_direction>(
+                    1 << (bind.name - BIND_WINDOW_SWAP_UP))))
             output->get_active()->swap(other);
         break;
+    case BIND_WINDOW_HALF_UP:
+    case BIND_WINDOW_HALF_DOWN:
+    case BIND_WINDOW_HALF_LEFT:
+    case BIND_WINDOW_HALF_RIGHT: {
+        // set the active toplevel to take up the specified half of the screen
+        Workspace *workspace = output->get_active();
+        if (Toplevel *active = workspace->active_toplevel)
+            workspace->set_half_in_direction(
+                active, static_cast<wlr_direction>(
+                            1 << (bind.name - BIND_WINDOW_HALF_UP)));
+        break;
+    }
     case BIND_WORKSPACE_TILE:
         // tile all toplevels in workspace
         output->get_active()->tile();

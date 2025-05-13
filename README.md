@@ -4,7 +4,7 @@ A wayland compositor with high protocol support, simple customization and an IPC
 
 [![Build](https://github.com/dy-tea/awm/actions/workflows/build.yml/badge.svg)](https://github.com/dy-tea/awm/actions/workflows/build.yml)
 
-https://github.com/user-attachments/assets/c916d37b-eda9-4566-b6a0-1f7a748b1b77
+https://github.com/user-attachments/assets/ebbc565e-4f09-4ac7-b204-8dea5832f9e3
 
 ### Dependencies
 

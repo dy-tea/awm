@@ -89,9 +89,6 @@ struct Server {
         nullptr};
     wl_listener destroy_keyboard_shortcuts_inhibitor;
 
-    wlr_text_input_manager_v3 *wlr_text_input_manager;
-    wl_listener new_text_input;
-
     wlr_drm_lease_v1_manager *wlr_drm_lease_manager;
     wl_listener drm_lease_request;
 

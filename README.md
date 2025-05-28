@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/ebbc565e-4f09-4ac7-b204-8dea5832f9e3
 
 - `meson`
 - `ninja`
-- `wlroots-git` **0.19**
+- `wlroots-git` **0.20**
 - `xkbcommon`
 - `wayland-server`
 - `wayland-protocols`
@@ -60,7 +60,7 @@ Note that tests have additional dependencies.
 
 **Custom wlroots**
 
-If system wlroots is not found, clone wlroots to `subprojects/wlroots` and build using that instead of system wlroots. Note that `libwlroots-0.19.so` won't be installed to `/usr/lib` so you will have to copy it there if you want to run awm using the drm backend.
+If system wlroots is not found, clone wlroots to `subprojects/wlroots` and build using that instead of system wlroots. Note that `libwlroots-0.20.so` won't be installed to `/usr/lib` so you will have to copy it there if you want to run awm using the drm backend.
 
 ### Configuration
 

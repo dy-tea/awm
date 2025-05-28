@@ -563,15 +563,6 @@ Server::Server(Config *config) : config(config) {
     };
     wl_signal_add(&wlr_xdg_wm_dialog->events.new_dialog, &new_xdg_dialog);
 
-    // text input
-    wlr_text_input_manager = wlr_text_input_manager_v3_create(display);
-
-    new_text_input.notify = [](wl_listener *listener, void *data) {
-        Server *server = wl_container_of(listener, server, new_text_input);
-        new TextInput(server, static_cast<wlr_text_input_v3 *>(data));
-    };
-    wl_signal_add(&wlr_text_input_manager->events.text_input, &new_text_input);
-
     // system bell
     wlr_xdg_system_bell = wlr_xdg_system_bell_v1_create(display, 1);
 
@@ -944,7 +935,6 @@ Server::~Server() {
 
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&new_xdg_dialog.link);
-    wl_list_remove(&new_text_input.link);
     wl_list_remove(&new_keyboard_shortcuts_inhibit.link);
     wl_list_remove(&ring_system_bell.link);
 

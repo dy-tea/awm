@@ -361,6 +361,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             // non-unique
             j[string_format("%p", t)] = {
                 {"title", t->title()},
+                {"class", t->app_id()},
                 {"x", t->geometry.x},
                 {"y", t->geometry.y},
                 {"width", t->geometry.width},

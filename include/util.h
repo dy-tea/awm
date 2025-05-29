@@ -7,6 +7,9 @@
 
 #include "wlr.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+
 // send a notification
 template <typename... Args>
 void notify_send(const std::string title, const std::string &format,
@@ -31,6 +34,8 @@ void notify_send(const std::string title, const std::string &format,
               nullptr);
     }
 }
+
+#pragma GCC diagnostic pop
 
 // stolen from https://stackoverflow.com/a/26221725
 template <typename... Args>

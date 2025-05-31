@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "Server.h"
 #include <libinput.h>
 #include <sstream>
@@ -215,6 +216,10 @@ bool Config::load() {
 
         // spawn
         connect(ipc_table->getBool("spawn"), &ipc.spawn);
+    } else {
+        ipc.path = "";
+        ipc.enabled = true;
+        ipc.spawn = true;
     }
 
     // get keyboard config
@@ -238,10 +243,19 @@ bool Config::load() {
 
         // repeat delay
         connect(keyboard->getInt("repeat_delay"), &repeat_delay);
-    } else
+    } else {
         // no keyboard config
+        keyboard_layout = "us";
+        keyboard_model = "";
+        keyboard_variant = "";
+        keyboard_options = "";
+        repeat_rate = 25;
+        repeat_delay = 600;
+
         wlr_log(WLR_INFO, "%s",
-                "no keyboard configuration found, using us layout");
+                "no keyboard configuration found, using us layout with default "
+                "settings");
+    }
 
     // get pointer config
     std::unique_ptr<toml::Table> pointer =
@@ -371,6 +385,33 @@ bool Config::load() {
             connect(touchpad->getDouble("accel_speed"),
                     &cursor.touchpad.accel_speed);
         }
+    } else {
+        cursor.xcursor.theme = "";
+        cursor.xcursor.size = 24;
+
+        cursor.mouse.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+        cursor.mouse.accel_speed = 0.0;
+        cursor.mouse.natural_scroll = false;
+        cursor.mouse.left_handed = false;
+
+        cursor.touchpad.tap_to_click = LIBINPUT_CONFIG_TAP_ENABLED;
+        cursor.touchpad.tap_and_drag = LIBINPUT_CONFIG_DRAG_ENABLED;
+        cursor.touchpad.drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY;
+        cursor.touchpad.tap_button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
+        cursor.touchpad.natural_scroll = true;
+        cursor.touchpad.disable_while_typing = LIBINPUT_CONFIG_DWT_ENABLED;
+        cursor.touchpad.left_handed = false;
+        cursor.touchpad.middle_emulation =
+            LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+        cursor.touchpad.scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
+        cursor.touchpad.click_method =
+            LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
+        cursor.touchpad.event_mode = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
+        cursor.touchpad.profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+        cursor.touchpad.accel_speed = 0.0;
+
+        wlr_log(WLR_INFO, "%s",
+                "no cursor configuration found, using defaults");
     }
 
     // general
@@ -393,6 +434,14 @@ bool Config::load() {
         // minimize to workspace
         connect(general_table->getInt("minimize_to_workspace"),
                 &general.minimize_to_workspace);
+    } else {
+        general.focus_on_hover = false;
+        general.fowa = FOWA_ACTIVE;
+        general.system_bell = "";
+        general.minimize_to_workspace = 0;
+
+        wlr_log(WLR_INFO, "%s",
+                "no general configuration found, using defaults");
     }
 
     // tiling
@@ -403,6 +452,8 @@ bool Config::load() {
         set_option("tiling.method", {"none", "grid", "master", "dwindle"},
                    {TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE},
                    tiling_table->getString("method"), &tiling.method);
+    } else {
+        tiling.method = TILE_GRID;
     }
 
     // get awm binds

@@ -89,7 +89,8 @@ OutputManager::OutputManager(Server *server) : server(server) {
             return;
 
         wlr_output_state_set_enabled(&state, event->mode);
-        wlr_output_commit_state(output->wlr_output, &state);
+        wlr_output_commit_state(event->output, &state);
+        wlr_output_state_finish(&state);
 
         manager->arrange();
     };

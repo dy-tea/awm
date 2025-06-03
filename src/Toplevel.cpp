@@ -4,8 +4,10 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // on map or display
     Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
+    Server *server = toplevel->server;
+
     // get the focused output
-    Output *output = toplevel->server->focused_output();
+    Output *output = server->focused_output();
 
     // xdg toplevel
     if (const wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel) {
@@ -100,8 +102,6 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         // add the toplevel to the scene tree
         toplevel->scene_surface->buffer->node.data = toplevel;
         toplevel->scene_tree->node.data = toplevel;
-
-        Server *server = toplevel->server;
 
         // set seat if requested
         if (wlr_xwayland_surface_override_redirect_wants_focus(

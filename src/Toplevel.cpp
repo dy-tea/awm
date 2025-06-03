@@ -917,18 +917,18 @@ void Toplevel::save_geometry() {
 std::string Toplevel::title() const {
 #ifdef XWAYLAND
     if (xwayland_surface)
-        return xwayland_surface->title;
+        return xwayland_surface->title ? xwayland_surface->title : "";
 #endif
-    return xdg_toplevel->title;
+    return xdg_toplevel->title ? xdg_toplevel->title : "";
 }
 
 // get the app id of the toplevel
 std::string Toplevel::app_id() const {
 #ifdef XWAYLAND
     if (xwayland_surface)
-        return xwayland_surface->class_;
+        return xwayland_surface->class_ ? xwayland_surface->class_ : "";
 #endif
-    return xdg_toplevel->app_id;
+    return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
 }
 
 // update the title of the toplevel

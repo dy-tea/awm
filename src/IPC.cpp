@@ -1,3 +1,4 @@
+#include "IPC.h"
 #include "Server.h"
 #include <string>
 #include <sys/socket.h>
@@ -138,13 +139,20 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
             goto unknown;
         case 'o': // output
             if (std::getline(ss, token, ' ')) {
-                if (token[0] == 'l') { // output list
+                switch (token[0]) {
+                case 'l': // output list
                     message = IPC_OUTPUT_LIST;
                     break;
-                } else if (token[0] == 'm') { // output modes
+                case 't': // output toplevels
+                    message = IPC_OUTPUT_TOPLEVELS;
+                    break;
+                case 'm': // output modes
                     message = IPC_OUTPUT_MODES;
                     break;
+                default:
+                    goto unknown;
                 }
+                break;
             }
             goto unknown;
         case 'w': // workspace
@@ -187,10 +195,11 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
             goto unknown;
         case 'b': // bind
             if (std::getline(ss, token, ' ')) {
-                if (token[0] == 'l') { // bind list
+                switch (token[0]) {
+                case 'l': // bind list
                     message = IPC_BIND_LIST;
                     break;
-                } else if (token[0] == 'r') { // bind run
+                case 'r': // bind run
                     if (std::getline(ss, token, ' ')) {
                         data = token;
                         message = IPC_BIND_RUN;
@@ -201,12 +210,17 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
 
                         break;
                     }
-                } else if (token[0] == 'd') // bind display
+                    goto unknown;
+                case 'd': // bind display
                     if (std::getline(ss, token, ' ')) {
                         data = token;
                         message = IPC_BIND_DISPLAY;
                         break;
                     }
+                default:
+                    goto unknown;
+                }
+                break;
             }
             [[fallthrough]];
         default:
@@ -285,6 +299,20 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             if (o->serial)
                 j[o->name]["serial"] = o->serial;
         }
+        break;
+    }
+    case IPC_OUTPUT_TOPLEVELS: {
+        Output *output, *tmp;
+        Workspace *workspace, *tmp1;
+        Toplevel *toplevel, *tmp2;
+        int i = 0;
+        wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
+                              link)
+            wl_list_for_each_safe(workspace, tmp1, &output->workspaces, link)
+                wl_list_for_each_safe(toplevel, tmp2, &workspace->toplevels,
+                                      link)
+                    j[output->wlr_output->name][workspace->num][i++] =
+                        string_format("%p", toplevel);
         break;
     }
     case IPC_OUTPUT_MODES: {

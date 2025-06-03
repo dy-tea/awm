@@ -36,6 +36,7 @@ void print_usage() {
                  "\t[s]pawn <command>\n"
                  "\t[o]utput\n"
                  "\t\t- [l]ist\n"
+                 "\t\t- [t]toplevels\n"
                  "\t\t- [m]odes\n"
                  "\t[w]orkspace\n"
                  "\t\t- [l]ist\n"
@@ -124,6 +125,9 @@ int main(int argc, char **argv) {
 
         if (group[0] == 'l') { // output list
             message = "o l";
+            break;
+        } else if (group[0] == 't') { // output toplevels
+            message = "o t";
             break;
         } else if (group[0] == 'm') { // output modes
             message = "o m";

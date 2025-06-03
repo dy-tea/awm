@@ -13,6 +13,7 @@ awmsg [<FLAGS>]... (bind) <BIND-OPTION>;
           | (-s <PATH> | --socket <PATH>) "use socket path";
 
 <OUTPUT-OPTION> ::= (list) "list outputs"
+                  | (toplevels) "list toplevels on outputs"
                   | (modes) "list output modes";
 
 <WORKSPACE-OPTION> ::= (list) "list workspaces"

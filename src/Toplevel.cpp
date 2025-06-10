@@ -1,13 +1,25 @@
 #include "Server.h"
+#include "WindowRule.h"
+#include <string_view>
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // on map or display
     Toplevel *toplevel = wl_container_of(listener, toplevel, map);
 
     Server *server = toplevel->server;
+    Output *output = nullptr;
 
-    // get the focused output
-    Output *output = server->focused_output();
+    // apply rule
+    WindowRule *matching = nullptr;
+    for (WindowRule *rule : server->config->window_rules)
+        if (rule->matches(toplevel)) {
+            matching = rule;
+            output = server->output_manager->get_output(matching->output);
+            break;
+        }
+
+    if (!output)
+        output = server->focused_output();
 
     // xdg toplevel
     if (const wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel) {
@@ -47,9 +59,6 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         // ensure position falls in bounds
         x = std::max(x, usable_area.x);
         y = std::max(y, usable_area.y);
-
-        // add toplevel to active workspace and focus it
-        output->get_active()->add_toplevel(toplevel, true);
 
         // set position and size
         toplevel->set_position_size(x, y, width, height);
@@ -107,19 +116,23 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         if (wlr_xwayland_surface_override_redirect_wants_focus(
                 toplevel->xwayland_surface))
             wlr_xwayland_set_seat(server->xwayland, server->seat->wlr_seat);
-
-        // add to active workspace
-        output->get_active()->add_toplevel(toplevel, true);
     }
 #endif
+    if (matching)
+        // apply window rule
+        matching->apply(toplevel);
+    else
+        // add toplevel to active workspace and focus it
+        output->get_active()->add_toplevel(toplevel, true);
+
     // foreign toplevel
     toplevel->create_foreign();
     toplevel->create_ext_foreign();
 
     // set app id for foreign toplevel
-    if (std::string app_id = toplevel->app_id(); !app_id.empty()) {
+    if (std::string_view app_id = toplevel->app_id(); !app_id.data()) {
         wlr_foreign_toplevel_handle_v1_set_app_id(toplevel->foreign_handle,
-                                                  app_id.c_str());
+                                                  app_id.data());
     }
 
     toplevel->update_ext_foreign();
@@ -858,9 +871,10 @@ void Toplevel::create_foreign() {
 
 // create ext foreign toplevel
 void Toplevel::create_ext_foreign() {
-    wlr_ext_foreign_toplevel_handle_v1_state state{};
-    state.app_id = app_id().c_str();
-    state.title = title().c_str(),
+    wlr_ext_foreign_toplevel_handle_v1_state state{
+        title().data(),
+        app_id().data(),
+    };
     ext_foreign_handle = wlr_ext_foreign_toplevel_handle_v1_create(
         server->wlr_foreign_toplevel_list, &state);
 
@@ -877,9 +891,10 @@ void Toplevel::create_ext_foreign() {
 
 // update ext foreign toplevel
 void Toplevel::update_ext_foreign() const {
-    wlr_ext_foreign_toplevel_handle_v1_state state{};
-    state.app_id = app_id().c_str();
-    state.title = title().c_str();
+    wlr_ext_foreign_toplevel_handle_v1_state state{
+        title().data(),
+        app_id().data(),
+    };
     wlr_ext_foreign_toplevel_handle_v1_update_state(ext_foreign_handle, &state);
 }
 
@@ -914,7 +929,7 @@ void Toplevel::save_geometry() {
 }
 
 // get the title of the toplevel
-std::string Toplevel::title() const {
+std::string_view Toplevel::title() const {
 #ifdef XWAYLAND
     if (xwayland_surface)
         return xwayland_surface->title ? xwayland_surface->title : "";
@@ -923,7 +938,7 @@ std::string Toplevel::title() const {
 }
 
 // get the app id of the toplevel
-std::string Toplevel::app_id() const {
+std::string_view Toplevel::app_id() const {
 #ifdef XWAYLAND
     if (xwayland_surface)
         return xwayland_surface->class_ ? xwayland_surface->class_ : "";
@@ -933,7 +948,7 @@ std::string Toplevel::app_id() const {
 
 // update the title of the toplevel
 void Toplevel::update_title() {
-    const std::string title = this->title();
+    const std::string title = std::string(this->title());
 
     if (foreign_handle && !title.empty())
         wlr_foreign_toplevel_handle_v1_set_title(foreign_handle, title.c_str());
@@ -944,7 +959,7 @@ void Toplevel::update_title() {
 
 // update the app id of the toplevel
 void Toplevel::update_app_id() {
-    const std::string id = app_id();
+    const std::string id = std::string(app_id());
 
     if (foreign_handle && !id.empty())
         wlr_foreign_toplevel_handle_v1_set_app_id(foreign_handle, id.c_str());

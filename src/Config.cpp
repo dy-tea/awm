@@ -1,5 +1,8 @@
 #include "Config.h"
 #include "Server.h"
+#include "WindowRule.h"
+#include "util.h"
+#include "xdg-shell-protocol.h"
 #include <libinput.h>
 #include <sstream>
 #include <tomlcpp.hpp>
@@ -144,9 +147,8 @@ bool Config::load() {
     }
 
     // Get startup table
-    std::unique_ptr<toml::Table> startup =
-        config_file.table->getTable("startup");
-    if (startup) {
+    if (std::unique_ptr<toml::Table> startup =
+            config_file.table->getTable("startup")) {
         // startup commands
         if (std::unique_ptr<toml::Array> exec = startup->getArray("exec")) {
             if (auto commands = exec->getStringVector()) {
@@ -189,9 +191,8 @@ bool Config::load() {
         wlr_log(WLR_INFO, "%s", "No startup configuration found, ingoring");
 
     // exit
-    std::unique_ptr<toml::Table> exit_table =
-        config_file.table->getTable("exit");
-    if (exit_table) {
+    if (std::unique_ptr<toml::Table> exit_table =
+            config_file.table->getTable("exit")) {
         // list of commands to run on exit
         if (auto exec = exit_table->getArray("exec")) {
             if (auto commands = exec->getStringVector()) {
@@ -206,8 +207,8 @@ bool Config::load() {
     }
 
     // ipc
-    std::unique_ptr<toml::Table> ipc_table = config_file.table->getTable("ipc");
-    if (ipc_table) {
+    if (std::unique_ptr<toml::Table> ipc_table =
+            config_file.table->getTable("ipc")) {
         // socket path
         connect(ipc_table->getString("socket"), &ipc.path);
 
@@ -223,9 +224,8 @@ bool Config::load() {
     }
 
     // get keyboard config
-    std::unique_ptr<toml::Table> keyboard =
-        config_file.table->getTable("keyboard");
-    if (keyboard) {
+    if (std::unique_ptr<toml::Table> keyboard =
+            config_file.table->getTable("keyboard")) {
         // get layout
         connect(keyboard->getString("layout"), &keyboard_layout);
 
@@ -258,9 +258,8 @@ bool Config::load() {
     }
 
     // get pointer config
-    std::unique_ptr<toml::Table> pointer =
-        config_file.table->getTable("pointer");
-    if (pointer) {
+    if (std::unique_ptr<toml::Table> pointer =
+            config_file.table->getTable("pointer")) {
         // xcursor
         auto xcursor_table = pointer->getTable("xcursor");
         if (xcursor_table) {
@@ -415,9 +414,8 @@ bool Config::load() {
     }
 
     // general
-    std::unique_ptr<toml::Table> general_table =
-        config_file.table->getTable("general");
-    if (general_table) {
+    if (std::unique_ptr<toml::Table> general_table =
+            config_file.table->getTable("general")) {
         // focus on hover
         connect(general_table->getBool("focus_on_hover"),
                 &general.focus_on_hover);
@@ -445,9 +443,8 @@ bool Config::load() {
     }
 
     // tiling
-    std::unique_ptr<toml::Table> tiling_table =
-        config_file.table->getTable("tiling");
-    if (tiling_table) {
+    if (std::unique_ptr<toml::Table> tiling_table =
+            config_file.table->getTable("tiling")) {
         // method
         set_option("tiling.method", {"none", "grid", "master", "dwindle"},
                    {TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE},
@@ -457,9 +454,8 @@ bool Config::load() {
     }
 
     // get awm binds
-    std::unique_ptr<toml::Table> binds_table =
-        config_file.table->getTable("binds");
-    if (binds_table) {
+    if (std::unique_ptr<toml::Table> binds_table =
+            config_file.table->getTable("binds")) {
         // clear binds
         binds.clear();
 
@@ -556,9 +552,8 @@ bool Config::load() {
     }
 
     // Get user-defined commands
-    std::unique_ptr<toml::Array> command_tables =
-        config_file.table->getArray("commands");
-    if (command_tables) {
+    if (std::unique_ptr<toml::Array> command_tables =
+            config_file.table->getArray("commands")) {
         auto tables = command_tables->getTableVector();
 
         // clear commands
@@ -579,9 +574,10 @@ bool Config::load() {
         wlr_log(WLR_INFO, "%s", "No user-defined commands set, ignoring");
 
     // monitor configs
-    std::unique_ptr<toml::Array> monitor_tables =
-        config_file.table->getArray("monitors");
-    if (monitor_tables) {
+    if (std::unique_ptr<toml::Array> monitor_tables =
+            config_file.table->getArray("monitors")) {
+        outputs.clear();
+
         if (auto tables = monitor_tables->getTableVector())
             for (toml::Table &table : *tables) {
                 // create new output config
@@ -609,7 +605,6 @@ bool Config::load() {
                 connect(table.getDouble("refresh"), &oc->refresh);
 
                 // transform
-                auto transform = table.getString("transform");
                 set_option(
                     "monitors.transform",
                     {"none", "90", "180", "270", "f", "f90", "f180", "f270"},
@@ -641,6 +636,61 @@ bool Config::load() {
                     outputs.emplace_back(oc);
                 }
             }
+    }
+
+    // window rule configs
+    if (std::unique_ptr<toml::Array> window_rule_tables =
+            config_file.table->getArray("windowrules")) {
+        window_rules.clear();
+
+        if (auto tables = window_rule_tables->getTableVector()) {
+            for (toml::Table table : *tables) {
+                auto title_result = table.getString("title");
+                auto class_result = table.getString("class");
+
+                // must have title or class
+                if (!(title_result.first || class_result.first)) {
+                    notify_send("Config", "%s",
+                                "windowrules must have title or class");
+                    continue;
+                }
+
+                // create new WindowRule
+                WindowRule *w = new WindowRule(
+                    title_result.first ? title_result.second : "",
+                    class_result.first ? class_result.second : "");
+
+                // workspace
+                if (auto initial_workspace = table.getInt("workspace");
+                    initial_workspace.first)
+                    w->add_rule(RULES_INITIAL_WORKSPACE,
+                                initial_workspace.second);
+
+                // output
+                if (auto initial_output = table.getString("output");
+                    initial_output.first)
+                    w->add_rule(RULES_INITIAL_OUTPUT, initial_output.second);
+
+                // state
+                xdg_toplevel_state *state = new xdg_toplevel_state;
+                set_option("windowrules.state", {"maximized", "fullscreen"},
+                           {XDG_TOPLEVEL_STATE_MAXIMIZED,
+                            XDG_TOPLEVEL_STATE_FULLSCREEN},
+                           table.getString("state"), state);
+                if (state)
+                    w->add_rule(RULES_INITIAL_TOPLEVEL_STATE, state);
+
+                if (w->rule_count)
+                    window_rules.emplace_back(w);
+                else {
+                    notify_send("Config",
+                                "No rules found for window_rule with title: "
+                                "%s, class: %s",
+                                w->title_match.c_str(), w->class_match.c_str());
+                    delete w;
+                }
+            }
+        }
     }
 
     return true;

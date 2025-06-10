@@ -3,6 +3,7 @@
 #include "Cursor.h"
 #include "Decoration.h"
 #include <string>
+#include <string_view>
 
 struct Toplevel {
     wl_list link;
@@ -76,8 +77,8 @@ struct Toplevel {
     void create_ext_foreign();
     void update_ext_foreign() const;
 
-    std::string title() const;
-    std::string app_id() const;
+    std::string_view title() const;
+    std::string_view app_id() const;
     void update_title();
     void update_app_id();
 

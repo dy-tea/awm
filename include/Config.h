@@ -1,5 +1,6 @@
 #pragma once
 
+#include "WindowRule.h"
 #include "tomlcpp.hpp"
 #include "util.h"
 #include "wlr.h"
@@ -175,6 +176,9 @@ struct Config {
 
     // outputs
     std::vector<OutputConfig *> outputs;
+
+    // window rules
+    std::vector<WindowRule *> window_rules;
 
     Config();
     explicit Config(const std::string &path);

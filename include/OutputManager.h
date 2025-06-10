@@ -1,6 +1,7 @@
 #pragma once
 
 #include "wlr.h"
+#include <string>
 
 struct OutputManager {
     struct Server *server;
@@ -25,6 +26,7 @@ struct OutputManager {
     void apply_config(wlr_output_configuration_v1 *cfg, bool test_only) const;
 
     struct Output *get_output(const wlr_output *wlr_output);
+    struct Output *get_output(const std::string &name);
     struct Output *output_at(double x, double y);
 
     void arrange() const;

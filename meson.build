@@ -131,6 +131,7 @@ executable(
     'src' / 'IPC.cpp',
     'src' / 'Seat.cpp',
     'src' / 'Decoration.cpp',
+    'src' / 'WindowRule.cpp',
     protocol_sources,
     protocol_code,
   ],

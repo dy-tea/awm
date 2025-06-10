@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "wlr/util/log.h"
 #include <map>
 
 OutputManager::OutputManager(Server *server) : server(server) {
@@ -154,6 +155,19 @@ Output *OutputManager::get_output(const wlr_output *wlr_output) {
     // no output found
     wlr_log(WLR_ERROR, "could not find output of pointer %p",
             (void *)wlr_output);
+    return nullptr;
+}
+
+// get output by name
+Output *OutputManager::get_output(const std::string &name) {
+    // check each output
+    Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &outputs,
+                          link) if (output->wlr_output->name ==
+                                    name) return output;
+
+    // no output found
+    wlr_log(WLR_DEBUG, "could not find output of name `%s`", name.c_str());
     return nullptr;
 }
 

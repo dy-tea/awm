@@ -1,5 +1,6 @@
 #include "WindowRule.h"
 #include "Server.h"
+#include <regex>
 
 WindowRule::WindowRule(std::string title_match, std::string class_match)
     : title_match(title_match), class_match(class_match) {}
@@ -36,13 +37,17 @@ void WindowRule::add_rule(Rules rule_name, xdg_toplevel_state *data) {
     }
 }
 
-// see if toplevel matches window rule TODO glob or regex
+// see if toplevel matches window rule
 bool WindowRule::matches(Toplevel *toplevel) {
     bool match = true;
-    if (!title_match.empty())
-        match &= title_match == toplevel->title();
-    if (!class_match.empty())
-        match &= class_match == toplevel->app_id();
+    if (!title_match.empty()) {
+        std::regex re(title_match);
+        match &= std::regex_match(std::string(toplevel->title()), re);
+    }
+    if (!class_match.empty()) {
+        std::regex re(class_match);
+        match &= std::regex_match(std::string(toplevel->app_id()), re);
+    }
     return match;
 }
 

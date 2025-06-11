@@ -125,8 +125,8 @@ exec = "alacritty"
 
 # apply a rule to a window matching title and/or class
 [[windowrules]]
-class = "foot" # match app_id / class
-# title = ""   # match title
-workspace = 2 # workspace num to start on
-# output = "HDMI-A-1" # output name to start on
+class = "foot"      # regex match app_id / class
+title = ""          # regex match title
+workspace = 2       # workspace num to start on
+output = "HDMI-A-1" # output name to start on
 state = "maximized" # maximized, fullscreen

@@ -3,24 +3,47 @@
 #include <regex>
 
 WindowRule::WindowRule(std::string title_match, std::string class_match)
-    : title_match(title_match), class_match(class_match) {}
+    : title_match(title_match), class_match(class_match) {
+    geometry = new wlr_box;
+}
 
 WindowRule::~WindowRule() {
     if (toplevel_state)
         delete toplevel_state;
+    delete geometry;
 }
 
 void WindowRule::add_rule(Rules rule_name, int data) {
-    if (rule_name == RULES_INITIAL_WORKSPACE) {
+    rule_count++;
+
+    switch (rule_name) {
+    case RULES_WORKSPACE: {
         workspace = data;
-        rule_count++;
-    } else {
+        break;
+    }
+    case RULES_TOPLEVEL_X: {
+        geometry->x = data;
+        break;
+    }
+    case RULES_TOPLEVEL_Y: {
+        geometry->y = data;
+        break;
+    }
+    case RULES_TOPLEVEL_W: {
+        geometry->width = data;
+        break;
+    }
+    case RULES_TOPLEVEL_H: {
+        geometry->height = data;
+        break;
+    }
+    default:
         throw std::runtime_error("Invalid rule type for int");
     }
 }
 
 void WindowRule::add_rule(Rules rule_name, const std::string &data) {
-    if (rule_name == RULES_INITIAL_OUTPUT) {
+    if (rule_name == RULES_OUTPUT) {
         output = data;
         rule_count++;
     } else {
@@ -29,7 +52,7 @@ void WindowRule::add_rule(Rules rule_name, const std::string &data) {
 }
 
 void WindowRule::add_rule(Rules rule_name, xdg_toplevel_state *data) {
-    if (rule_name == RULES_INITIAL_TOPLEVEL_STATE) {
+    if (rule_name == RULES_TOPLEVEL_STATE) {
         toplevel_state = data;
         rule_count++;
     } else {
@@ -71,6 +94,10 @@ void WindowRule::apply(Toplevel *toplevel) {
     target_workspace->add_toplevel(toplevel, false);
     if (target_output->get_active() != target_workspace)
         toplevel->set_hidden(true);
+
+    // set toplevel geometry
+    if (geometry)
+        toplevel->set_position_size(*geometry);
 
     // set toplevel state
     if (toplevel_state)

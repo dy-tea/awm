@@ -4,9 +4,13 @@
 #include <string>
 
 enum Rules {
-    RULES_INITIAL_WORKSPACE,
-    RULES_INITIAL_OUTPUT,
-    RULES_INITIAL_TOPLEVEL_STATE,
+    RULES_WORKSPACE,
+    RULES_OUTPUT,
+    RULES_TOPLEVEL_STATE,
+    RULES_TOPLEVEL_X,
+    RULES_TOPLEVEL_Y,
+    RULES_TOPLEVEL_W,
+    RULES_TOPLEVEL_H,
 };
 
 struct WindowRule {
@@ -18,6 +22,7 @@ struct WindowRule {
     int workspace{-1};
     std::string output{};
     xdg_toplevel_state *toplevel_state{nullptr};
+    wlr_box *geometry{};
 
     WindowRule(std::string title_match, std::string class_match);
     ~WindowRule();

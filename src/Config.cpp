@@ -659,7 +659,8 @@ bool Config::load() {
                 // create new WindowRule
                 WindowRule *w = new WindowRule(
                     title_result.first ? title_result.second : "",
-                    class_result.first ? class_result.second : "");
+                    class_result.first ? class_result.second : "",
+                    title_result.first | 1 << class_result.first);
 
                 // workspace
                 if (auto initial_workspace = table.getInt("workspace");
@@ -718,10 +719,12 @@ bool Config::load() {
                 if (w->rule_count)
                     window_rules.emplace_back(w);
                 else {
-                    notify_send("Config",
-                                "No rules found for window_rule with title: "
-                                "%s, class: %s",
-                                w->title_match.c_str(), w->class_match.c_str());
+                    notify_send(
+                        "Config",
+                        "No rules found for window_rule with title: "
+                        "%s, class: %s",
+                        title_result.first ? title_result.second.c_str() : "",
+                        class_result.first ? class_result.second.c_str() : "");
                     delete w;
                 }
             }

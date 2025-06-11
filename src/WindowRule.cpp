@@ -1,9 +1,10 @@
 #include "WindowRule.h"
 #include "Server.h"
-#include <regex>
 
-WindowRule::WindowRule(std::string title_match, std::string class_match)
-    : title_match(title_match), class_match(class_match) {
+WindowRule::WindowRule(std::string title_match, std::string class_match,
+                       uint8_t title_class_present)
+    : title_re(std::regex(title_match)), class_re(std::regex(class_match)),
+      title_class_present(title_class_present) {
     geometry = new wlr_box;
 }
 
@@ -63,14 +64,10 @@ void WindowRule::add_rule(Rules rule_name, xdg_toplevel_state *data) {
 // see if toplevel matches window rule
 bool WindowRule::matches(Toplevel *toplevel) {
     bool match = true;
-    if (!title_match.empty()) {
-        std::regex re(title_match);
-        match &= std::regex_match(std::string(toplevel->title()), re);
-    }
-    if (!class_match.empty()) {
-        std::regex re(class_match);
-        match &= std::regex_match(std::string(toplevel->app_id()), re);
-    }
+    if (title_class_present & 1)
+        match &= std::regex_match(std::string(toplevel->title()), title_re);
+    if (title_class_present & 2)
+        match &= std::regex_match(std::string(toplevel->app_id()), class_re);
     return match;
 }
 

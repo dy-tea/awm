@@ -673,7 +673,6 @@ bool Config::load() {
 
                 // state
                 xdg_toplevel_state *state = new xdg_toplevel_state;
-                state = nullptr;
                 set_option("windowrules.state", {"maximized", "fullscreen"},
                            {XDG_TOPLEVEL_STATE_MAXIMIZED,
                             XDG_TOPLEVEL_STATE_FULLSCREEN},

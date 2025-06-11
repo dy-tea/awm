@@ -83,9 +83,9 @@ void WindowRule::apply(Toplevel *toplevel) {
         target_output = server->focused_output();
 
     // get target workspace
-    Workspace *target_workspace = workspace < 0
-                                      ? target_output->get_active()
-                                      : target_output->get_workspace(workspace);
+    Workspace *target_workspace = workspace > 0
+                                      ? target_output->get_workspace(workspace)
+                                      : target_output->get_active();
 
     // set toplevel workspace
     target_workspace->add_toplevel(toplevel, false);

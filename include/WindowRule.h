@@ -21,7 +21,7 @@ struct WindowRule {
 
     size_t rule_count{0};
 
-    int workspace{-1};
+    int workspace{0};
     std::string output{};
     xdg_toplevel_state *toplevel_state{nullptr};
     wlr_box *geometry{};

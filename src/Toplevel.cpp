@@ -752,8 +752,12 @@ bool Toplevel::fullscreen() const {
 
 // set the toplevel to be fullscreened
 void Toplevel::set_fullscreen(const bool fullscreen) {
-    // get output
-    const Output *output = server->focused_output();
+    // get output from toplevel's current workspace, fallback to focused output
+    const Output *output = nullptr;
+    if (Workspace *workspace = server->get_workspace(this))
+        output = workspace->output;
+    else
+        output = server->focused_output();
 
     // get output geometry
     const wlr_box output_box = output->layout_geometry;
@@ -803,8 +807,12 @@ void Toplevel::set_maximized(const bool maximized) {
     if (fullscreen())
         set_fullscreen(false);
 
-    // get output
-    const Output *output = server->focused_output();
+    // get output from toplevel's current workspace, fallback to focused output
+    const Output *output = nullptr;
+    if (Workspace *workspace = server->get_workspace(this))
+        output = workspace->output;
+    else
+        output = server->focused_output();
 
     // get usable output area
     wlr_box usable_area = output->usable_area;

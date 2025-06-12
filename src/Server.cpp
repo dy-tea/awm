@@ -710,6 +710,7 @@ Server::Server(Config *config) : config(config) {
 
     // data control manager
     wlr_data_control_manager_v1_create(display);
+    wlr_ext_data_control_manager_v1_create(display, 1);
 
     // gamma control manager
     wlr_scene_set_gamma_control_manager_v1(

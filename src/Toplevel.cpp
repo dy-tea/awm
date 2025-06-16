@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "WindowRule.h"
+#include "wlr.h"
 #include <string_view>
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
@@ -66,16 +67,22 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 #ifdef XWAYLAND
     // xwayland surface
     else {
+        wlr_xwayland_surface *xwayland_surface = toplevel->xwayland_surface;
+
         // create scene surface
         toplevel->scene_surface = wlr_scene_surface_create(
-            toplevel->scene_tree, toplevel->xwayland_surface->surface);
+            toplevel->scene_tree, xwayland_surface->surface);
+
+        // create image capture scene surface
+        toplevel->image_capture_surface = wlr_scene_surface_create(
+            &toplevel->image_capture->tree, xwayland_surface->surface);
 
         // get usable area of the output
         wlr_box area = output->usable_area;
 
         // calcualte the width and height
-        int width = toplevel->xwayland_surface->width;
-        int height = toplevel->xwayland_surface->height;
+        int width = xwayland_surface->width;
+        int height = xwayland_surface->height;
 
         // ensure size does not exceed output
         if (width > area.width)
@@ -85,8 +92,8 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             height = area.height;
 
         // get surface position
-        int x = toplevel->xwayland_surface->x;
-        int y = toplevel->xwayland_surface->y;
+        int x = xwayland_surface->x;
+        int y = xwayland_surface->y;
 
         // center the surface to the focused output if zero
         if (!x)
@@ -95,8 +102,7 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             y += area.y + (output->layout_geometry.height - height) / 2;
 
         // send a configure event
-        wlr_xwayland_surface_configure(toplevel->xwayland_surface, x, y, width,
-                                       height);
+        wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
 
         // set the position
         wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node, x,
@@ -114,7 +120,7 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
         // set seat if requested
         if (wlr_xwayland_surface_override_redirect_wants_focus(
-                toplevel->xwayland_surface))
+                xwayland_surface))
             wlr_xwayland_set_seat(server->xwayland, server->seat->wlr_seat);
     }
 #endif
@@ -184,6 +190,9 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     // add the toplevel to the scene tree
     scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
                                               xdg_toplevel->base);
+    image_capture = wlr_scene_create();
+    image_capture_tree =
+        wlr_scene_xdg_surface_create(&image_capture->tree, xdg_toplevel->base);
     scene_tree->node.data = this;
     xdg_toplevel->base->data = this;
 
@@ -219,7 +228,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
 
         // popups do not need to be tracked
         new Popup(static_cast<wlr_xdg_popup *>(data), toplevel->scene_tree,
-                  toplevel->server);
+                  toplevel->image_capture_tree, toplevel->server);
     };
     wl_signal_add(&xdg_toplevel->base->events.new_popup, &new_xdg_popup);
 

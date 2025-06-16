@@ -90,7 +90,7 @@ LayerSurface::LayerSurface(Output *output,
             wl_container_of(listener, layer_surface, new_popup);
 
         new Popup(static_cast<wlr_xdg_popup *>(data), layer_surface->scene_tree,
-                  layer_surface->output->server);
+                  nullptr, layer_surface->output->server);
     };
     wl_signal_add(&wlr_layer_surface->events.new_popup, &new_popup);
 

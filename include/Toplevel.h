@@ -2,6 +2,7 @@
 
 #include "Cursor.h"
 #include "Decoration.h"
+#include "wlr.h"
 #include <string>
 #include <string_view>
 
@@ -58,6 +59,11 @@ struct Toplevel {
     Decoration *decoration{nullptr};
     wlr_xdg_toplevel_decoration_v1_mode decoration_mode{
         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE};
+
+    wlr_scene *image_capture;
+    wlr_ext_image_capture_source_v1 *image_capture_source;
+    wlr_scene_tree *image_capture_tree;
+    wlr_scene_surface *image_capture_surface;
 
     wlr_box geometry{};
     wlr_box saved_geometry{};

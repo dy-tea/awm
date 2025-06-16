@@ -96,6 +96,9 @@ struct Server {
     wl_listener new_xdg_decoration;
     wl_list decorations;
 
+    wlr_ext_foreign_toplevel_image_capture_source_manager_v1 *wlr_ext_foreign_toplevel_image_capture_source_manager;
+    wl_listener new_toplevel_capture_request;
+
     wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;

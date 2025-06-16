@@ -1,9 +1,10 @@
 #include "Server.h"
 
 Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
-             Server *server)
+             wlr_scene_tree *image_capture_parent, Server *server)
     : server(server), xdg_popup(xdg_popup),
-      parent_tree(wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base)) {
+      parent_tree(wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base)),
+      image_capture_tree(image_capture_parent) {
     xdg_popup->base->data = parent_tree;
 
     // xdg_popup_commit
@@ -49,7 +50,8 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
         Popup *popup = wl_container_of(listener, popup, new_popup);
         auto *xdg_popup = static_cast<wlr_xdg_popup *>(data);
 
-        new Popup(xdg_popup, popup->parent_tree, popup->server);
+        new Popup(xdg_popup, popup->parent_tree, popup->image_capture_tree,
+                  popup->server);
     };
     wl_signal_add(&xdg_popup->base->events.new_popup, &new_popup);
 }

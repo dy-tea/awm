@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "Config.h"
+#include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -679,6 +680,42 @@ Server::Server(Config *config) : config(config) {
                   &new_xdg_decoration);
 #endif
 
+    // foreign toplevel image capture source
+    wlr_ext_foreign_toplevel_image_capture_source_manager =
+        wlr_ext_foreign_toplevel_image_capture_source_manager_v1_create(display,
+                                                                        1);
+
+    new_toplevel_capture_request.notify = [](wl_listener *listener,
+                                             void *data) {
+        Server *server =
+            wl_container_of(listener, server, new_toplevel_capture_request);
+        auto request = static_cast<
+            wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request *>(
+            data);
+        Toplevel *toplevel =
+            static_cast<Toplevel *>(request->toplevel_handle->data);
+        wlr_ext_image_capture_source_v1 *capture_source =
+            toplevel->image_capture_source;
+
+        if (!capture_source) {
+            // no image capture source, create one
+            capture_source =
+                wlr_ext_image_capture_source_v1_create_with_scene_node(
+                    &toplevel->image_capture->tree.node,
+                    wl_display_get_event_loop(server->display),
+                    server->allocator, server->renderer);
+
+            if (!capture_source)
+                return;
+        }
+
+        wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request_accept(
+            request, capture_source);
+    };
+    wl_signal_add(&wlr_ext_foreign_toplevel_image_capture_source_manager->events
+                       .new_request,
+                  &new_toplevel_capture_request);
+
     // foreign toplevel list
     wlr_foreign_toplevel_list =
         wlr_ext_foreign_toplevel_list_v1_create(display, 1);
@@ -941,6 +978,8 @@ Server::~Server() {
 
     if (wlr_drm_lease_manager)
         wl_list_remove(&drm_lease_request.link);
+
+    wl_list_remove(&new_toplevel_capture_request.link);
 
 #ifdef XDG_DECORATION
     wl_list_remove(&new_xdg_decoration.link);

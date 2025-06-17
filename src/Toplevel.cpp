@@ -179,6 +179,9 @@ void Toplevel::unmap_notify(wl_listener *listener,
             toplevel->ext_foreign_handle);
     }
 
+    // remove reference
+    toplevel->image_capture_surface = nullptr;
+
     // notify clients
     if (IPC *ipc = server->ipc)
         ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
@@ -354,6 +357,10 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
 
     // create scene tree
     scene_tree = wlr_scene_tree_create(server->layers.floating);
+
+    // create capture
+    image_capture = wlr_scene_create();
+    image_capture_tree = wlr_scene_tree_create(server->layers.floating);
 
     // destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {

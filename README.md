@@ -22,7 +22,7 @@ You can build and run using:
 
 ```sh
 # clone
-git clone https://github.com/dy-tea/awm.git
+git clone https://github.com/dy-tea/awm.git --recursive
 cd awm/
 
 # build

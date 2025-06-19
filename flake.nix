@@ -2,11 +2,11 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
     chaotic-cx.url = "github:chaotic-cx/nyx";
+    self.submodules = true;
   };
 
-  outputs = { self, nixpkgs, flake-utils, nixpkgs-wayland, chaotic-cx }:
+  outputs = { self, nixpkgs, flake-utils, chaotic-cx }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -26,7 +26,7 @@
           libinput
           xorg.xcbutilwm
         ] ++ [
-          nixpkgs-wayland.packages.${system}.wlroots
+          chaotic-cx.packages.${system}.wlroots_git
           chaotic-cx.packages.${system}.wayland-protocols_git
         ];
       in {

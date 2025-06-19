@@ -73,7 +73,8 @@ endforeach
 # dependencies
 tomlcpp_proj = subproject('tomlcpp')
 tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
-nlohmann_json = dependency('nlohmann_json')
+json_proj = subproject('json')
+json_dep = json_proj.get_variable('nlohmann_json_dep')
 
 # wlroots
 wlroots_version = ['>=0.20.0', '<0.21.0']
@@ -102,7 +103,7 @@ libs = [
   dependency('libinput'),
   dependency('xcb'),
   tomlcpp_dep,
-  nlohmann_json,
+  json_dep,
   wlroots,
 ]
 
@@ -163,7 +164,7 @@ install_data(
 executable(
   'awmsg',
   'awmsg/main.cpp',
-  dependencies: nlohmann_json,
+  dependencies: json_dep,
   install: true,
   install_dir: get_option('bindir'),
 )
@@ -211,7 +212,7 @@ if get_option('tests')
     test = executable(
       name,
       ['awmtest' / 'tests' / t],
-      dependencies: nlohmann_json,
+      dependencies: json_dep,
     )
     test(name, test, is_parallel: false, timeout: 0)
   endforeach

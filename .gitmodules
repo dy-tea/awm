@@ -1,0 +1,9 @@
+[submodule "subprojects/tomlcpp"]
+	path = subprojects/tomlcpp
+	url = https://github.com/dy-tea/tomlcpp.git
+[submodule "subprojects/json"]
+	path = subprojects/json
+	url = https://github.com/nlohmann/json.git
+[submodule "subprojects/backward-cpp"]
+	path = subprojects/backward-cpp
+	url = https://github.com/dy-tea/backward-cpp.git

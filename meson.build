@@ -10,7 +10,7 @@ project(
     'buildtype=release',
     'cpp_std=c++17',
   ],
-  meson_version: '>= 1.1',
+  meson_version: '>= 1.2.0',
 )
 
 # optional xwayland support
@@ -75,6 +75,7 @@ tomlcpp_proj = subproject('tomlcpp')
 tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
 nlohmann_json = dependency('nlohmann_json')
 
+# wlroots
 wlroots_version = ['>=0.20.0', '<0.21.0']
 if false
   # this looks weird but it will use the wlroots in the subprojects directory
@@ -108,6 +109,14 @@ libs = [
 # xwayland
 if xwayland_option
   libs += [xwayland]
+endif
+
+# backward-cpp
+backward_option = get_option('backward')
+if backward_option
+  backward_proj = subproject('backward-cpp', default_options: {'tests': false})
+  backward = backward_proj.get_variable('backward_dep')
+  libs += [backward]
 endif
 
 # main executable

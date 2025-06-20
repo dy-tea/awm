@@ -9,6 +9,7 @@ project(
     'optimization=3',
     'buildtype=release',
     'cpp_std=c++17',
+    'debug=true',
   ],
   meson_version: '>= 1.2.0',
 )
@@ -117,7 +118,9 @@ backward_option = get_option('backward')
 if backward_option
   backward_proj = subproject('backward-cpp', default_options: {'tests': false})
   backward = backward_proj.get_variable('backward_dep')
-  libs += [backward]
+  backward_interface = backward_proj.get_variable('backward_interface_dep')
+  add_project_arguments('-DBACKWARD', language: 'cpp')
+  libs += [backward, backward_interface]
 endif
 
 # main executable

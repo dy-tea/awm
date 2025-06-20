@@ -385,27 +385,21 @@ void Cursor::process_resize() {
     wlr_scene_node_set_position(&toplevel->scene_tree->node, new_x, new_y);
 
 #ifdef XWAYLAND
-    if (toplevel->xdg_toplevel) {
+    if (wlr_xdg_toplevel *xdg = toplevel->xdg_toplevel;
+        xdg && xdg->base->initialized) {
 #endif
-        wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_width,
-                                  new_height);
-        wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+        wlr_xdg_toplevel_set_size(xdg, new_width, new_height);
+        wlr_xdg_surface_schedule_configure(xdg->base);
+
+        // enforce minimum size
+        new_width = std::max(new_width, xdg->current.min_width);
+        new_height = std::max(new_height, xdg->current.min_height);
 #ifdef XWAYLAND
     } else if (toplevel->xwayland_surface)
         // I have no idea why but if I set the position here it breaks resizing
         // from the top left corner
         wlr_xwayland_surface_configure(toplevel->xwayland_surface, 0, 0,
                                        new_width, new_height);
-
-    if (toplevel->xdg_toplevel) {
-#endif
-        // enforce minimum size
-        new_width =
-            std::max(new_width, toplevel->xdg_toplevel->current.min_width);
-        new_height =
-            std::max(new_height, toplevel->xdg_toplevel->current.min_height);
-#ifdef XWAYLAND
-    }
 #endif
 
     toplevel->geometry = {new_x, new_y, new_width, new_height};

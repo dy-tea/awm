@@ -4,13 +4,24 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
              wlr_scene_tree *image_capture_parent, Server *server)
     : server(server), xdg_popup(xdg_popup),
       parent_tree(wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base)),
-      image_capture_tree(image_capture_parent) {
+      image_capture_tree(
+          wlr_scene_xdg_surface_create(image_capture_parent, xdg_popup->base)) {
     xdg_popup->base->data = parent_tree;
+
+    // ensure trees are created
+    if (!parent_tree || !image_capture_tree) {
+        delete this;
+        return;
+    }
 
     // xdg_popup_commit
     commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Popup *popup = wl_container_of(listener, popup, commit);
         Output *output = popup->server->focused_output();
+
+        // only position on initial commit
+        if (!popup->xdg_popup->base->initial_commit)
+            return;
 
         // output is required for popup positioning
         if (!output)
@@ -31,10 +42,6 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
 
         // unconstrain the popup from the relative box
         wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup, &box);
-
-        // schedule configure
-        if (popup->xdg_popup->base->initial_commit)
-            wlr_xdg_surface_schedule_configure(popup->xdg_popup->base);
     };
     wl_signal_add(&xdg_popup->base->surface->events.commit, &commit);
 

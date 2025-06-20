@@ -2,6 +2,11 @@
 #include "version.h"
 #include <wordexp.h>
 
+#ifdef BACKWARD
+#include <backward.hpp>
+backward::SignalHandling sh;
+#endif
+
 Server *Server::instance = nullptr;
 
 int main(const int argc, char *argv[]) {

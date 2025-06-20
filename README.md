@@ -47,6 +47,18 @@ Currently xwayland support is very unstable and might even be removed in the fut
 meson setup build -DXWAYLAND=false
 ```
 
+**Custom wlroots**
+
+If system wlroots is not found, clone wlroots to `subprojects/wlroots` and build using that instead of system wlroots. Note that `libwlroots-0.20.so` won't be installed to `/usr/lib` so you will have to copy it there if you want to run awm using the drm backend.
+
+### Configuration
+
+An example configuration can be found in [config-minimal.toml](config-minimal.toml).
+You can copy this file to `~/.config/awm/config.toml` and modify it to your liking.
+All options are documented in [config.toml](config.toml) and many are explained in the wiki.
+
+### Testing
+
 **Tests**
 
 You can build and run tests using:
@@ -58,15 +70,20 @@ meson test -C build/
 
 Note that tests have additional dependencies.
 
-**Custom wlroots**
+**Backtrace**
 
-If system wlroots is not found, clone wlroots to `subprojects/wlroots` and build using that instead of system wlroots. Note that `libwlroots-0.20.so` won't be installed to `/usr/lib` so you will have to copy it there if you want to run awm using the drm backend.
+If you find a crash and would like to get a backtrace, enable `backward-cpp` traces using:
 
-### Configuration
+```sh
+meson configure -Dbackward=true build/
+ninja -C build/
+```
 
-An example configuration can be found in [config-minimal.toml](config-minimal.toml).
-You can copy this file to `~/.config/awm/config.toml` and modify it to your liking.
-All options are documented in [config.toml](config.toml) and many are explained in the wiki.
+You can then create a log file by running awm with:
+
+```sh
+script -c "awm" log.txt
+```
 
 ### Supported protocols
 

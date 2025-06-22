@@ -1,0 +1,17 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "label": "Debug",
+    "adapter": "CodeLLDB",
+    "program": "build/awm",
+    "args": ["-c", "config.toml"],
+    "request": "launch",
+    "build": {
+      "command": "ninja",
+      "args": ["-C", "build"]
+    }
+  }
+]

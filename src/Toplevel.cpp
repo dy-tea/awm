@@ -872,6 +872,7 @@ void Toplevel::set_maximized(const bool maximized) {
 void Toplevel::create_foreign() {
     foreign_handle = wlr_foreign_toplevel_handle_v1_create(
         server->wlr_foreign_toplevel_manager);
+    foreign_handle->data = this;
 
     // foreign toplevel activate
     foreign_activate.notify = [](wl_listener *listener, void *data) {
@@ -901,6 +902,7 @@ void Toplevel::create_ext_foreign() {
     };
     ext_foreign_handle = wlr_ext_foreign_toplevel_handle_v1_create(
         server->wlr_foreign_toplevel_list, &state);
+    ext_foreign_handle->data = this;
 
     // ext foreign toplevel destroy
     ext_foreign_destroy.notify = [](wl_listener *listener,

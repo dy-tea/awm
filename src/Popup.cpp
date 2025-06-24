@@ -3,16 +3,13 @@
 Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
              wlr_scene_tree *image_capture_parent, Server *server)
     : server(server), xdg_popup(xdg_popup),
-      parent_tree(wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base)),
-      image_capture_tree(
-          wlr_scene_xdg_surface_create(image_capture_parent, xdg_popup->base)) {
+      parent_tree(wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base)) {
     xdg_popup->base->data = parent_tree;
 
-    // ensure trees are created
-    if (!parent_tree || !image_capture_tree) {
-        delete this;
-        return;
-    }
+    // set capture parent if provided
+    if (image_capture_parent)
+        image_capture_tree =
+            wlr_scene_xdg_surface_create(image_capture_parent, xdg_popup->base);
 
     // xdg_popup_commit
     commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {

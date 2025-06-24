@@ -24,6 +24,7 @@ struct Server {
     Config *config;
 
     wl_display *display;
+    wl_event_loop *event_loop;
     wlr_session *session{nullptr};
     wlr_backend *backend;
     wlr_renderer *renderer;
@@ -34,6 +35,7 @@ struct Server {
 
     wlr_linux_dmabuf_v1 *wlr_linux_dmabuf{nullptr};
 
+    wl_event_source *recreating_renderer{nullptr};
     wl_listener renderer_lost;
 
     int drm_fd;
@@ -96,7 +98,8 @@ struct Server {
     wl_listener new_xdg_decoration;
     wl_list decorations;
 
-    wlr_ext_foreign_toplevel_image_capture_source_manager_v1 *wlr_ext_foreign_toplevel_image_capture_source_manager;
+    wlr_ext_foreign_toplevel_image_capture_source_manager_v1
+        *wlr_ext_foreign_toplevel_image_capture_source_manager;
     wl_listener new_toplevel_capture_request;
 
     wlr_input_method_manager_v2 *wlr_input_method_manager;

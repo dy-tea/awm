@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "Config.h"
 #include "wlr.h"
+#include <wayland-util.h>
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -271,6 +272,50 @@ void Server::spawn(const std::string &command) const {
         execl("/bin/sh", "/bin/sh", "-c", command.c_str(), nullptr);
 }
 
+static void recreate_renderer(void *data) {
+    Server *server = static_cast<Server *>(data);
+    server->recreating_renderer = nullptr;
+
+    // create new renderer
+    wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
+    if (!renderer) {
+        wlr_log(WLR_ERROR, "%s", "Unable to create renderer");
+        return;
+    }
+
+    // create new allocator
+    wlr_allocator *allocator =
+        wlr_allocator_autocreate(server->backend, renderer);
+    if (!allocator) {
+        wlr_log(WLR_ERROR, "%s", "Unable to create allocator");
+        wlr_renderer_destroy(renderer);
+        return;
+    }
+
+    // replace old and renderer and allocator
+    wlr_renderer *old_renderer = server->renderer;
+    wlr_allocator *old_allocator = server->allocator;
+    server->renderer = renderer;
+    server->allocator = allocator;
+
+    // reset signal
+    wl_list_remove(&server->renderer_lost.link);
+    wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
+
+    // move compositor to new renderer
+    wlr_compositor_set_renderer(server->compositor, renderer);
+
+    // reinint outputs
+    Output *output, *tmp;
+    wl_list_for_each_safe(output, tmp, &server->output_manager->outputs, link)
+        wlr_output_init_render(output->wlr_output, server->allocator,
+                               server->renderer);
+
+    // destroy old renderer and allocator
+    wlr_allocator_destroy(old_allocator);
+    wlr_renderer_destroy(old_renderer);
+}
+
 Server::Server(Config *config) : config(config) {
     // set renderer
     setenv("WLR_RENDERER", config->renderer.c_str(), true);
@@ -278,9 +323,11 @@ Server::Server(Config *config) : config(config) {
     // display
     display = wl_display_create();
 
+    // event loop
+    event_loop = wl_display_get_event_loop(display);
+
     // backend
-    if (!(backend = wlr_backend_autocreate(wl_display_get_event_loop(display),
-                                           &session))) {
+    if (!(backend = wlr_backend_autocreate(event_loop, &session))) {
         wlr_log(WLR_ERROR, "%s", "failed to create wlr_backend");
         ::exit(1);
     }
@@ -297,47 +344,14 @@ Server::Server(Config *config) : config(config) {
         // renderer recovery (thanks sway)
         Server *server = wl_container_of(listener, server, renderer_lost);
 
-        wlr_log(WLR_INFO, "%s", "Re-creating renderer after GPU reset");
-
-        // create new renderer
-        wlr_renderer *renderer = wlr_renderer_autocreate(server->backend);
-        if (!renderer) {
-            wlr_log(WLR_ERROR, "%s", "Unable to create renderer");
+        if (server->recreating_renderer) {
+            wlr_log(WLR_INFO, "%s", "renderer already being recreated");
             return;
         }
 
-        // create new allocator
-        wlr_allocator *allocator =
-            wlr_allocator_autocreate(server->backend, renderer);
-        if (!allocator) {
-            wlr_log(WLR_ERROR, "%s", "Unable to create allocator");
-            wlr_renderer_destroy(renderer);
-            return;
-        }
-
-        // replace old and renderer and allocator
-        wlr_renderer *old_renderer = server->renderer;
-        wlr_allocator *old_allocator = server->allocator;
-        server->renderer = renderer;
-        server->allocator = allocator;
-
-        // reset signal
-        wl_list_remove(&server->renderer_lost.link);
-        wl_signal_add(&server->renderer->events.lost, &server->renderer_lost);
-
-        // move compositor to new renderer
-        wlr_compositor_set_renderer(server->compositor, renderer);
-
-        // reinint outputs
-        Output *output, *tmp;
-        wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
-                              link)
-            wlr_output_init_render(output->wlr_output, server->allocator,
-                                   server->renderer);
-
-        // destroy old renderer and allocator
-        wlr_allocator_destroy(old_allocator);
-        wlr_renderer_destroy(old_renderer);
+        wlr_log(WLR_INFO, "%s", "re-creating renderer after GPU reset");
+        server->recreating_renderer = wl_event_loop_add_idle(
+            server->event_loop, recreate_renderer, server);
     };
     wl_signal_add(&renderer->events.lost, &renderer_lost);
 
@@ -701,8 +715,7 @@ Server::Server(Config *config) : config(config) {
             // no image capture source, create one
             capture_source =
                 wlr_ext_image_capture_source_v1_create_with_scene_node(
-                    &toplevel->image_capture->tree.node,
-                    wl_display_get_event_loop(server->display),
+                    &toplevel->image_capture->tree.node, server->event_loop,
                     server->allocator, server->renderer);
 
             if (!capture_source)
@@ -923,7 +936,7 @@ Server::Server(Config *config) : config(config) {
 
     // add config updater to event loop
     config_update_timer = wl_event_loop_add_timer(
-        wl_display_get_event_loop(display),
+        event_loop,
         [](void *data) {
             Server *server = static_cast<Server *>(data);
 

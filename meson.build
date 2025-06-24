@@ -145,6 +145,7 @@ executable(
     'src' / 'Seat.cpp',
     'src' / 'Decoration.cpp',
     'src' / 'WindowRule.cpp',
+    'src' / 'WorkspaceManager.cpp',
     protocol_sources,
     protocol_code,
   ],

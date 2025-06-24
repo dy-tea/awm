@@ -12,7 +12,7 @@ Workspace *Server::get_workspace(Toplevel *toplevel) const {
     // for each output check each workspace
     wl_list_for_each_safe(output, tmp, &output_manager->outputs, link)
         wl_list_for_each_safe(
-            workspace, tmp1, &output->workspaces,
+            workspace, tmp1, &workspace_manager->workspaces,
             link) if (workspace->contains(toplevel)) return workspace;
 
     // no workspace found
@@ -100,7 +100,8 @@ Toplevel *Server::get_toplevel(wlr_surface *surface) const {
     Workspace *workspace, *tmp1;
     Toplevel *toplevel, *tmp2;
     wl_list_for_each_safe(output, tmp, &output_manager->outputs, link)
-        wl_list_for_each_safe(workspace, tmp1, &output->workspaces, link)
+        wl_list_for_each_safe(workspace, tmp1, &workspace_manager->workspaces,
+                              link)
             wl_list_for_each_safe(
                 toplevel, tmp2, &workspace->toplevels,
                 link) if ((toplevel->xdg_toplevel &&
@@ -383,6 +384,9 @@ Server::Server(Config *config) : config(config) {
 
     // output manager
     output_manager = new OutputManager(this);
+
+    // workspace manager
+    workspace_manager = new WorkspaceManager(this);
 
     // scene
     scene = wlr_scene_create();

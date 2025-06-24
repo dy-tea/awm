@@ -18,6 +18,7 @@
 #include "TextInput.h"
 #include "Toplevel.h"
 #include "Workspace.h"
+#include "WorkspaceManager.h"
 
 struct Server {
     static Server *instance; // singleton
@@ -53,6 +54,7 @@ struct Server {
     wl_listener new_pointer_constraint;
 
     OutputManager *output_manager;
+    WorkspaceManager *workspace_manager;
 
     struct {
         wlr_scene_tree *background;

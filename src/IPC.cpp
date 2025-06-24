@@ -1,5 +1,6 @@
 #include "IPC.h"
 #include "Server.h"
+#include "WorkspaceManager.h"
 #include <string>
 #include <sys/socket.h>
 #include <wayland-server-core.h>
@@ -302,17 +303,14 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     }
     case IPC_OUTPUT_TOPLEVELS: {
-        Output *output, *tmp;
         Workspace *workspace, *tmp1;
         Toplevel *toplevel, *tmp2;
         int i = 0;
-        wl_list_for_each_safe(output, tmp, &server->output_manager->outputs,
-                              link)
-            wl_list_for_each_safe(workspace, tmp1, &output->workspaces, link)
-                wl_list_for_each_safe(toplevel, tmp2, &workspace->toplevels,
-                                      link)
-                    j[output->wlr_output->name][workspace->num][i++] =
-                        string_format("%p", toplevel);
+        wl_list_for_each_safe(workspace, tmp1,
+                              &server->workspace_manager->workspaces, link)
+            wl_list_for_each_safe(toplevel, tmp2, &workspace->toplevels, link)
+                j[workspace->output->wlr_output->name][workspace->num][i++] =
+                    string_format("%p", toplevel);
         break;
     }
     case IPC_OUTPUT_MODES: {
@@ -338,21 +336,23 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     }
     case IPC_WORKSPACE_LIST: {
-        Output *output = server->focused_output();
+        WorkspaceManager *manager = server->workspace_manager;
 
-        // max output post-increments so we subtract 1
-        j["max"] = output->max_workspace - 1;
-
-        // get active workspace
-        j["active"] = output->get_active()->num;
-
-        // find the active workspace and count toplevels
+        // count toplevels
         int toplevel_count = 0;
         Workspace *workspace, *tmp;
-        wl_list_for_each_safe(workspace, tmp, &output->workspaces, link)
+        wl_list_for_each_safe(workspace, tmp, &manager->workspaces, link)
             toplevel_count += wl_list_length(&workspace->toplevels);
-
         j["toplevels"] = toplevel_count;
+
+        // find focused output and active workspace
+        Output *focused = server->focused_output();
+        j["focused_output"] = focused->wlr_output->name;
+        if (!focused)
+            break;
+        workspace = manager->get_active_workspace(server->focused_output());
+        j["active_workspace"] = workspace->num;
+
         break;
     }
     case IPC_WORKSPACE_SET: {
@@ -378,13 +378,12 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     }
     case IPC_TOPLEVEL_LIST: {
         // list all toplevels regardless of workspace
-        Output *o, *t0;
-        Workspace *w, *t1;
-        Toplevel *t, *t2;
+        Workspace *w, *t0;
+        Toplevel *t, *t1;
 
-        wl_list_for_each_safe(o, t0, &server->output_manager->outputs, link)
-            wl_list_for_each_safe(w, t1, &o->workspaces, link)
-                wl_list_for_each_safe(t, t2, &w->toplevels, link)
+        wl_list_for_each_safe(w, t0, &server->workspace_manager->workspaces,
+                              link)
+            wl_list_for_each_safe(t, t1, &w->toplevels, link)
             // toplevels are indexed by their pointer as title is
             // non-unique
             j[string_format("%p", t)] = {

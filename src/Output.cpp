@@ -1,5 +1,4 @@
 #include "Server.h"
-#include <stdexcept>
 
 Output::Output(Server *server, struct wlr_output *wlr_output)
     : server(server), wlr_output(wlr_output) {
@@ -10,11 +9,12 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     OutputManager *manager = server->output_manager;
     wl_list_insert(&manager->outputs, &link);
 
-    // create workspaces
-    wl_list_init(&workspaces);
-    for (int i = 0; i != 10; ++i)
-        new_workspace();
-    set_workspace(1);
+    // create initial workspaces through WorkspaceManager
+    if (!server->workspace_manager->adopt_workspaces(this)) {
+        for (int i = 1; i <= 10; ++i)
+            server->workspace_manager->new_workspace(this, i);
+        set_workspace(1);
+    }
 
     // create layers
     layers.background = wlr_scene_tree_create(server->layers.background);
@@ -116,8 +116,7 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
 }
 
 Output::~Output() {
-    Workspace *workspace, *tmp;
-    wl_list_for_each_safe(workspace, tmp, &workspaces, link) delete workspace;
+    server->workspace_manager->orphanize_workspaces(this);
 
     wl_list_remove(&frame.link);
     wl_list_remove(&request_state.link);
@@ -208,61 +207,25 @@ Output::shell_layer(const enum zwlr_layer_shell_v1_layer layer) const {
 
 // create a new workspace for this output
 Workspace *Output::new_workspace() {
-    Workspace *workspace = new Workspace(this, max_workspace++);
-    wl_list_insert(&workspaces, &workspace->link);
-
-    if (server->ipc)
-        server->ipc->notify_clients({IPC_OUTPUT_LIST, IPC_WORKSPACE_LIST});
-
-    return workspace;
+    return server->workspace_manager->new_workspace(this);
 }
 
-// get the workspace numbered n
-Workspace *Output::get_workspace(const uint32_t n) const {
-    Workspace *workspace, *tmp;
-    wl_list_for_each_safe(workspace, tmp, &workspaces,
-                          link) if (workspace->num == n) return workspace;
-
-    return nullptr;
+Workspace *Output::get_active() {
+    return server->workspace_manager->get_active_workspace(this);
 }
 
-// get the currently focused workspace
-Workspace *Output::get_active() const {
-    if (wl_list_empty(&workspaces))
-        return nullptr;
-
-    Workspace *active = wl_container_of(workspaces.next, active, link);
-    return active;
+Workspace *Output::get_workspace(const uint32_t n) {
+    return server->workspace_manager->get_workspace(n, this);
 }
 
 // change the focused workspace to passed workspace
 bool Output::set_workspace(Workspace *workspace) {
-    Workspace *previous = get_active();
-
-    // invalid workspace
-    if (!workspace || !previous)
-        return false;
-
-    // workspace is already active, we should still consume the bind
-    if (workspace == previous)
-        return true;
-
-    // hide workspace we are moving from
-    previous->set_hidden(true);
-
-    // set new workspace to the active one
-    wl_list_remove(&workspace->link);
-    wl_list_insert(&workspaces, &workspace->link);
-
-    // focus new workspace
-    workspace->focus();
-
-    return true;
+    return server->workspace_manager->set_workspace(workspace);
 }
 
 // change the focused workspace to workspace n
 bool Output::set_workspace(const uint32_t n) {
-    return set_workspace(get_workspace(n));
+    return server->workspace_manager->set_workspace(n, this);
 }
 
 // update layout geometry

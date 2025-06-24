@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Config.h"
 #include "wlr.h"
 
 struct Output {
@@ -23,7 +24,6 @@ struct Output {
 
     wlr_box layout_geometry;
 
-    struct wl_list workspaces;
     uint32_t max_workspace{1};
 
     wlr_session_lock_surface_v1 *lock_surface{nullptr};
@@ -46,8 +46,8 @@ struct Output {
     shell_layer(enum zwlr_layer_shell_v1_layer layer) const;
 
     struct Workspace *new_workspace();
-    struct Workspace *get_active() const;
-    struct Workspace *get_workspace(uint32_t n) const;
+    struct Workspace *get_active();
+    struct Workspace *get_workspace(uint32_t n);
     bool set_workspace(Workspace *workspace);
     bool set_workspace(uint32_t n);
 };

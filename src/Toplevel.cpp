@@ -1,6 +1,5 @@
 #include "Server.h"
 #include "WindowRule.h"
-#include "wlr.h"
 #include <string_view>
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {

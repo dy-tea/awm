@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "wlr/util/log.h"
 #include <map>
 
 OutputManager::OutputManager(Server *server) : server(server) {

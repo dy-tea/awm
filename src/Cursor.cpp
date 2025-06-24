@@ -385,7 +385,10 @@ void Cursor::process_resize() {
     wlr_scene_node_set_position(&toplevel->scene_tree->node, new_x, new_y);
 
 #ifdef XWAYLAND
-    if (wlr_xdg_toplevel *xdg = toplevel->xdg_toplevel;
+    if (
+#endif
+        wlr_xdg_toplevel *xdg = toplevel->xdg_toplevel;
+#ifdef XWAYLAND
         xdg && xdg->base->initialized) {
 #endif
         wlr_xdg_toplevel_set_size(xdg, new_width, new_height);

@@ -1,10 +1,6 @@
-#include "Config.h"
 #include "Server.h"
 #include "WindowRule.h"
 #include "util.h"
-#include "wlr.h"
-#include "xdg-shell-protocol.h"
-#include <libinput.h>
 #include <sstream>
 #include <tomlcpp.hpp>
 

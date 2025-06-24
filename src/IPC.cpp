@@ -3,7 +3,6 @@
 #include "WorkspaceManager.h"
 #include <string>
 #include <sys/socket.h>
-#include <wayland-server-core.h>
 using json = nlohmann::json;
 
 IPC::IPC(Server *server, std::string sock_path)

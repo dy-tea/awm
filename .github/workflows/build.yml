@@ -19,7 +19,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install --fix-missing meson wayland-protocols wayland-utils \
-          libwlroots-dev xwayland
+          libwlroots-dev xwayland nlohmann-json3-dev
 
       - name: pixman-1
         run: |

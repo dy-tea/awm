@@ -74,8 +74,6 @@ endforeach
 # dependencies
 tomlcpp_proj = subproject('tomlcpp')
 tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
-json_proj = subproject('json')
-json_dep = json_proj.get_variable('nlohmann_json_dep')
 
 # wlroots
 wlroots_version = ['>=0.20.0', '<0.21.0']
@@ -103,8 +101,8 @@ libs = [
   dependency('xkbcommon'),
   dependency('libinput'),
   dependency('xcb'),
+  dependency('nlohmann_json'),
   tomlcpp_dep,
-  json_dep,
   wlroots,
 ]
 

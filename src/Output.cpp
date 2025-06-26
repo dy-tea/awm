@@ -126,6 +126,10 @@ Output::~Output() {
 
 // arrange all layers
 void Output::arrange_layers() {
+    // output must be enabled to have an effective resolution
+    if (!enabled)
+        return;
+
     wlr_box usable = {};
     wlr_output_effective_resolution(wlr_output, &usable.width, &usable.height);
     const wlr_box full_area = usable;

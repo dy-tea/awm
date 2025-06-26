@@ -83,15 +83,20 @@ OutputManager::OutputManager(Server *server) : server(server) {
         OutputManager *manager = wl_container_of(listener, manager, set_mode);
         auto event = static_cast<wlr_output_power_v1_set_mode_event *>(data);
         wlr_output_state state{};
-        Output *output = manager->server->get_output(event->output);
 
-        if (!output)
+        if (!event->output || !event->output->data) {
+            wlr_log(WLR_ERROR, "%s",
+                    "tried setting mode on invalid or destroyed output");
             return;
+        }
+
+        Output *output = static_cast<Output *>(event->output->data);
 
         wlr_output_state_set_enabled(&state, event->mode);
         wlr_output_commit_state(event->output, &state);
         wlr_output_state_finish(&state);
 
+        output->enabled = event->mode;
         manager->arrange();
     };
     wl_signal_add(&wlr_output_power_manager->events.set_mode, &set_mode);

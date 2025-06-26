@@ -7,11 +7,14 @@ struct Output {
     struct wl_list link;
     struct Server *server;
     struct wlr_output *wlr_output;
+    wlr_scene_output *scene_output;
+
     struct wl_listener frame;
     struct wl_listener request_state;
     struct wl_listener destroy;
 
     struct wlr_box usable_area;
+    wlr_box layout_geometry;
 
     struct {
         struct wlr_scene_tree *background;
@@ -20,14 +23,11 @@ struct Output {
         struct wlr_scene_tree *overlay;
     } layers;
 
-    wlr_scene_output *scene_output;
-
-    wlr_box layout_geometry;
-
-    uint32_t max_workspace{1};
-
     wlr_session_lock_surface_v1 *lock_surface{nullptr};
     wl_listener destroy_lock_surface;
+
+    bool enabled{true};
+    uint32_t max_workspace{1};
 
     Output(struct Server *server, struct wlr_output *wlr_output);
     ~Output();

@@ -158,9 +158,6 @@ bool Config::load() {
             }
         }
 
-        // renderer
-        connect(startup->getString("renderer"), &renderer);
-
         // env vars
         if (std::unique_ptr<toml::Array> env = startup->getArray("env")) {
             if (auto tables = env->getTableVector())

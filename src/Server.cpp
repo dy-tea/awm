@@ -318,8 +318,9 @@ static void recreate_renderer(void *data) {
 }
 
 Server::Server(Config *config) : config(config) {
-    // set renderer
-    setenv("WLR_RENDERER", config->renderer.c_str(), true);
+    // set envvars from config
+    for (const auto &[key, value] : config->startup_env)
+        setenv(key.c_str(), value.c_str(), true);
 
     // display
     display = wl_display_create();
@@ -919,10 +920,6 @@ Server::Server(Config *config) : config(config) {
     setenv("XCURSOR_PATH",
            ("/usr/share/icons:~/.local/share/icons" + xcursor_path_str).c_str(),
            true);
-
-    // set envvars from config
-    for (const auto &[key, value] : config->startup_env)
-        setenv(key.c_str(), value.c_str(), true);
 
     // run startup commands from config
     for (const std::string &command : config->startup_commands)

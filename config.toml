@@ -3,12 +3,13 @@
 # place your config at ~/.config/awm/config.toml
 # or specify a config path with the -c flag
 
-[startup]
-exec = ["hyprpaper"] # list of commands to run on startup
-renderer = "auto"    # "gles2", "pixman", "vulkan"
+# list of commands to run on startup
+startup.exec = ["hyprpaper"]
 
 # env variables to set on startup
 [[startup.env]]
+WLR_RENDERER = "auto"                    # "gles2", "pixman", "vulkan"
+WLR_RENDER_NO_EXPLICIT_SYNC = 0          # may need to be set to 1 on intel iGPUs (https://github.com/swaywm/sway/issues/8755)
 MOZ_ENABLE_WAYLAND = 1                   # enable wayland for firefox
 ELECTRON_OZONE_PLATFORM_HINT = "wayland" # set electron apps to use wayland
 SDL_VIDEODRIVER = "wayland"              # set sdl apps to use wayland (e.g. osu-lazer)

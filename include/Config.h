@@ -101,10 +101,9 @@ struct Config {
     std::string path;
     std::filesystem::file_time_type last_write_time;
 
-    std::string renderer{"auto"};
+    std::vector<std::pair<std::string, std::string>> startup_env;
     std::vector<std::string> startup_commands;
     std::vector<std::string> exit_commands;
-    std::vector<std::pair<std::string, std::string>> startup_env;
     std::vector<std::pair<Bind, std::string>> commands;
 
     struct {

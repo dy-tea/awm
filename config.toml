@@ -56,10 +56,10 @@ profile = "adaptive"         # "none", "flat", "adaptive", "custom"
 accel_speed = 0.0            # range from -1.0 to 1.0
 
 [general]
-focus_on_hover = false                                        # focus window on mouse hover, false by default
-focus_on_activation = "active"                                # "none", "active", "any"
-system_bell = "/usr/share/sounds/freedesktop/stereo/bell.oga" # path to system bell sound, leave empty for no sound, empty by default
-minimize_to_workspace = 10                                    # move window to workspace 10 on minimize, if 0 move below all other windows in the workspace
+focus_on_hover = false                                                                 # focus window on mouse hover, false by default
+focus_on_activation = "active"                                                         # "none", "active", "any"
+system_bell = "ffplay -nodisp -autoexit /usr/share/sounds/freedesktop/stereo/bell.oga" # command for system bell sound, leave empty for no command, empty by default
+minimize_to_workspace = 0                                                              # move window to workspace 10 on minimize, if 0 move below all other windows in the workspace
 
 [tiling]
 method = "grid" # "none", "grid", "master", "dwindle"

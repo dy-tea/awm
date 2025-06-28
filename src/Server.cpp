@@ -596,12 +596,12 @@ Server::Server(Config *config) : config(config) {
             return;
         }
 
-        // get bell sound defined in config
-        const std::string &sound = server->config->general.system_bell;
+        // get bell command defined in config
+        const std::string &command = server->config->general.system_bell;
 
-        // play system bell sound if provided
-        if (!sound.empty())
-            server->spawn("ffplay -nodisp -autoexit " + sound);
+        // spawn system bell command if provided
+        if (!command.empty())
+            server->spawn(command);
     };
     wl_signal_add(&wlr_xdg_system_bell->events.ring, &ring_system_bell);
 

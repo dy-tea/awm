@@ -110,6 +110,7 @@ script -c "awm" log.txt
 - [Data control protocol](https://wayland.app/protocols/ext-data-control-v1)
 - [XDG System bell](https://wayland.app/protocols/xdg-system-bell-v1)
 - [Color management](https://wayland.app/protocols/color-management-v1)
+- [Idle inhibit](https://wayland.app/protocols/idle-inhibit-unstable-v1)
 - [Keyboard shortcuts inhibit](https://wayland.app/protocols/keyboard-shortcuts-inhibit-unstable-v1)
 - [Pointer constraints](https://wayland.app/protocols/pointer-constraints-unstable-v1)
 - [Primary Selection](https://wayland.app/protocols/primary-selection-unstable-v1)

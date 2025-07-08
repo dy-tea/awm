@@ -19,6 +19,7 @@
 #include "Toplevel.h"
 #include "Workspace.h"
 #include "WorkspaceManager.h"
+#include "wlr.h"
 
 struct Server {
     static Server *instance; // singleton
@@ -96,6 +97,9 @@ struct Server {
     wlr_drm_lease_v1_manager *wlr_drm_lease_manager;
     wl_listener drm_lease_request;
 
+    wlr_idle_inhibit_manager_v1 *wlr_idle_inhibit_manager;
+    wl_listener new_idle_inhibitor;
+
     wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
     wl_listener new_xdg_decoration;
     wl_list decorations;
@@ -151,4 +155,5 @@ struct Server {
                                    double *sx, double *sy);
 
     bool handle_bind(Bind bind);
+    void update_idle_inhibitor(wlr_surface *sans);
 };

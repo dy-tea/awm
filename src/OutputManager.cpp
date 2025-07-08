@@ -214,6 +214,9 @@ void OutputManager::arrange() const {
     const wlr_box full = full_geometry();
     wlr_scene_node_set_position(&server->lock_background->node, full.x, full.y);
     wlr_scene_rect_set_size(server->lock_background, full.width, full.height);
+
+    // send update
+    server->update_idle_inhibitor(nullptr);
 }
 
 // get the full geometry of all outputs

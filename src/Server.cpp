@@ -120,6 +120,31 @@ Output *Server::focused_output() const {
     return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
 }
 
+// set new status if any inhibitor is active
+void Server::update_idle_inhibitor(wlr_surface *sans) {
+    bool inhibited = false;
+
+    // check if any inhibitor is active
+    wlr_idle_inhibitor_v1 *inhibitor, *tmp;
+    wl_list_for_each_safe(inhibitor, tmp, &wlr_idle_inhibit_manager->inhibitors,
+                          link) {
+        wlr_surface *surface = wlr_surface_get_root_surface(inhibitor->surface);
+        wlr_scene_tree *tree = static_cast<wlr_scene_tree *>(surface->data);
+
+        // set inhibited if active
+        int _unused_x, _unused_y;
+        if (sans != surface &&
+            (!tree ||
+             wlr_scene_node_coords(&tree->node, &_unused_x, &_unused_y))) {
+            inhibited = true;
+            break;
+        }
+    }
+
+    // set notifier status
+    wlr_idle_notifier_v1_set_inhibited(wlr_idle_notifier, inhibited);
+}
+
 // execute either a wm bind or command bind, returns true if
 // bind is valid, false otherwise
 bool Server::handle_bind(Bind bind) {
@@ -694,6 +719,36 @@ Server::Server(Config *config) : config(config) {
         wl_signal_add(&wlr_drm_lease_manager->events.request,
                       &drm_lease_request);
     }
+
+    // idle inhibitor
+    wlr_idle_inhibit_manager = wlr_idle_inhibit_v1_create(display);
+
+    new_idle_inhibitor.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_idle_inhibitor);
+        wlr_idle_inhibitor_v1 *inhibitor =
+            static_cast<wlr_idle_inhibitor_v1 *>(data);
+
+        // set up destroy listener
+        wl_listener *destroy_listener = new wl_listener;
+        destroy_listener->notify = [](wl_listener *listener, void *data) {
+            Server *server =
+                wl_container_of(listener, server, new_idle_inhibitor);
+            wlr_idle_inhibitor_v1 *inhibitor =
+                static_cast<wlr_idle_inhibitor_v1 *>(data);
+
+            server->update_idle_inhibitor(
+                wlr_surface_get_root_surface(inhibitor->surface));
+
+            wl_list_remove(&listener->link);
+            delete listener;
+        };
+        wl_signal_add(&inhibitor->events.destroy, destroy_listener);
+
+        // update idle inhibitor
+        server->update_idle_inhibitor(nullptr);
+    };
+    wl_signal_add(&wlr_idle_inhibit_manager->events.new_inhibitor,
+                  &new_idle_inhibitor);
 
     // xdg decoration
 #ifdef XDG_DECORATION

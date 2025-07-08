@@ -131,7 +131,7 @@ struct Server {
         return instance;
     }
     static Server *get() { return instance; }
-    Server() = default;
+    Server() = delete;
     Server(const Server &other) = delete;
     Server(Config *config);
     ~Server();

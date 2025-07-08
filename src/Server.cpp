@@ -728,16 +728,19 @@ Server::Server(Config *config) : config(config) {
         wlr_idle_inhibitor_v1 *inhibitor =
             static_cast<wlr_idle_inhibitor_v1 *>(data);
 
+        // holy cursed
+        inhibitor->data = server;
+
         // set up destroy listener
         wl_listener *destroy_listener = new wl_listener;
         destroy_listener->notify = [](wl_listener *listener, void *data) {
-            Server *server =
-                wl_container_of(listener, server, new_idle_inhibitor);
             wlr_idle_inhibitor_v1 *inhibitor =
                 static_cast<wlr_idle_inhibitor_v1 *>(data);
+            Server *server = static_cast<Server *>(inhibitor->data);
 
-            server->update_idle_inhibitor(
-                wlr_surface_get_root_surface(inhibitor->surface));
+            if (server)
+                server->update_idle_inhibitor(
+                    wlr_surface_get_root_surface(inhibitor->surface));
 
             wl_list_remove(&listener->link);
             delete listener;
@@ -1068,6 +1071,7 @@ Server::~Server() {
     if (wlr_drm_lease_manager)
         wl_list_remove(&drm_lease_request.link);
 
+    wl_list_remove(&new_idle_inhibitor.link);
     wl_list_remove(&new_toplevel_capture_request.link);
 
 #ifdef XDG_DECORATION

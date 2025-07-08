@@ -195,6 +195,26 @@ bool Server::handle_bind(Bind bind) {
         if (Toplevel *active = output->get_active()->active_toplevel)
             active->begin_interactive(CURSORMODE_MOVE, 0);
         break;
+    case BIND_WINDOW_RESIZE:
+        // resize the active toplevel with the mouse
+        if (Toplevel *active = output->get_active()->active_toplevel) {
+            // find what edges to resize based on cursor position
+            double x = cursor->cursor->x, y = cursor->cursor->y;
+            wlr_box geo = active->geometry;
+
+            uint32_t edges = 0;
+            if (x < geo.x + (double)geo.width / 2)
+                edges |= WLR_EDGE_LEFT;
+            if (x > geo.x + (double)geo.width / 2)
+                edges |= WLR_EDGE_RIGHT;
+            if (y < geo.y + (double)geo.height / 2)
+                edges |= WLR_EDGE_TOP;
+            if (y > geo.y + (double)geo.height / 2)
+                edges |= WLR_EDGE_BOTTOM;
+
+            active->begin_interactive(CURSORMODE_RESIZE, edges);
+        }
+        break;
     case BIND_WINDOW_UP:
     case BIND_WINDOW_DOWN:
     case BIND_WINDOW_LEFT:

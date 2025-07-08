@@ -2,6 +2,7 @@
 #include "WindowRule.h"
 #include "util.h"
 #include <sstream>
+#include <string>
 #include <tomlcpp.hpp>
 
 // get the wlr modifier enum value from the string representation
@@ -133,7 +134,7 @@ Config::Config(const std::string &path) : path(path) {
 
 // load config from path
 bool Config::load() {
-    // Read in config file
+    // read in config file
     toml::Result config_file = toml::parseFile(path);
 
     // false if no config file
@@ -143,7 +144,7 @@ bool Config::load() {
         return false;
     }
 
-    // Get startup table
+    // get startup table
     if (std::unique_ptr<toml::Table> startup =
             config_file.table->getTable("startup")) {
         // startup commands
@@ -480,6 +481,9 @@ bool Config::load() {
 
             // window_move bind
             set_bind("move", window_bind.get(), BIND_WINDOW_MOVE);
+
+            // window_resize bind
+            set_bind("resize", window_bind.get(), BIND_WINDOW_RESIZE);
 
             // window_up bind
             set_bind("up", window_bind.get(), BIND_WINDOW_UP);

@@ -116,6 +116,7 @@ script -c "awm" log.txt
 - [Pointer gestures](https://wayland.app/protocols/pointer-gestures-unstable-v1)
 - [Primary Selection](https://wayland.app/protocols/primary-selection-unstable-v1)
 - [Relative pointer](https://wayland.app/protocols/relative-pointer-unstable-v1)
+- [XDG foreign](https://wayland.app/protocols/xdg-foreign-unstable-v2)
 - [XDG output](https://wayland.app/protocols/xdg-output-unstable-v1)
 - [wlr data control](https://wayland.app/protocols/wlr-data-control-unstable-v1)
 - [wlr export DMA-BUF](https://wayland.app/protocols/wlr-export-dmabuf-unstable-v1)

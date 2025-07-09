@@ -796,6 +796,12 @@ Server::Server(Config *config) : config(config) {
                        .new_request,
                   &new_toplevel_capture_request);
 
+    // xdg foreign
+    wlr_xdg_foreign_registry *xdg_foreign_registry =
+        wlr_xdg_foreign_registry_create(display);
+    wlr_xdg_foreign_v1_create(display, xdg_foreign_registry);
+    wlr_xdg_foreign_v2_create(display, xdg_foreign_registry);
+
     // foreign toplevel list
     wlr_foreign_toplevel_list =
         wlr_ext_foreign_toplevel_list_v1_create(display, 1);

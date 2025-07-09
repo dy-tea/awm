@@ -113,6 +113,7 @@ script -c "awm" log.txt
 - [Idle inhibit](https://wayland.app/protocols/idle-inhibit-unstable-v1)
 - [Keyboard shortcuts inhibit](https://wayland.app/protocols/keyboard-shortcuts-inhibit-unstable-v1)
 - [Pointer constraints](https://wayland.app/protocols/pointer-constraints-unstable-v1)
+- [Pointer gestures](https://wayland.app/protocols/pointer-gestures-unstable-v1)
 - [Primary Selection](https://wayland.app/protocols/primary-selection-unstable-v1)
 - [Relative pointer](https://wayland.app/protocols/relative-pointer-unstable-v1)
 - [XDG output](https://wayland.app/protocols/xdg-output-unstable-v1)

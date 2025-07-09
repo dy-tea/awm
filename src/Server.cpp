@@ -917,7 +917,7 @@ Server::Server(Config *config) : config(config) {
 
             // set xcursor
             wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
-                server->cursor->cursor_mgr, "default", 1);
+                server->cursor->xcursor_manager, "default", 1);
             if (xcursor) {
                 wlr_xwayland_set_cursor(
                     server->xwayland, xcursor->images[0]->buffer,

@@ -11,12 +11,13 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
     const char *theme = server->config->cursor.xcursor.theme.empty()
                             ? nullptr
                             : server->config->cursor.xcursor.theme.data();
-    cursor_mgr = wlr_xcursor_manager_create(theme, size > 0 ? size : 24);
+    xcursor_manager = wlr_xcursor_manager_create(theme, size > 0 ? size : 24);
 
     cursor_mode = CURSORMODE_PASSTHROUGH;
 
     // cursor shape manager
-    cursor_shape_mgr = wlr_cursor_shape_manager_v1_create(server->display, 1);
+    wlr_cursor_shape_manager =
+        wlr_cursor_shape_manager_v1_create(server->display, 1);
 
     // set cursor shape
     request_set_shape.notify = [](wl_listener *listener, void *data) {
@@ -29,10 +30,10 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
             return;
 
         if (event->seat_client == cursor->seat->pointer_state.focused_client)
-            wlr_cursor_set_xcursor(cursor->cursor, cursor->cursor_mgr,
+            wlr_cursor_set_xcursor(cursor->cursor, cursor->xcursor_manager,
                                    wlr_cursor_shape_v1_name(event->shape));
     };
-    wl_signal_add(&cursor_shape_mgr->events.request_set_shape,
+    wl_signal_add(&wlr_cursor_shape_manager->events.request_set_shape,
                   &request_set_shape);
 
     // motion
@@ -81,8 +82,7 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_button_event *>(data);
 
         // notify activity
-        wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier,
-                                             cursor->seat);
+        cursor->notify_activity();
 
         // forward to seat
         wlr_seat_pointer_notify_button(cursor->seat, event->time_msec,
@@ -137,8 +137,7 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_axis_event *>(data);
 
         // notify activity
-        wlr_idle_notifier_v1_notify_activity(cursor->server->wlr_idle_notifier,
-                                             cursor->seat);
+        cursor->notify_activity();
 
         // forward to seat
         wlr_seat_pointer_notify_axis(
@@ -156,6 +155,132 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
     };
     wl_signal_add(&cursor->events.frame, &frame);
 
+    // gestures
+    wlr_pointer_gestures = wlr_pointer_gestures_v1_create(server->display);
+
+    // pinch
+    pinch_begin.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, pinch_begin);
+        const auto *event = static_cast<wlr_pointer_pinch_begin_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_pinch_begin(cursor->wlr_pointer_gestures,
+                                                 seat, event->time_msec,
+                                                 event->fingers);
+    };
+    wl_signal_add(&cursor->events.pinch_begin, &pinch_begin);
+
+    pinch_update.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, pinch_update);
+        const auto *event = static_cast<wlr_pointer_pinch_update_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_pinch_update(
+            cursor->wlr_pointer_gestures, seat, event->time_msec, event->dx,
+            event->dy, event->scale, event->rotation);
+    };
+    wl_signal_add(&cursor->events.pinch_update, &pinch_update);
+
+    pinch_end.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, pinch_end);
+        const auto *event = static_cast<wlr_pointer_pinch_end_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_pinch_end(cursor->wlr_pointer_gestures,
+                                               seat, event->time_msec,
+                                               event->cancelled);
+    };
+    wl_signal_add(&cursor->events.pinch_end, &pinch_end);
+
+    // swipe
+    swipe_begin.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, swipe_begin);
+        const auto *event = static_cast<wlr_pointer_swipe_begin_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_swipe_begin(cursor->wlr_pointer_gestures,
+                                                 seat, event->time_msec,
+                                                 event->fingers);
+    };
+    wl_signal_add(&cursor->events.swipe_begin, &swipe_begin);
+
+    swipe_update.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, swipe_update);
+        const auto *event = static_cast<wlr_pointer_swipe_update_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_swipe_update(cursor->wlr_pointer_gestures,
+                                                  seat, event->time_msec,
+                                                  event->dx, event->dy);
+    };
+    wl_signal_add(&cursor->events.swipe_update, &swipe_update);
+
+    swipe_end.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, swipe_end);
+        const auto *event = static_cast<wlr_pointer_swipe_end_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_swipe_end(cursor->wlr_pointer_gestures,
+                                               seat, event->time_msec,
+                                               event->cancelled);
+    };
+    wl_signal_add(&cursor->events.swipe_end, &swipe_end);
+
+    // hold
+    hold_begin.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, hold_begin);
+        const auto *event = static_cast<wlr_pointer_hold_begin_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_hold_begin(cursor->wlr_pointer_gestures,
+                                                seat, event->time_msec,
+                                                event->fingers);
+    };
+    wl_signal_add(&cursor->events.hold_begin, &hold_begin);
+
+    hold_end.notify = [](wl_listener *listener, void *data) {
+        Cursor *cursor = wl_container_of(listener, cursor, hold_end);
+        const auto *event = static_cast<wlr_pointer_hold_end_event *>(data);
+        wlr_seat *seat = cursor->seat;
+
+        // notify activity
+        cursor->notify_activity();
+
+        // send event
+        wlr_pointer_gestures_v1_send_hold_end(cursor->wlr_pointer_gestures,
+                                              seat, event->time_msec,
+                                              event->cancelled);
+    };
+    wl_signal_add(&cursor->events.hold_end, &hold_end);
+
     // constraint
     wl_list_init(&constraint_commit.link);
 
@@ -170,9 +295,17 @@ Cursor::~Cursor() {
     wl_list_remove(&axis.link);
     wl_list_remove(&frame.link);
     wl_list_remove(&request_set_shape.link);
+    wl_list_remove(&pinch_begin.link);
+    wl_list_remove(&pinch_update.link);
+    wl_list_remove(&pinch_end.link);
+    wl_list_remove(&swipe_begin.link);
+    wl_list_remove(&swipe_update.link);
+    wl_list_remove(&swipe_end.link);
+    wl_list_remove(&hold_begin.link);
+    wl_list_remove(&hold_end.link);
 
     wlr_cursor_destroy(cursor);
-    wlr_xcursor_manager_destroy(cursor_mgr);
+    wlr_xcursor_manager_destroy(xcursor_manager);
 }
 
 // deactivate cursor
@@ -180,6 +313,11 @@ void Cursor::reset_mode() {
     cursor_mode = CURSORMODE_PASSTHROUGH;
     pressed_buttons = 0;
     server->seat->grabbed_toplevel = nullptr;
+}
+
+// tell the idle manager of activity
+void Cursor::notify_activity() {
+    wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier, seat);
 }
 
 void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
@@ -234,7 +372,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
     wlr_cursor_move(cursor, device, dx, dy);
 
     // notify activity
-    wlr_idle_notifier_v1_notify_activity(server->wlr_idle_notifier, seat);
+    notify_activity();
 
     // move or resize toplevel
     if (cursor_mode == CURSORMODE_MOVE) {
@@ -278,7 +416,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
     }
 
     // set default cursor mode
-    wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
+    wlr_cursor_set_xcursor(cursor, xcursor_manager, "default");
     wlr_seat_pointer_clear_focus(seat);
 }
 

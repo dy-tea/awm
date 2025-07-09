@@ -20,8 +20,7 @@ enum CursorButton {
 struct Cursor {
     struct Server *server;
     wlr_cursor *cursor;
-    wlr_xcursor_manager *cursor_mgr;
-    wlr_cursor_shape_manager_v1 *cursor_shape_mgr;
+    wlr_xcursor_manager *xcursor_manager;
     wlr_seat *seat;
     CursorMode cursor_mode;
 
@@ -38,6 +37,7 @@ struct Cursor {
     wl_listener axis;
     wl_listener frame;
 
+    wlr_cursor_shape_manager_v1 *wlr_cursor_shape_manager;
     wl_listener request_set_shape;
 
     wlr_pointer_constraint_v1 *active_constraint{nullptr};
@@ -45,10 +45,21 @@ struct Cursor {
     pixman_region32_t confine;
     wl_listener constraint_commit;
 
+    wlr_pointer_gestures_v1 *wlr_pointer_gestures;
+    wl_listener pinch_begin;
+    wl_listener pinch_update;
+    wl_listener pinch_end;
+    wl_listener swipe_begin;
+    wl_listener swipe_update;
+    wl_listener swipe_end;
+    wl_listener hold_begin;
+    wl_listener hold_end;
+
     Cursor(struct Seat *seat);
     ~Cursor();
 
     void reset_mode();
+    void notify_activity();
     void process_motion(uint32_t time, wlr_input_device *device, double dx,
                         double dy, double unaccel_dx, double unaccel_dy);
     void process_move();

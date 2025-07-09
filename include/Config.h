@@ -21,6 +21,7 @@ enum BindName {
     BIND_WINDOW_NEXT,
     BIND_WINDOW_MOVE,
     BIND_WINDOW_RESIZE,
+    BIND_WINDOW_PIN,
     BIND_WINDOW_UP,
     BIND_WINDOW_DOWN,
     BIND_WINDOW_LEFT,
@@ -41,11 +42,12 @@ enum BindName {
 };
 
 const std::string BIND_NAMES[] = {
-    "none",       "exit",       "maximize",  "fullscreen", "previous",
-    "next",       "move",       "resize",    "up",         "down",
-    "left",       "right",      "close",     "swap_up",    "swap_down",
-    "swap_left",  "swap_right", "half_up",   "half_down",  "half_left",
-    "half_right", "tile",       "tile_sans", "open",       "window_to",
+    "none",      "exit",       "maximize",   "fullscreen", "previous",
+    "next",      "move",       "resize",     "pin",        "up",
+    "down",      "left",       "right",      "close",      "swap_up",
+    "swap_down", "swap_left",  "swap_right", "half_up",    "half_down",
+    "half_left", "half_right", "tile",       "tile_sans",  "open",
+    "window_to",
 };
 
 const std::string MOUSE_BUTTONS[] = {

@@ -30,4 +30,5 @@ struct Workspace {
     void tile(std::vector<Toplevel *> sans_toplevels);
     void tile();
     void tile_sans_active();
+    std::vector<Toplevel *> pinned();
 };

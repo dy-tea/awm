@@ -72,6 +72,7 @@ window.previous = "Alt o"                # switch to previous window
 window.next = "Alt p"                    # switch to next window
 window.move = "Alt MouseLeft"            # move the active window
 window.resize = "Alt MouseRight"         # resize the active window
+window.pin = "Alt Shift P"               # keep active toplevel in active workspace
 window.up = "Alt k"                      # move the active window up
 window.down = "Alt j"                    # move the active window down
 window.left = "Alt h"                    # move the active window left

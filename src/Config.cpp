@@ -485,6 +485,9 @@ bool Config::load() {
             // window_resize bind
             set_bind("resize", window_bind.get(), BIND_WINDOW_RESIZE);
 
+            // window_pin bind
+            set_bind("pin", window_bind.get(), BIND_WINDOW_PIN);
+
             // window_up bind
             set_bind("up", window_bind.get(), BIND_WINDOW_UP);
 

@@ -216,6 +216,11 @@ bool Server::handle_bind(Bind bind) {
             active->begin_interactive(CURSORMODE_RESIZE, edges);
         }
         break;
+    case BIND_WINDOW_PIN:
+        // pin the active toplevel
+        if (Toplevel *active = output->get_active()->active_toplevel)
+            active->pinned = !active->pinned;
+        break;
     case BIND_WINDOW_UP:
     case BIND_WINDOW_DOWN:
     case BIND_WINDOW_LEFT:

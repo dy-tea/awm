@@ -55,6 +55,7 @@ struct Toplevel {
     wl_listener xdg_dialog_destroy;
 
     bool hidden{false};
+    bool pinned{false};
 
     Decoration *decoration{nullptr};
     wlr_xdg_toplevel_decoration_v1_mode decoration_mode{

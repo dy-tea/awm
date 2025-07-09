@@ -472,3 +472,14 @@ void Workspace::tile_sans_active() {
     if (active_toplevel)
         tile({active_toplevel});
 }
+
+// get pinned toplevels
+std::vector<Toplevel *> Workspace::pinned() {
+    std::vector<Toplevel *> pinned;
+
+    Toplevel *toplevel, *tmp;
+    wl_list_for_each_safe(toplevel, tmp, &toplevels, link) if (toplevel->pinned)
+        pinned.push_back(toplevel);
+
+    return pinned;
+}

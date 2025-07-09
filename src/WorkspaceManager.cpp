@@ -66,9 +66,16 @@ bool WorkspaceManager::set_workspace(Workspace *workspace) {
     // hide workspace we are moving from
     previous->set_hidden(true);
 
+    // get pinned toplevels from previous workspace
+    std::vector<Toplevel *> pinned = previous->pinned();
+
     // set workspace to active
     wl_list_remove(&workspace->link);
     wl_list_insert(&workspaces, &workspace->link);
+
+    // move pinned toplevels to new workspace
+    for (Toplevel *toplevel : pinned)
+        previous->move_to(toplevel, workspace);
 
     // focus new workspace
     workspace->focus();

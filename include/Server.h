@@ -22,7 +22,6 @@
 #include "wlr.h"
 
 struct Server {
-    static Server *instance; // singleton
     Config *config;
 
     wl_display *display;
@@ -125,14 +124,6 @@ struct Server {
 
     IPC *ipc{nullptr};
 
-    static Server *get(Config *config) {
-        if (!instance)
-            instance = new Server(config);
-        return instance;
-    }
-    static Server *get() { return instance; }
-    Server() = delete;
-    Server(const Server &other) = delete;
     Server(Config *config);
     ~Server();
 
@@ -155,5 +146,5 @@ struct Server {
                                    double *sx, double *sy);
 
     bool handle_bind(Bind bind);
-    void update_idle_inhibitor(wlr_surface *sans);
+    void update_idle_inhibitors(wlr_surface *sans);
 };

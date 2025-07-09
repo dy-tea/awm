@@ -145,6 +145,7 @@ executable(
     'src' / 'Decoration.cpp',
     'src' / 'WindowRule.cpp',
     'src' / 'WorkspaceManager.cpp',
+    'src' / 'IdleInhibitor.cpp',
     protocol_sources,
     protocol_code,
   ],

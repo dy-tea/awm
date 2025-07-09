@@ -7,8 +7,6 @@
 backward::SignalHandling sh;
 #endif
 
-Server *Server::instance = nullptr;
-
 int main(const int argc, char *argv[]) {
     // start logger
     wlr_log_init(WLR_DEBUG, nullptr);
@@ -92,7 +90,7 @@ int main(const int argc, char *argv[]) {
         config->startup_commands.push_back(startup_cmd);
 
     // start server
-    Server *server = Server::get(config);
+    Server *server = new Server(config);
     delete server;
     delete config;
 }

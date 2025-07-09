@@ -1,3 +1,4 @@
+#include "IdleInhibitor.h"
 #include "Server.h"
 #include <map>
 
@@ -216,7 +217,7 @@ void OutputManager::arrange() const {
     wlr_scene_rect_set_size(server->lock_background, full.width, full.height);
 
     // send update
-    server->update_idle_inhibitor(nullptr);
+    server->update_idle_inhibitors(nullptr);
 }
 
 // get the full geometry of all outputs

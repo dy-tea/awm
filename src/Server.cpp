@@ -1,5 +1,6 @@
 #include "Server.h"
 #include "Config.h"
+#include "IdleInhibitor.h"
 #include "wlr.h"
 #include <wayland-util.h>
 
@@ -118,31 +119,6 @@ Toplevel *Server::get_toplevel(wlr_surface *surface) const {
 // get the output under the cursor
 Output *Server::focused_output() const {
     return output_manager->output_at(cursor->cursor->x, cursor->cursor->y);
-}
-
-// set new status if any inhibitor is active
-void Server::update_idle_inhibitor(wlr_surface *sans) {
-    bool inhibited = false;
-
-    // check if any inhibitor is active
-    wlr_idle_inhibitor_v1 *inhibitor, *tmp;
-    wl_list_for_each_safe(inhibitor, tmp, &wlr_idle_inhibit_manager->inhibitors,
-                          link) {
-        wlr_surface *surface = wlr_surface_get_root_surface(inhibitor->surface);
-        wlr_scene_tree *tree = static_cast<wlr_scene_tree *>(surface->data);
-
-        // set inhibited if active
-        int _unused_x, _unused_y;
-        if (sans != surface &&
-            (!tree ||
-             wlr_scene_node_coords(&tree->node, &_unused_x, &_unused_y))) {
-            inhibited = true;
-            break;
-        }
-    }
-
-    // set notifier status
-    wlr_idle_notifier_v1_set_inhibited(wlr_idle_notifier, inhibited);
 }
 
 // execute either a wm bind or command bind, returns true if
@@ -310,6 +286,29 @@ bool Server::handle_bind(Bind bind) {
     }
 
     return true;
+}
+
+void Server::update_idle_inhibitors(wlr_surface *sans) {
+    bool inhibited = false;
+
+    // check if any inhibitor is active
+    wlr_idle_inhibitor_v1 *inhibitor;
+    wl_list_for_each(inhibitor, &wlr_idle_inhibit_manager->inhibitors, link) {
+        wlr_surface *surface = wlr_surface_get_root_surface(inhibitor->surface);
+        wlr_scene_tree *tree = static_cast<wlr_scene_tree *>(surface->data);
+
+        // set inhibited if active
+        int _unused_x, _unused_y;
+        if (sans != surface &&
+            (!tree ||
+             wlr_scene_node_coords(&tree->node, &_unused_x, &_unused_y))) {
+            inhibited = true;
+            break;
+        }
+    }
+
+    // set notifier status
+    wlr_idle_notifier_v1_set_inhibited(wlr_idle_notifier, inhibited);
 }
 
 // run a command with sh
@@ -728,27 +727,7 @@ Server::Server(Config *config) : config(config) {
         wlr_idle_inhibitor_v1 *inhibitor =
             static_cast<wlr_idle_inhibitor_v1 *>(data);
 
-        // holy cursed
-        inhibitor->data = server;
-
-        // set up destroy listener
-        wl_listener *destroy_listener = new wl_listener;
-        destroy_listener->notify = [](wl_listener *listener, void *data) {
-            wlr_idle_inhibitor_v1 *inhibitor =
-                static_cast<wlr_idle_inhibitor_v1 *>(data);
-            Server *server = static_cast<Server *>(inhibitor->data);
-
-            if (server)
-                server->update_idle_inhibitor(
-                    wlr_surface_get_root_surface(inhibitor->surface));
-
-            wl_list_remove(&listener->link);
-            delete listener;
-        };
-        wl_signal_add(&inhibitor->events.destroy, destroy_listener);
-
-        // update idle inhibitor
-        server->update_idle_inhibitor(nullptr);
+        new IdleInhibitor(inhibitor, server);
     };
     wl_signal_add(&wlr_idle_inhibit_manager->events.new_inhibitor,
                   &new_idle_inhibitor);
@@ -970,11 +949,12 @@ Server::Server(Config *config) : config(config) {
 
     // set up signal handler
     sa.sa_handler = [](int sig) {
+        Server *server = wl_container_of(sig, server, sa);
         if (sig == SIGCHLD)
             while (waitpid(-1, nullptr, WNOHANG) > 0)
                 ;
         else if (sig == SIGINT || sig == SIGTERM)
-            Server::get()->exit();
+            server->exit();
     };
     sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);

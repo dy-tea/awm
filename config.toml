@@ -119,7 +119,7 @@ bind = "Alt space"
 exec = "rofi -show drun"
 
 [[commands]] # Screenshot
-bind = "Alt c"
+bind = "Print"
 exec = "grim -g \"$(slurp)\" - | swappy -f -"
 
 [[commands]] # Terminal

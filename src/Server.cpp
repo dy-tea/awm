@@ -796,6 +796,26 @@ Server::Server(Config *config) : config(config) {
                        .new_request,
                   &new_toplevel_capture_request);
 
+    // toplevel tag
+    wlr_xdg_toplevel_tag_manager =
+        wlr_xdg_toplevel_tag_manager_v1_create(display, 1);
+
+    xdg_toplevel_set_tag.notify = [](wl_listener *listener, void *data) {
+        Server *server =
+            wl_container_of(listener, server, xdg_toplevel_set_tag);
+        const auto event =
+            static_cast<wlr_xdg_toplevel_tag_manager_v1_set_tag_event *>(data);
+
+        Toplevel *toplevel =
+            server->get_toplevel(event->toplevel->base->surface);
+        if (!toplevel)
+            return;
+
+        toplevel->tag = event->tag;
+    };
+    wl_signal_add(&wlr_xdg_toplevel_tag_manager->events.set_tag,
+                  &xdg_toplevel_set_tag);
+
     // xdg foreign
     wlr_xdg_foreign_registry *xdg_foreign_registry =
         wlr_xdg_foreign_registry_create(display);
@@ -1064,6 +1084,7 @@ Server::~Server() {
 
     wl_list_remove(&new_idle_inhibitor.link);
     wl_list_remove(&new_toplevel_capture_request.link);
+    wl_list_remove(&xdg_toplevel_set_tag.link);
 
 #ifdef XDG_DECORATION
     wl_list_remove(&new_xdg_decoration.link);

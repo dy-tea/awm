@@ -126,14 +126,17 @@ exec = "grim -g \"$(slurp)\" - | swappy -f -"
 bind = "Alt Return"
 exec = "alacritty"
 
-# apply a rule to a window matching title and/or class
+# apply a rule to a window
 [[windowrules]]
-class = "foot"      # regex match app_id / class
-title = ""          # regex match title
-workspace = 2       # workspace num to start on
-output = "HDMI-A-1" # output name to start on
-# state = "maximized" # maximized, fullscreen
+class = "foot"        # regex match app_id / class
+title = ""            # regex match title
+workspace = 2         # workspace num to start on
+output = "HDMI-A-1"   # output name to start on
 geometry.x = 600
 geometry.y = 400
 geometry.width = 500
 geometry.height = 500
+
+[[windowrules]]
+tag = "sometag"     # regex match tag (only for wayland windows)
+state = "maximized" # maximized, fullscreen

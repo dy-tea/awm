@@ -1,8 +1,13 @@
 #pragma once
 #include "Toplevel.h"
-#include "xdg-shell-protocol.h"
 #include <regex>
 #include <string>
+
+enum WindowRuleFlags {
+    WINDOW_RULE_TITLE = 1 << 0,
+    WINDOW_RULE_CLASS = 1 << 1,
+    WINDOW_RULE_TAG = 1 << 2,
+};
 
 enum Rules {
     RULES_WORKSPACE,
@@ -17,7 +22,8 @@ enum Rules {
 struct WindowRule {
     std::regex title_re;
     std::regex class_re;
-    uint8_t title_class_present;
+    std::regex tag_re;
+    uint8_t matches_present; // WindowRuleFlags
 
     size_t rule_count{0};
 
@@ -26,8 +32,8 @@ struct WindowRule {
     xdg_toplevel_state *toplevel_state{nullptr};
     wlr_box *geometry{};
 
-    WindowRule(std::string title_match, std::string class_match,
-               uint8_t title_class_present);
+    WindowRule(std::string title_match, std::string class_match, std::string tag_match,
+               uint8_t matches_present);
     ~WindowRule();
 
     void add_rule(Rules rule_name, int data);

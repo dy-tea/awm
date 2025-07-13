@@ -107,6 +107,9 @@ struct Server {
         *wlr_ext_foreign_toplevel_image_capture_source_manager;
     wl_listener new_toplevel_capture_request;
 
+    wlr_xdg_toplevel_tag_manager_v1 *wlr_xdg_toplevel_tag_manager;
+    wl_listener xdg_toplevel_set_tag;
+
     wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;

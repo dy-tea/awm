@@ -648,11 +648,12 @@ bool Config::load() {
             for (toml::Table table : *tables) {
                 auto title_result = table.getString("title");
                 auto class_result = table.getString("class");
+                auto tag_result = table.getString("tag");
 
-                // must have title or class
-                if (!(title_result.first || class_result.first)) {
+                if (!(title_result.first || class_result.first ||
+                      tag_result.first)) {
                     notify_send("Config", "%s",
-                                "windowrules must have title or class");
+                                "windowrules must have title, class or tag");
                     continue;
                 }
 
@@ -660,7 +661,9 @@ bool Config::load() {
                 WindowRule *w = new WindowRule(
                     title_result.first ? title_result.second : "",
                     class_result.first ? class_result.second : "",
-                    title_result.first | 1 << class_result.first);
+                    tag_result.first ? tag_result.second : "",
+                    title_result.first | class_result.first << 1 |
+                        tag_result.first << 2);
 
                 // workspace
                 if (auto initial_workspace = table.getInt("workspace");
@@ -722,9 +725,10 @@ bool Config::load() {
                     notify_send(
                         "Config",
                         "No rules found for window_rule with title: "
-                        "%s, class: %s",
+                        "%s, class: %s, tag: %s",
                         title_result.first ? title_result.second.c_str() : "",
-                        class_result.first ? class_result.second.c_str() : "");
+                        class_result.first ? class_result.second.c_str() : "",
+                        tag_result.first ? tag_result.second.c_str() : "");
                     delete w;
                 }
             }

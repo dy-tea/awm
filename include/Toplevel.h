@@ -69,6 +69,8 @@ struct Toplevel {
     wlr_box geometry{};
     wlr_box saved_geometry{};
 
+    std::string tag{};
+
     Toplevel(Server *server, wlr_xdg_toplevel *wlr_xdg_toplevel);
     ~Toplevel();
 

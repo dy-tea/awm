@@ -88,10 +88,13 @@ script -c "awm" log.txt
 
 ### Supported protocols
 
+Stable:
 - [Presentation time](https://wayland.app/protocols/presentation-time)
 - [Viewporter](https://wayland.app/protocols/viewporter)
 - [XDG shell](https://wayland.app/protocols/xdg-shell)
 - [Linux DMA-BUF](https://wayland.app/protocols/linux-dmabuf-v1)
+
+Staging:
 - [XDG activation](https://wayland.app/protocols/xdg-activation-v1)
 - [DRM lease](https://wayland.app/protocols/drm-lease-v1)
 - [DRM synchronization object](https://wayland.app/protocols/linux-drm-syncobj-v1)
@@ -102,23 +105,28 @@ script -c "awm" log.txt
 - [Image Capture Source](https://wayland.app/protocols/ext-image-capture-source-v1)
 - [Image Copy Capture](https://wayland.app/protocols/ext-image-copy-capture-v1)
 - [Xwayland shell](https://wayland.app/protocols/xwayland-shell-v1) **WIP**
-- [Fractional scale](https://wayland.app/protocols/fractional-scale-v1)
+- [Fractional scale](https://wayland.app/protocols/fractional-scale-v1) ?
 - [Cursor shape](https://wayland.app/protocols/cursor-shape-v1)
 - [Foreign toplevel list](https://wayland.app/protocols/ext-foreign-toplevel-list-v1)
-- [XDG dialog windows](https://wayland.app/protocols/xdg-dialog-v1)
+- [XDG dialog windows](https://wayland.app/protocols/xdg-dialog-v1) ?
 - [Alpha modifier protocol](https://wayland.app/protocols/alpha-modifier-v1)
 - [Data control protocol](https://wayland.app/protocols/ext-data-control-v1)
-- [XDG System bell](https://wayland.app/protocols/xdg-system-bell-v1)
-- [Color management](https://wayland.app/protocols/color-management-v1)
-- [Color representation](https://wayland.app/protocols/color-representation-v1)
+- [System bell protocol](https://wayland.app/protocols/xdg-system-bell-v1)
+- [Color management](https://wayland.app/protocols/color-management-v1) ?
+- [Color representation](https://wayland.app/protocols/color-representation-v1) ?
+- [XDG toplevel tag](https://wayland.app/protocols/xdg-toplevel-tag-v1) ?
+
+Unstable:
 - [Idle inhibit](https://wayland.app/protocols/idle-inhibit-unstable-v1)
 - [Keyboard shortcuts inhibit](https://wayland.app/protocols/keyboard-shortcuts-inhibit-unstable-v1)
 - [Pointer constraints](https://wayland.app/protocols/pointer-constraints-unstable-v1)
 - [Pointer gestures](https://wayland.app/protocols/pointer-gestures-unstable-v1)
-- [Primary Selection](https://wayland.app/protocols/primary-selection-unstable-v1)
+- [Primary selection](https://wayland.app/protocols/primary-selection-unstable-v1)
 - [Relative pointer](https://wayland.app/protocols/relative-pointer-unstable-v1)
 - [XDG foreign](https://wayland.app/protocols/xdg-foreign-unstable-v2)
 - [XDG output](https://wayland.app/protocols/xdg-output-unstable-v1)
+
+WLR Unstable:
 - [wlr data control](https://wayland.app/protocols/wlr-data-control-unstable-v1)
 - [wlr export DMA-BUF](https://wayland.app/protocols/wlr-export-dmabuf-unstable-v1)
 - [wlr foreign toplevel management](https://wayland.app/protocols/wlr-foreign-toplevel-management-unstable-v1)
@@ -128,4 +136,8 @@ script -c "awm" log.txt
 - [wlr output power management](https://wayland.app/protocols/wlr-output-power-management-unstable-v1)
 - [wlr screencopy](https://wayland.app/protocols/wlr-screencopy-unstable-v1)
 - [wlr virtual pointer](https://wayland.app/protocols/wlr-virtual-pointer-unstable-v1)
+
+External:
 - [Virtual keyboard](https://wayland.app/protocols/virtual-keyboard-unstable-v1)
+
+_Protocols suffixed with ? are untested._

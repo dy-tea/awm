@@ -48,6 +48,7 @@ protocols = [
   'protocols' / 'wlr-data-control-unstable-v1.xml',
   'protocols' / 'wlr-screencopy-unstable-v1.xml',
   'protocols' / 'wlr-output-power-management-unstable-v1.xml',
+  'protocols' / 'color-representation-v1.xml',
 ]
 
 # generate protocol headers and code

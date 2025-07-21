@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <wayland-server-core.h>
 
 #include "Decoration.h"
 #include "IPC.h"

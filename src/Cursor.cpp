@@ -88,10 +88,13 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         wlr_seat_pointer_notify_button(cursor->seat, event->time_msec,
                                        event->button, event->state);
 
-        if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
+        if (event->state == WL_POINTER_BUTTON_STATE_RELEASED) {
             // show standard pointer cursor
             cursor->reset_mode();
-        else {
+
+            // remove button press
+            cursor->pressed_buttons &= ~(1 << (event->button - 272));
+        } else {
             // handle cursor focus
             Server *server = cursor->server;
 
@@ -164,7 +167,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_pinch_begin_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -179,7 +181,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_pinch_update_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -194,7 +195,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_pinch_end_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -210,7 +210,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_swipe_begin_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -225,7 +224,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_swipe_update_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -240,7 +238,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_swipe_end_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -256,7 +253,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_hold_begin_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -271,7 +267,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
         const auto *event = static_cast<wlr_pointer_hold_end_event *>(data);
         wlr_seat *seat = cursor->seat;
 
-        // notify activity
         cursor->notify_activity();
 
         // send event
@@ -311,7 +306,6 @@ Cursor::~Cursor() {
 // deactivate cursor
 void Cursor::reset_mode() {
     cursor_mode = CURSORMODE_PASSTHROUGH;
-    pressed_buttons = 0;
     server->seat->grabbed_toplevel = nullptr;
 }
 

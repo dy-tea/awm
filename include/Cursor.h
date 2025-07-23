@@ -29,7 +29,7 @@ struct Cursor {
     double grab_x, grab_y;
     wlr_box grab_geobox;
     uint32_t resize_edges;
-    uint32_t pressed_buttons{0};
+    uint32_t pressed_buttons{0}; // CursorButton
 
     wl_listener motion;
     wl_listener motion_absolute;

@@ -113,6 +113,7 @@ struct Config {
         std::string path{""};
         bool enabled{true};
         bool spawn{true};
+        bool bind_run{true};
     } ipc;
 
     // keyboard

@@ -1,6 +1,7 @@
 #include "IPC.h"
 #include "Server.h"
 #include "WorkspaceManager.h"
+#include "util.h"
 #include <string>
 #include <sys/socket.h>
 using json = nlohmann::json;
@@ -355,6 +356,12 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     }
     case IPC_WORKSPACE_SET: {
+        if (!server->config->ipc.bind_run) {
+            notify_send("IPC", "%s",
+                        "called workspace set but bind_run is disabled");
+            break;
+        }
+
         try {
             // try parsing an integer
             const uint32_t n = std::stoi(data);
@@ -511,6 +518,11 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         break;
     }
     case IPC_BIND_RUN: {
+        if (!server->config->ipc.bind_run) {
+            notify_send("IPC", "%s", "called bind_run but it is disabled");
+            break;
+        }
+
         std::string bind_name;
         xkb_keysym_t keysym = 0;
 

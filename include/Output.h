@@ -27,8 +27,6 @@ struct Output {
     wl_listener destroy_lock_surface;
 
     bool enabled{true};
-    uint32_t max_workspace{1};
-
     Output(struct Server *server, struct wlr_output *wlr_output);
     ~Output();
 

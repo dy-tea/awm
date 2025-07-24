@@ -21,8 +21,7 @@ int main() {
 
     // assertions
     ASSERT(toplevels.size() == 10);
-    ASSERT(workspaces["active"] == 10);
-    ASSERT(workspaces["max"] == 10);
+    ASSERT(workspaces["active_workspace"] == 10);
     ASSERT(workspaces["toplevels"] == 10);
 
     EXIT();

@@ -359,9 +359,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             // try parsing an integer
             const uint32_t n = std::stoi(data);
 
-            // integer should be below max workspace, since it is always
-            // workspace count + 1
-            if (n > server->focused_output()->max_workspace)
+            if (n < 1 || n > 10)
                 throw std::invalid_argument("out of range");
 
             // set workspace
@@ -524,13 +522,14 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             bind_name = data.substr(0, s);
             try {
                 int digit = std::stoi(data.substr(s + 1));
-                if (digit < 1 || digit > 9)
+                if (digit < 1 || digit > 10)
                     throw std::invalid_argument("out of range");
 
                 keysym = digit + XKB_KEY_0;
             } catch (std::invalid_argument &e) {
                 notify_send("IPC", "invalid number `%s`: %s", data.c_str(),
                             e.what());
+                break;
             }
         }
 

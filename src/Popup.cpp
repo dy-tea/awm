@@ -1,4 +1,4 @@
-#include "Server.h"
+#include "Popup.h"
 
 Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
              wlr_scene_tree *image_capture_parent, Server *server)
@@ -14,42 +14,23 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
     // xdg_popup_commit
     commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Popup *popup = wl_container_of(listener, popup, commit);
-        Output *output = popup->server->focused_output();
 
         // only position on initial commit
         if (!popup->xdg_popup->base->initial_commit)
             return;
 
-        // output is required for popup positioning
-        if (!output)
-            return;
-
-        // get the coords of the parent tree's scene node
-        int lx, ly;
-        wlr_scene_node_coords(&popup->parent_tree->node.parent->node, &lx, &ly);
-
-        // calculate the geometry of the popup relative to the parent tree's
-        // scene node
-        wlr_box box = {
-            output->layout_geometry.x - lx,
-            output->layout_geometry.y - ly,
-            output->layout_geometry.width,
-            output->layout_geometry.height,
-        };
-
-        // unconstrain the popup from the relative box
-        wlr_xdg_popup_unconstrain_from_box(popup->xdg_popup, &box);
+        popup->unconstrain();
     };
     wl_signal_add(&xdg_popup->base->surface->events.commit, &commit);
 
-    // xdg_popup_destroy
-    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
-        Popup *popup = wl_container_of(listener, popup, destroy);
-        delete popup;
+    // xdg_popup_reposition
+    reposition.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
+        Popup *popup = wl_container_of(listener, popup, reposition);
+        popup->unconstrain();
     };
-    wl_signal_add(&xdg_popup->events.destroy, &destroy);
+    wl_signal_add(&xdg_popup->events.reposition, &reposition);
 
-    // xdg_popup_popup
+    // xdg_popup_new_popup
     new_popup.notify = [](wl_listener *listener, void *data) {
         Popup *popup = wl_container_of(listener, popup, new_popup);
         auto *xdg_popup = static_cast<wlr_xdg_popup *>(data);
@@ -58,10 +39,43 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
                   popup->server);
     };
     wl_signal_add(&xdg_popup->base->events.new_popup, &new_popup);
+
+    // xdg_popup_destroy
+    destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
+        Popup *popup = wl_container_of(listener, popup, destroy);
+        delete popup;
+    };
+    wl_signal_add(&xdg_popup->events.destroy, &destroy);
 }
 
 Popup::~Popup() {
     wl_list_remove(&commit.link);
-    wl_list_remove(&destroy.link);
+    wl_list_remove(&reposition.link);
     wl_list_remove(&new_popup.link);
+    wl_list_remove(&destroy.link);
+}
+
+void Popup::unconstrain() {
+    wlr_box geo = xdg_popup->base->geometry;
+    Output *output = server->output_manager->output_at(geo.x, geo.y);
+
+    // output is required for popup positioning
+    if (!output)
+        return;
+
+    // get the coords of the parent tree's scene node
+    int lx, ly;
+    wlr_scene_node_coords(&parent_tree->node.parent->node, &lx, &ly);
+
+    // calculate the geometry of the popup relative to the parent tree's
+    // scene node
+    wlr_box box = {
+        output->layout_geometry.x - lx,
+        output->layout_geometry.y - ly,
+        output->layout_geometry.width,
+        output->layout_geometry.height,
+    };
+
+    // unconstrain the popup from the relative box
+    wlr_xdg_popup_unconstrain_from_box(xdg_popup, &box);
 }

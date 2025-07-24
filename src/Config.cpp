@@ -1,9 +1,13 @@
+#include "Config.h"
 #include "Server.h"
 #include "WindowRule.h"
 #include "util.h"
+#include <libinput.h>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <tomlcpp.hpp>
+#include <wayland-client-protocol.h>
 
 // get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(const std::string &modifier) {
@@ -76,27 +80,41 @@ void Config::set_bind(const std::string &name, toml::Table *source,
 }
 
 // helper function to connect the second pair if the first bool is true
-template <typename T> void connect(const std::pair<bool, T> &pair, T *target) {
+// set default value if false
+template <typename T>
+void connect(const std::pair<bool, T> &pair, T *target,
+             std::optional<T> default_ = {}) {
     if (pair.first)
         *target = pair.second;
+    else if (default_.has_value())
+        *target = default_.value();
+    else
+        *target = T{};
 }
 
 // set target pointer to source mapped from options_src to options_dst by index
 // if source first is true, print error message if source is not found in
 // options_src
+// set default value if false
 template <typename T>
 void set_option(std::string name, const std::vector<std::string> &options_src,
                 const std::vector<T> &options_dst,
-                const std::pair<bool, std::string> &source, T *target) {
+                const std::pair<bool, std::string> &source, T *target,
+                std::optional<T> default_ = {}) {
     // sizes should be non zero
     assert(options_src.size() && options_dst.size());
 
     // sizes should be equal
     assert(options_src.size() == options_dst.size());
 
-    // source needs to be set
-    if (!source.first)
+    // set default value if false
+    if (!source.first) {
+        if (default_.has_value())
+            *target = default_.value();
+        else
+            target = nullptr;
         return;
+    }
 
     // find option in src and set dst
     for (size_t i = 0; i != options_src.size(); ++i)
@@ -182,8 +200,10 @@ bool Config::load() {
                     }
                 }
         }
-    } else
-        wlr_log(WLR_INFO, "%s", "No startup configuration found, ingoring");
+    } else {
+        startup_env.clear();
+        startup_commands.clear();
+    }
 
     // exit
     if (std::unique_ptr<toml::Table> exit_table =
@@ -199,7 +219,8 @@ bool Config::load() {
                     exit_commands.emplace_back(command);
             }
         }
-    }
+    } else
+        exit_commands.clear();
 
     // ipc
     if (std::unique_ptr<toml::Table> ipc_table =
@@ -208,21 +229,26 @@ bool Config::load() {
         connect(ipc_table->getString("socket"), &ipc.path);
 
         // enabled
-        connect(ipc_table->getBool("enabled"), &ipc.enabled);
+        connect(ipc_table->getBool("enabled"), &ipc.enabled, {true});
 
         // spawn
-        connect(ipc_table->getBool("spawn"), &ipc.spawn);
+        connect(ipc_table->getBool("spawn"), &ipc.spawn, {true});
+
+        // bind run
+        connect(ipc_table->getBool("bind_run"), &ipc.bind_run, {true});
     } else {
         ipc.path = "";
         ipc.enabled = true;
         ipc.spawn = true;
+        ipc.bind_run = true;
     }
 
     // get keyboard config
     if (std::unique_ptr<toml::Table> keyboard =
             config_file.table->getTable("keyboard")) {
         // get layout
-        connect(keyboard->getString("layout"), &keyboard_layout);
+        connect(keyboard->getString("layout"), &keyboard_layout,
+                {std::string("us")});
 
         // get model
         connect(keyboard->getString("model"), &keyboard_model);
@@ -234,10 +260,11 @@ bool Config::load() {
         connect(keyboard->getString("options"), &keyboard_options);
 
         // repeat rate
-        connect(keyboard->getInt("repeat_rate"), &repeat_rate);
+        connect(keyboard->getInt("repeat_rate"), &repeat_rate, {(int64_t)25});
 
         // repeat delay
-        connect(keyboard->getInt("repeat_delay"), &repeat_delay);
+        connect(keyboard->getInt("repeat_delay"), &repeat_delay,
+                {(int64_t)600});
     } else {
         // no keyboard config
         keyboard_layout = "us";
@@ -262,7 +289,8 @@ bool Config::load() {
             connect(xcursor_table->getString("theme"), &cursor.xcursor.theme);
 
             // size
-            connect(xcursor_table->getInt("size"), &cursor.xcursor.size);
+            connect(xcursor_table->getInt("size"), &cursor.xcursor.size,
+                    {(int64_t)24});
         }
 
         // mouse
@@ -270,20 +298,23 @@ bool Config::load() {
         if (mouse) {
             // natural scroll
             connect(mouse->getBool("natural_scroll"),
-                    &cursor.mouse.natural_scroll);
+                    &cursor.mouse.natural_scroll, {false});
 
             // left-handed
-            connect(mouse->getBool("left_handed"), &cursor.mouse.left_handed);
+            connect(mouse->getBool("left_handed"), &cursor.mouse.left_handed,
+                    {false});
 
             // profile
             set_option("pointer.mouse.profile", {"none", "flat", "adaptive"},
                        {LIBINPUT_CONFIG_ACCEL_PROFILE_NONE,
                         LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT,
                         LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE},
-                       mouse->getString("profile"), &cursor.mouse.profile);
+                       mouse->getString("profile"), &cursor.mouse.profile,
+                       {LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE});
 
             // accel speed
-            connect(mouse->getDouble("accel_speed"), &cursor.mouse.accel_speed);
+            connect(mouse->getDouble("accel_speed"), &cursor.mouse.accel_speed,
+                    {0.0});
         }
 
         // touchpad
@@ -308,18 +339,19 @@ bool Config::load() {
                 {LIBINPUT_CONFIG_DRAG_LOCK_DISABLED,
                  LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_TIMEOUT,
                  LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY},
-                touchpad->getString("drag_lock"), &cursor.touchpad.drag_lock);
+                touchpad->getString("drag_lock"), &cursor.touchpad.drag_lock,
+                {LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY});
 
             // tap button map
             set_option(
                 "pointer.touchpad.tap_button_map", {"lrm", "lmr"},
                 {LIBINPUT_CONFIG_TAP_MAP_LRM, LIBINPUT_CONFIG_TAP_MAP_LMR},
                 touchpad->getString("tap_button_map"),
-                &cursor.touchpad.tap_button_map);
+                &cursor.touchpad.tap_button_map, {LIBINPUT_CONFIG_TAP_MAP_LRM});
 
             // natural scroll
             connect(touchpad->getBool("natural_scroll"),
-                    &cursor.touchpad.natural_scroll);
+                    &cursor.touchpad.natural_scroll, {true});
 
             // disable while typing
             if (auto disable_while_typing =
@@ -331,7 +363,7 @@ bool Config::load() {
 
             // left-handed
             connect(touchpad->getBool("left_handed"),
-                    &cursor.touchpad.left_handed);
+                    &cursor.touchpad.left_handed, {false});
 
             // middle emulation
             if (auto middle_emulation = touchpad->getBool("middle_emulation");
@@ -347,7 +379,8 @@ bool Config::load() {
                         LIBINPUT_CONFIG_SCROLL_2FG, LIBINPUT_CONFIG_SCROLL_EDGE,
                         LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN},
                        touchpad->getString("scroll_method"),
-                       &cursor.touchpad.scroll_method);
+                       &cursor.touchpad.scroll_method,
+                       {LIBINPUT_CONFIG_SCROLL_2FG});
 
             // click method
             set_option("pointer.touchpad.click_method",
@@ -356,7 +389,8 @@ bool Config::load() {
                         LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS,
                         LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER},
                        touchpad->getString("click_method"),
-                       &cursor.touchpad.click_method);
+                       &cursor.touchpad.click_method,
+                       {LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS});
 
             // event mode
             set_option("pointer.touchpad.event_mode",
@@ -365,19 +399,20 @@ bool Config::load() {
                         LIBINPUT_CONFIG_SEND_EVENTS_DISABLED,
                         LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE},
                        touchpad->getString("event_mode"),
-                       &cursor.touchpad.event_mode);
+                       &cursor.touchpad.event_mode,
+                       {LIBINPUT_CONFIG_SEND_EVENTS_ENABLED});
 
             // profile
             set_option("pointer.touchpad.profile", {"none", "flat", "adaptive"},
                        {LIBINPUT_CONFIG_ACCEL_PROFILE_NONE,
                         LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT,
                         LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE},
-                       touchpad->getString("profile"),
-                       &cursor.touchpad.profile);
+                       touchpad->getString("profile"), &cursor.touchpad.profile,
+                       {LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE});
 
             // accel speed
             connect(touchpad->getDouble("accel_speed"),
-                    &cursor.touchpad.accel_speed);
+                    &cursor.touchpad.accel_speed, {0.0});
         }
     } else {
         cursor.xcursor.theme = "";
@@ -413,20 +448,20 @@ bool Config::load() {
             config_file.table->getTable("general")) {
         // focus on hover
         connect(general_table->getBool("focus_on_hover"),
-                &general.focus_on_hover);
+                &general.focus_on_hover, {false});
 
         // focus on activation
         set_option("general.focus_on_activation", {"none", "active", "any"},
                    {FOWA_NONE, FOWA_ACTIVE, FOWA_ANY},
                    general_table->getString("focus_on_activation"),
-                   &general.fowa);
+                   &general.fowa, {FOWA_ACTIVE});
 
         // system bell
         connect(general_table->getString("system_bell"), &general.system_bell);
 
         // minimize to workspace
         connect(general_table->getInt("minimize_to_workspace"),
-                &general.minimize_to_workspace);
+                &general.minimize_to_workspace, {(int64_t)0});
     } else {
         general.focus_on_hover = false;
         general.fowa = FOWA_ACTIVE;
@@ -443,10 +478,10 @@ bool Config::load() {
         // method
         set_option("tiling.method", {"none", "grid", "master", "dwindle"},
                    {TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE},
-                   tiling_table->getString("method"), &tiling.method);
-    } else {
+                   tiling_table->getString("method"), &tiling.method,
+                   {TILE_GRID});
+    } else
         tiling.method = TILE_GRID;
-    }
 
     // get awm binds
     if (std::unique_ptr<toml::Table> binds_table =
@@ -585,25 +620,27 @@ bool Config::load() {
                 auto *oc = new OutputConfig();
 
                 // name
-                connect(table.getString("name"), &oc->name);
+                connect(table.getString("name"), &oc->name, {std::string("")});
 
                 // enabled
-                connect(table.getBool("enabled"), &oc->enabled);
+                connect(table.getBool("enabled"), &oc->enabled, {true});
 
                 // width
-                connect<int32_t>(table.getInt("width"), &oc->width);
+                connect<int32_t>(table.getInt("width"), &oc->width,
+                                 {(int32_t)0});
 
                 // height
-                connect<int32_t>(table.getInt("height"), &oc->height);
+                connect<int32_t>(table.getInt("height"), &oc->height,
+                                 {(int32_t)0});
 
                 // x
-                connect(table.getDouble("x"), &oc->x);
+                connect(table.getDouble("x"), &oc->x, {0.0});
 
                 // y
-                connect(table.getDouble("y"), &oc->y);
+                connect(table.getDouble("y"), &oc->y, {0.0});
 
                 // refresh rate
-                connect(table.getDouble("refresh"), &oc->refresh);
+                connect(table.getDouble("refresh"), &oc->refresh, {0.0});
 
                 // transform
                 set_option(
@@ -615,7 +652,8 @@ bool Config::load() {
                      WL_OUTPUT_TRANSFORM_FLIPPED_90,
                      WL_OUTPUT_TRANSFORM_FLIPPED_180,
                      WL_OUTPUT_TRANSFORM_FLIPPED_270},
-                    table.getString("transform"), &oc->transform);
+                    table.getString("transform"), &oc->transform,
+                    {WL_OUTPUT_TRANSFORM_NORMAL});
 
                 // scale
                 connect<float>(table.getDouble("scale"), &oc->scale);

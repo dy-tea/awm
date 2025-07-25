@@ -67,6 +67,30 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // xwayland surface
     else {
         wlr_xwayland_surface *xwayland_surface = toplevel->xwayland_surface;
+        if (!xwayland_surface->surface)
+            return;
+
+        // add commit listener
+        toplevel->commit.notify = [](wl_listener *listener,
+                                     [[maybe_unused]] void *data) {
+            Toplevel *toplevel = wl_container_of(listener, toplevel, commit);
+            wlr_xwayland_surface *xwayland_surface = toplevel->xwayland_surface;
+            if (!xwayland_surface->surface)
+                return;
+
+            wlr_surface_state *state = &xwayland_surface->surface->current;
+            wlr_box *current = &toplevel->geometry;
+
+            // update size if state differs
+            if (current->width != state->width ||
+                current->height != state->height) {
+                current->width = state->width;
+                current->height = state->height;
+                toplevel->set_position_size(*current);
+            }
+        };
+        wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
+                      &toplevel->commit);
 
         // create scene surface
         toplevel->scene_surface = wlr_scene_surface_create(
@@ -79,16 +103,9 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         // get usable area of the output
         wlr_box area = output->usable_area;
 
-        // calcualte the width and height
-        int width = xwayland_surface->width;
-        int height = xwayland_surface->height;
-
-        // ensure size does not exceed output
-        if (width > area.width)
-            width = area.width;
-
-        if (height > area.height)
-            height = area.height;
+        // calculate the width and height
+        int width = std::min((int)xwayland_surface->width, area.width);
+        int height = std::min((int)xwayland_surface->height, area.height);
 
         // get surface position
         int x = xwayland_surface->x;
@@ -161,8 +178,12 @@ void Toplevel::unmap_notify(wl_listener *listener,
     if (Workspace *workspace = server->get_workspace(toplevel))
         workspace->close(toplevel);
 
-    // remove link
+    // remove links
     wl_list_remove(&toplevel->link);
+
+    // commit is per-surface with xwayland
+    if (toplevel->xwayland_surface)
+        wl_list_remove(&toplevel->commit.link);
 
     // remove foreign handle
     if (toplevel->foreign_handle) {
@@ -321,6 +342,7 @@ Toplevel::~Toplevel() {
         wl_list_remove(&associate.link);
         wl_list_remove(&dissociate.link);
         wl_list_remove(&configure.link);
+        wl_list_remove(&focus_in.link);
         wl_list_remove(&xwayland_resize.link);
         wl_list_remove(&xwayland_move.link);
         wl_list_remove(&xwayland_maximize.link);
@@ -356,6 +378,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
 
     // create scene tree
     scene_tree = wlr_scene_tree_create(server->layers.floating);
+    scene_tree->node.data = this;
 
     // create capture
     image_capture = wlr_scene_create();
@@ -441,6 +464,19 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
         toplevel->server->output_manager->arrange();
     };
     wl_signal_add(&xwayland_surface->events.request_configure, &configure);
+
+    // focus in
+    focus_in.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
+        Toplevel *toplevel = wl_container_of(listener, toplevel, focus_in);
+        wlr_xwayland_surface *xsurface = toplevel->xwayland_surface;
+
+        if (!xsurface->surface)
+            return;
+
+        if (toplevel != toplevel->server->seat->grabbed_toplevel)
+            toplevel->focus();
+    };
+    wl_signal_add(&xwayland_surface->events.focus_in, &focus_in);
 
     // resize
     xwayland_resize.notify = [](wl_listener *listener, void *data) {

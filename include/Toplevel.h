@@ -37,6 +37,7 @@ struct Toplevel {
     wl_listener associate;
     wl_listener dissociate;
     wl_listener configure;
+    wl_listener focus_in;
     wl_listener xwayland_resize;
     wl_listener xwayland_move;
     wl_listener xwayland_maximize;

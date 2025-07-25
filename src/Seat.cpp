@@ -1,4 +1,6 @@
 #include "Server.h"
+#include "wlr.h"
+#include <wayland-server-core.h>
 
 Seat::Seat(Server *server) : server(server) {
     wlr_seat = wlr_seat_create(server->display, "seat0");
@@ -45,10 +47,24 @@ Seat::Seat(Server *server) : server(server) {
     };
     wl_signal_add(&server->backend->events.new_input, &new_input);
 
+    // pointer_state focus_change
+    pointer_focus_change.notify = [](wl_listener *listener, void *data) {
+        Seat *seat = wl_container_of(listener, seat, pointer_focus_change);
+        Cursor *cursor = seat->server->cursor;
+        const auto *event =
+            static_cast<wlr_seat_pointer_focus_change_event *>(data);
+
+        if (!event->new_surface)
+            wlr_cursor_set_xcursor(cursor->cursor, cursor->xcursor_manager,
+                                   "default");
+    };
+    wl_signal_add(&wlr_seat->pointer_state.events.focus_change,
+                  &pointer_focus_change);
+
     // request_cursor
-    request_cursor.notify = [](wl_listener *listener, void *data) {
+    request_set_cursor.notify = [](wl_listener *listener, void *data) {
         // client-provided cursor image
-        Seat *seat = wl_container_of(listener, seat, request_cursor);
+        Seat *seat = wl_container_of(listener, seat, request_set_cursor);
         const auto *event =
             static_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
 
@@ -57,7 +73,7 @@ Seat::Seat(Server *server) : server(server) {
             wlr_cursor_set_surface(seat->server->cursor->cursor, event->surface,
                                    event->hotspot_x, event->hotspot_y);
     };
-    wl_signal_add(&wlr_seat->events.request_set_cursor, &request_cursor);
+    wl_signal_add(&wlr_seat->events.request_set_cursor, &request_set_cursor);
 
     // request_set_selection
     request_set_selection.notify = [](wl_listener *listener, void *data) {
@@ -171,7 +187,8 @@ Seat::Seat(Server *server) : server(server) {
 
 Seat::~Seat() {
     wl_list_remove(&new_input.link);
-    wl_list_remove(&request_cursor.link);
+    wl_list_remove(&pointer_focus_change.link);
+    wl_list_remove(&request_set_cursor.link);
     wl_list_remove(&request_set_selection.link);
     wl_list_remove(&request_set_primary_selection.link);
     wl_list_remove(&request_start_drag.link);

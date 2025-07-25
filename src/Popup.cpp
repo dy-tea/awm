@@ -56,16 +56,14 @@ Popup::~Popup() {
 }
 
 void Popup::unconstrain() {
-    wlr_box geo = xdg_popup->base->geometry;
-    Output *output = server->output_manager->output_at(geo.x, geo.y);
-
-    // output is required for popup positioning
-    if (!output)
-        return;
-
     // get the coords of the parent tree's scene node
     int lx, ly;
     wlr_scene_node_coords(&parent_tree->node.parent->node, &lx, &ly);
+
+    // get output containing parent tree's scene node
+    Output *output = server->output_manager->output_at(lx, ly);
+    if (!output)
+        return;
 
     // calculate the geometry of the popup relative to the parent tree's
     // scene node

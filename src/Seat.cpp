@@ -1,6 +1,4 @@
 #include "Server.h"
-#include "wlr.h"
-#include <wayland-server-core.h>
 
 Seat::Seat(Server *server) : server(server) {
     wlr_seat = wlr_seat_create(server->display, "seat0");

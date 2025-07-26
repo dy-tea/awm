@@ -1,5 +1,6 @@
 #pragma once
 
+#include "InputRelay.h"
 #include "wlr.h"
 
 struct Seat {
@@ -22,6 +23,8 @@ struct Seat {
 
     wlr_virtual_keyboard_manager_v1 *virtual_keyboard_manager;
     wl_listener new_virtual_keyboard;
+
+    InputRelay *input_relay;
 
     Seat(Server *server);
     ~Seat();

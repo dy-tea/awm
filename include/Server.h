@@ -112,6 +112,7 @@ struct Server {
     wl_listener xdg_toplevel_set_tag;
 
     wlr_input_method_manager_v2 *wlr_input_method_manager;
+    wlr_text_input_manager_v3 *wlr_text_input_manager;
     wlr_ext_foreign_toplevel_list_v1 *wlr_foreign_toplevel_list;
     wlr_foreign_toplevel_manager_v1 *wlr_foreign_toplevel_manager;
     wlr_idle_notifier_v1 *wlr_idle_notifier;

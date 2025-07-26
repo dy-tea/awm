@@ -1,44 +1,44 @@
-#include "Server.h"
+#include "TextInput.h"
+#include "InputRelay.h"
 
-// FIXME: missing a lot of implementation
-TextInput::TextInput(Server *server, wlr_text_input_v3 *wlr_text_input)
-    : server(server), wlr_text_input(wlr_text_input) {
+// based on labwc implementation
+
+TextInput::TextInput(InputRelay *relay, wlr_text_input_v3 *wlr_text_input)
+    : relay(relay), wlr_text_input(wlr_text_input) {
+
+    wl_list_insert(&relay->text_inputs, &link);
 
     // enable
-    enable.notify = [](wl_listener *listener, void *data) {
+    enable.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         TextInput *text_input = wl_container_of(listener, text_input, enable);
-        wlr_text_input_v3 *wlr_text_input =
-            static_cast<wlr_text_input_v3 *>(data);
+        InputRelay *relay = text_input->relay;
 
-        wlr_text_input->current_enabled = true;
+        relay->update_active_text_input();
+        if (relay->active_text_input == text_input) {
+            relay->update_popups_positions();
+            relay->send_state_to_input_method();
+        }
     };
     wl_signal_add(&wlr_text_input->events.enable, &enable);
 
-    // commit
-    commit.notify = [](wl_listener *listener, void *data) {
-        TextInput *text_input = wl_container_of(listener, text_input, commit);
-        wlr_text_input_v3 *wlr_text_input =
-            static_cast<wlr_text_input_v3 *>(data);
-
-        if (!(wlr_text_input || wlr_text_input->current_enabled))
-            return;
-
-        wlr_text_input_v3_send_done(wlr_text_input);
-    };
-    wl_signal_add(&wlr_text_input->events.commit, &commit);
-
     // disable
-    disable.notify = [](wl_listener *listener, void *data) {
+    disable.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         TextInput *text_input = wl_container_of(listener, text_input, disable);
-        wlr_text_input_v3 *wlr_text_input =
-            static_cast<wlr_text_input_v3 *>(data);
-
-        if (!wlr_text_input->focused_surface)
-            return;
-
-        wlr_text_input->current_enabled = false;
+        text_input->relay->update_active_text_input();
     };
     wl_signal_add(&wlr_text_input->events.disable, &disable);
+
+    // commit
+    commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
+        TextInput *text_input = wl_container_of(listener, text_input, commit);
+        InputRelay *relay = text_input->relay;
+
+        if (relay->active_text_input == text_input) {
+            relay->update_popups_positions();
+            relay->send_state_to_input_method();
+        }
+    };
+    wl_signal_add(&wlr_text_input->events.commit, &commit);
 
     // destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
@@ -46,6 +46,8 @@ TextInput::TextInput(Server *server, wlr_text_input_v3 *wlr_text_input)
         delete text_input;
     };
     wl_signal_add(&wlr_text_input->events.destroy, &destroy);
+
+    relay->update_text_inputs_focused_surface();
 }
 
 TextInput::~TextInput() {
@@ -53,4 +55,7 @@ TextInput::~TextInput() {
     wl_list_remove(&commit.link);
     wl_list_remove(&disable.link);
     wl_list_remove(&destroy.link);
+    wl_list_remove(&link);
+
+    relay->update_active_text_input();
 }

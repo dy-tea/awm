@@ -116,6 +116,9 @@ Staging:
 - [Color representation](https://wayland.app/protocols/color-representation-v1) ?
 - [XDG toplevel tag](https://wayland.app/protocols/xdg-toplevel-tag-v1) ?
 
+Experimental:
+- [Input method v2](https://wayland.app/protocols/xx-input-method-v2) ?
+
 Unstable:
 - [Idle inhibit](https://wayland.app/protocols/idle-inhibit-unstable-v1)
 - [Keyboard shortcuts inhibit](https://wayland.app/protocols/keyboard-shortcuts-inhibit-unstable-v1)
@@ -123,6 +126,7 @@ Unstable:
 - [Pointer gestures](https://wayland.app/protocols/pointer-gestures-unstable-v1)
 - [Primary selection](https://wayland.app/protocols/primary-selection-unstable-v1)
 - [Relative pointer](https://wayland.app/protocols/relative-pointer-unstable-v1)
+- [Text input](https://wayland.app/protocols/text-input-unstable-v3) ?
 - [XDG foreign](https://wayland.app/protocols/xdg-foreign-unstable-v2)
 - [XDG output](https://wayland.app/protocols/xdg-output-unstable-v1)
 

@@ -891,6 +891,9 @@ Server::Server(Config *config) : config(config) {
     // input method
     wlr_input_method_manager = wlr_input_method_manager_v2_create(display);
 
+    // text input manager
+    wlr_text_input_manager = wlr_text_input_manager_v3_create(display);
+
     // idle notifier
     wlr_idle_notifier = wlr_idle_notifier_v1_create(display);
 

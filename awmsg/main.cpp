@@ -36,7 +36,7 @@ void print_usage() {
                  "\t[s]pawn <command>\n"
                  "\t[o]utput\n"
                  "\t\t- [l]ist\n"
-                 "\t\t- [t]toplevels\n"
+                 "\t\t- [t]oplevels\n"
                  "\t\t- [m]odes\n"
                  "\t[w]orkspace\n"
                  "\t\t- [l]ist\n"

@@ -1,6 +1,7 @@
 #include "IPC.h"
 #include "Server.h"
 #include "WorkspaceManager.h"
+#include "tomlcpp.hpp"
 #include "util.h"
 #include <string>
 #include <sys/socket.h>
@@ -305,12 +306,15 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     case IPC_OUTPUT_TOPLEVELS: {
         Workspace *workspace, *tmp1;
         Toplevel *toplevel, *tmp2;
-        int i = 0;
         wl_list_for_each_safe(workspace, tmp1,
-                              &server->workspace_manager->workspaces, link)
+                              &server->workspace_manager->workspaces, link) {
+            int i = 0;
+            j[workspace->output->wlr_output->name][workspace->num] =
+                json::array();
             wl_list_for_each_safe(toplevel, tmp2, &workspace->toplevels, link)
-                j[workspace->output->wlr_output->name][workspace->num][i++] =
-                    string_format("%p", toplevel);
+                j[workspace->output->wlr_output->name][workspace->num - 1]
+                 [i++] = string_format("%p", toplevel);
+        }
         break;
     }
     case IPC_OUTPUT_MODES: {

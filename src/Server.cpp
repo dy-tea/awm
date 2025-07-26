@@ -432,6 +432,9 @@ Server::Server(Config *config) : config(config) {
     wlr_subcompositor_create(display);
     wlr_data_device_manager_create(display);
 
+    // primary selection (early init to fix some gtk bs)
+    wlr_primary_selection_v1_device_manager_create(display);
+
     // output manager
     output_manager = new OutputManager(this);
 
@@ -920,9 +923,6 @@ Server::Server(Config *config) : config(config) {
 
     // single pixel buffer
     wlr_single_pixel_buffer_manager_v1_create(display);
-
-    // primary selection
-    wlr_primary_selection_v1_device_manager_create(display);
 
     // avoid using "wayland-0" as display socket
     std::string socket;

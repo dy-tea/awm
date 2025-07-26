@@ -24,10 +24,10 @@ struct Toplevel {
     wl_listener request_maximize;
     wl_listener request_fullscreen;
     wl_listener request_minimize;
+    wl_listener set_title;
+    wl_listener set_app_id;
     //  wl_listener request_show_window_menu;
     //  wl_listener set_parent;
-    //  wl_listener set_title;
-    //  wl_listener set_app_id;
 
 #ifdef XWAYLAND
     wlr_xwayland_surface *xwayland_surface{nullptr};

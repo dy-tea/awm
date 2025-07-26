@@ -1,6 +1,8 @@
 #include "Server.h"
 #include "WindowRule.h"
 #include <string_view>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // on map or display
@@ -333,6 +335,20 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
         }
     };
     wl_signal_add(&xdg_toplevel->events.request_minimize, &request_minimize);
+
+    // set_title
+    set_title.notify = []([[maybe_unused]] wl_listener *listener,
+                          [[maybe_unused]] void *data) {
+        // noop
+    };
+    wl_signal_add(&xdg_toplevel->events.set_title, &set_title);
+
+    // set_app_id
+    set_app_id.notify = []([[maybe_unused]] wl_listener *listener,
+                           [[maybe_unused]] void *data) {
+        // noop
+    };
+    wl_signal_add(&xdg_toplevel->events.set_app_id, &set_app_id);
 }
 
 Toplevel::~Toplevel() {
@@ -359,6 +375,8 @@ Toplevel::~Toplevel() {
         wl_list_remove(&request_maximize.link);
         wl_list_remove(&request_fullscreen.link);
         wl_list_remove(&request_minimize.link);
+        wl_list_remove(&set_title.link);
+        wl_list_remove(&set_app_id.link);
 #ifdef XWAYLAND
     }
 #endif

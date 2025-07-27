@@ -1,5 +1,6 @@
 #pragma once
-#include "Toplevel.h"
+
+#include "wlr.h"
 #include <regex>
 #include <string>
 
@@ -19,6 +20,8 @@ enum Rules {
     RULES_TOPLEVEL_H,
 };
 
+struct Toplevel;
+
 struct WindowRule {
     std::regex title_re;
     std::regex class_re;
@@ -32,8 +35,8 @@ struct WindowRule {
     xdg_toplevel_state *toplevel_state{nullptr};
     wlr_box *geometry{};
 
-    WindowRule(std::string title_match, std::string class_match, std::string tag_match,
-               uint8_t matches_present);
+    WindowRule(std::string title_match, std::string class_match,
+               std::string tag_match, uint8_t matches_present);
     ~WindowRule();
 
     void add_rule(Rules rule_name, int data);

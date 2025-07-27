@@ -1,4 +1,5 @@
 #include "IdleInhibitor.h"
+#include "Server.h"
 
 IdleInhibitor::IdleInhibitor(wlr_idle_inhibitor_v1 *idle_inhibitor,
                              Server *server)

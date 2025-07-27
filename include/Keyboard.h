@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Config.h"
+#include "wlr.h"
 
 struct Keyboard {
     wl_list link;
-    Server *server;
+    struct Server *server;
     struct wlr_keyboard *wlr_keyboard;
 
     wl_listener modifiers;

@@ -1,8 +1,13 @@
+#include "Toplevel.h"
+#include "Config.h"
+#include "IPC.h"
+#include "Output.h"
+#include "OutputManager.h"
+#include "Popup.h"
+#include "Seat.h"
 #include "Server.h"
 #include "WindowRule.h"
-#include <string_view>
-#include <wayland-server-core.h>
-#include <wayland-util.h>
+#include "Workspace.h"
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // on map or display

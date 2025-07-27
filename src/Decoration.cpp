@@ -1,4 +1,6 @@
+#include "Decoration.h"
 #include "Server.h"
+#include "Toplevel.h"
 
 const int TITLEBAR_HEIGHT = 30;
 const float TITLEBAR_COLOR[4] = {1.0f, 0.0f, 1.0f, 1.0f};

@@ -1,7 +1,10 @@
 #include "IPC.h"
+#include "Config.h"
+#include "Keyboard.h"
+#include "OutputManager.h"
 #include "Server.h"
+#include "Toplevel.h"
 #include "WorkspaceManager.h"
-#include "tomlcpp.hpp"
 #include "util.h"
 #include <string>
 #include <sys/socket.h>

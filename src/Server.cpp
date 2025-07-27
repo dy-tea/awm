@@ -1,8 +1,8 @@
 #include "Server.h"
-#include "Config.h"
 #include "IdleInhibitor.h"
+#include "Keyboard.h"
+#include "SessionLock.h"
 #include "wlr.h"
-#include <wayland-util.h>
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {

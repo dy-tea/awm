@@ -1,4 +1,5 @@
-#include "Server.h"
+#include "PointerConstraint.h"
+#include "Cursor.h"
 
 PointerConstraint::PointerConstraint(wlr_pointer_constraint_v1 *constraint,
                                      Cursor *cursor)

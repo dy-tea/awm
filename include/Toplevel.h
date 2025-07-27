@@ -8,7 +8,7 @@
 
 struct Toplevel {
     wl_list link;
-    Server *server;
+    struct Server *server;
     wlr_scene_tree *scene_tree{nullptr};
     wlr_scene_surface *scene_surface{nullptr};
 

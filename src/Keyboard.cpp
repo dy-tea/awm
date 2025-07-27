@@ -1,4 +1,10 @@
+#include "Keyboard.h"
+#include "Config.h"
+#include "Cursor.h"
+#include "IPC.h"
+#include "Seat.h"
 #include "Server.h"
+#include "util.h"
 
 // update the keyboard config
 void Keyboard::update_config() const {

@@ -1,13 +1,14 @@
 #include "Config.h"
+#include "Cursor.h"
+#include "Keyboard.h"
+#include "Seat.h"
 #include "Server.h"
-#include "WindowRule.h"
 #include "util.h"
 #include <libinput.h>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <tomlcpp.hpp>
-#include <wayland-client-protocol.h>
 
 // get the wlr modifier enum value from the string representation
 uint32_t parse_modifier(const std::string &modifier) {

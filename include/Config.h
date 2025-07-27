@@ -2,10 +2,8 @@
 
 #include "WindowRule.h"
 #include "tomlcpp.hpp"
-#include "util.h"
 #include "wlr.h"
 #include <filesystem>
-#include <libinput.h>
 #include <vector>
 
 const std::string MODIFIERS[] = {

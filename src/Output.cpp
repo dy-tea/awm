@@ -1,4 +1,9 @@
+#include "Output.h"
+#include "Config.h"
+#include "LayerSurface.h"
+#include "OutputManager.h"
 #include "Server.h"
+#include "WorkspaceManager.h"
 
 Output::Output(Server *server, struct wlr_output *wlr_output)
     : server(server), wlr_output(wlr_output) {

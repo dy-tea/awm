@@ -1,5 +1,9 @@
 #include "WindowRule.h"
+#include "Output.h"
+#include "OutputManager.h"
 #include "Server.h"
+#include "Toplevel.h"
+#include "Workspace.h"
 
 WindowRule::WindowRule(std::string title_match, std::string class_match,
                        std::string tag_match, uint8_t matches_present)

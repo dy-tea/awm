@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "Server.h"
 #include "version.h"
 #include <wordexp.h>

@@ -1,3 +1,6 @@
+#include "Seat.h"
+#include "Cursor.h"
+#include "Keyboard.h"
 #include "Server.h"
 
 Seat::Seat(Server *server) : server(server) {

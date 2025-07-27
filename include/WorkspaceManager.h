@@ -2,6 +2,8 @@
 
 #include "Output.h"
 #include "Workspace.h"
+#include <map>
+#include <string>
 
 struct OrphanedOutput {
     uint32_t active_num;

@@ -5,7 +5,7 @@
 #include <string>
 #include <unistd.h>
 
-#include "wlr.h"
+#include <wlr/util/log.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"

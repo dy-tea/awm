@@ -1,4 +1,13 @@
+#include "Cursor.h"
+#include "Config.h"
+#include "IPC.h"
+#include "Keyboard.h"
+#include "LayerSurface.h"
+#include "OutputManager.h"
+#include "Seat.h"
 #include "Server.h"
+#include "Toplevel.h"
+#include "Workspace.h"
 #include <pixman.h>
 
 Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {

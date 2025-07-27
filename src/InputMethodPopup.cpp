@@ -1,6 +1,10 @@
 #include "InputMethodPopup.h"
 #include "InputRelay.h"
+#include "Output.h"
+#include "OutputManager.h"
+#include "Seat.h"
 #include "Server.h"
+#include "TextInput.h"
 
 // based on labwc implementation
 

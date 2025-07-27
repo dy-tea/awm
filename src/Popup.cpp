@@ -1,4 +1,6 @@
 #include "Popup.h"
+#include "Output.h"
+#include "OutputManager.h"
 
 Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
              wlr_scene_tree *image_capture_parent, Server *server)

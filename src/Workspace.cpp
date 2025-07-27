@@ -1,5 +1,10 @@
+#include "Workspace.h"
+#include "Config.h"
+#include "IPC.h"
+#include "Output.h"
+#include "Seat.h"
 #include "Server.h"
-#include "wlr.h"
+#include "Toplevel.h"
 #include <algorithm>
 #include <limits>
 #include <stdexcept>

@@ -1,4 +1,8 @@
-#include "Server.h"
+#include "LayerSurface.h"
+#include "Output.h"
+#include "OutputManager.h"
+#include "Popup.h"
+#include "Seat.h"
 
 LayerSurface::LayerSurface(Output *output,
                            wlr_layer_surface_v1 *wlr_layer_surface)

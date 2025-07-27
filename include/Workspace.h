@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Toplevel.h"
 #include "wlr.h"
+#include <vector>
 
 struct Workspace {
     wl_list link;
     uint32_t num;
-    Output *output;
+    struct Output *output;
     wl_list toplevels;
-    Toplevel *active_toplevel{nullptr};
+    struct Toplevel *active_toplevel{nullptr};
 
     Workspace(Output *output, uint32_t num);
     ~Workspace() = default;

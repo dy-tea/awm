@@ -3,7 +3,7 @@
 #include "wlr.h"
 
 struct SessionLock {
-    Server *server;
+    struct Server *server;
     wlr_scene_tree *scene_tree;
     wlr_session_lock_v1 *session_lock;
 

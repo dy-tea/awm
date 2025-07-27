@@ -2,25 +2,20 @@
 
 #include <cassert>
 #include <fcntl.h>
+#include <string>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <wayland-server-core.h>
 
-#include "Decoration.h"
+#include "Config.h"
 #include "IPC.h"
-#include "Keyboard.h"
 #include "LayerSurface.h"
 #include "Output.h"
 #include "OutputManager.h"
 #include "PointerConstraint.h"
-#include "Popup.h"
 #include "Seat.h"
-#include "SessionLock.h"
-#include "TextInput.h"
 #include "Toplevel.h"
 #include "Workspace.h"
 #include "WorkspaceManager.h"
-#include "wlr.h"
 
 struct Server {
     Config *config;

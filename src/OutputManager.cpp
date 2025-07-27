@@ -1,6 +1,8 @@
-#include "IdleInhibitor.h"
+#include "OutputManager.h"
+#include "Config.h"
+#include "IPC.h"
+#include "Output.h"
 #include "Server.h"
-#include <map>
 
 OutputManager::OutputManager(Server *server) : server(server) {
     layout = wlr_output_layout_create(server->display);

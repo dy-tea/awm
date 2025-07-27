@@ -1,6 +1,5 @@
 #pragma once
 
-#include "wlr.h"
 #include <map>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -9,6 +8,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <vector>
+#include <wayland-server-core.h>
 using json = nlohmann::json;
 
 enum IPCMessage {

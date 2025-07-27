@@ -1,4 +1,8 @@
+#include "SessionLock.h"
+#include "Output.h"
+#include "Seat.h"
 #include "Server.h"
+#include "Workspace.h"
 
 SessionLock::SessionLock(Server *server, wlr_session_lock_v1 *session_lock)
     : server(server), session_lock(session_lock) {

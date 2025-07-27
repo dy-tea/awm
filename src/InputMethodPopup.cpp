@@ -10,6 +10,8 @@ InputMethodPopup::InputMethodPopup(InputRelay *relay,
       scene_tree(wlr_scene_subsurface_tree_create(relay->popup_tree,
                                                   popup_surface->surface)) {
 
+    wl_list_insert(&relay->popups, &link);
+
     commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         InputMethodPopup *popup = wl_container_of(listener, popup, commit);
         popup->update_position();

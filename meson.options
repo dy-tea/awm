@@ -1,3 +1,4 @@
 option('XWAYLAND', type: 'boolean', description: 'enable xwayland support')
+option('SYSTEMD', type: 'boolean', description: 'enable systemd support')
 option('tests', type: 'boolean', value: false, description: 'build tests')
 option('backward', type: 'boolean', value: false, description: 'link backward-cpp for backtraces')

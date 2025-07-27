@@ -21,6 +21,12 @@ if xwayland_option
   add_project_arguments('-DXWAYLAND', language: 'cpp')
 endif
 
+# optional systemd support
+systemd_option = get_option('SYSTEMD')
+if systemd_option
+  add_project_arguments('-DSYSTEMD', language: 'cpp')
+endif
+
 # programs
 wayland_scanner = find_program('wayland-scanner')
 

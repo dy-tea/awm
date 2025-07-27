@@ -1045,11 +1045,11 @@ Server::Server(Config *config) : config(config) {
 
     // set systemd user environment
     const std::string systemd_user_env[] = {
-        #ifdef SYSTEMD
+#ifdef SYSTEMD
         "systemctl --user set-environment XDG_CURRENT_DESKTOP=awm",
         "systemctl --user import-environment WAYLAND_DISPLAY DISPLAY "
-        #endif
         "XDG_CURRENT_DESKTOP AWM_SOCKET XCURSOR_SIZE XCURSOR_THEME",
+#endif
         "dbus-update-activation-environment WAYLAND_DISPLAY DISPLAY "
         "XDG_CURRENT_DESKTOP AWM_SOCKET XCURSOR_SIZE XCURSOR_THEME"};
     for (const std::string &command : systemd_user_env)

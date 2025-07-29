@@ -2,6 +2,7 @@
 #include "IdleInhibitor.h"
 #include "Keyboard.h"
 #include "SessionLock.h"
+#include "color-management-v1-protocol.h"
 #include "wlr.h"
 
 // get workspace by toplevel
@@ -826,33 +827,37 @@ Server::Server(Config *config) : config(config) {
                   &xdg_toplevel_set_tag);
 
     // color manager
-    const struct wlr_color_manager_v1_features color_manager_features = {
-        false, true, false, false, false, true, false, false};
-    const enum wp_color_manager_v1_render_intent
-        color_manager_render_intents[] = {
-            WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
+    if (renderer->features.input_color_transform) {
+        const struct wlr_color_manager_v1_features color_manager_features = {
+            false, true, false, false, false, true, false, false};
+        const enum wp_color_manager_v1_render_intent
+            color_manager_render_intents[] = {
+                WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
+            };
+        const enum wp_color_manager_v1_transfer_function
+            color_manager_transfer_functions[] = {
+                WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
+                WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
+                WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
+            };
+        const enum wp_color_manager_v1_primaries color_manager_primaries[] = {
+            WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+            WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
         };
-    const enum wp_color_manager_v1_transfer_function
-        color_manager_transfer_functions[] = {
-            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
-            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
+        const wlr_color_manager_v1_options color_manager_options = {
+            color_manager_features,
+            color_manager_render_intents,
+            sizeof(color_manager_render_intents) /
+                sizeof(color_manager_render_intents[0]),
+            color_manager_transfer_functions,
+            sizeof(color_manager_transfer_functions) /
+                sizeof(color_manager_transfer_functions[0]),
+            color_manager_primaries,
+            sizeof(color_manager_primaries) /
+                sizeof(color_manager_primaries[0]),
         };
-    const enum wp_color_manager_v1_primaries color_manager_primaries[] = {
-        WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
-        WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
-    };
-    const wlr_color_manager_v1_options color_manager_options = {
-        color_manager_features,
-        color_manager_render_intents,
-        sizeof(color_manager_render_intents) /
-            sizeof(color_manager_render_intents[0]),
-        color_manager_transfer_functions,
-        sizeof(color_manager_transfer_functions) /
-            sizeof(color_manager_transfer_functions[0]),
-        color_manager_primaries,
-        sizeof(color_manager_primaries) / sizeof(color_manager_primaries[0]),
-    };
-    wlr_color_manager_v1_create(display, 1, &color_manager_options);
+        wlr_color_manager_v1_create(display, 1, &color_manager_options);
+    }
 
     // color representation
     wp_color_representation_surface_v1_alpha_mode

@@ -188,9 +188,11 @@ void Toplevel::unmap_notify(wl_listener *listener,
     // remove links
     wl_list_remove(&toplevel->link);
 
+#ifdef XWAYLAND
     // commit is per-surface with xwayland
     if (toplevel->xwayland_surface)
         wl_list_remove(&toplevel->commit.link);
+#endif
 
     // remove foreign handle
     if (toplevel->foreign_handle) {

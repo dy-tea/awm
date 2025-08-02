@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <vector>
 #include <wayland-server-core.h>
-using json = nlohmann::json;
+using json = nlohmann::ordered_json;
 
 enum IPCMessage {
     IPC_NONE,

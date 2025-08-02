@@ -8,7 +8,7 @@
 #include "util.h"
 #include <string>
 #include <sys/socket.h>
-using json = nlohmann::json;
+using json = nlohmann::ordered_json;
 
 IPC::IPC(Server *server, std::string sock_path)
     : server(server), path(sock_path) {

@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-using json = nlohmann::json;
+using json = nlohmann::ordered_json;
 
 void print_err(std::string msg, ...) {
     va_list args;

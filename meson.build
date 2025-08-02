@@ -2,7 +2,7 @@ project(
   'awm',
   'cpp',
   'c',
-  version: '0.4.1',
+  version: '0.5.0',
   license: 'GPL-3.0-or-later',
   default_options: [
     'warning_level=3',

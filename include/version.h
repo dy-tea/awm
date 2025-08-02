@@ -1,1 +1,1 @@
-#define AWM_VERSION "0.4.1"
+#define AWM_VERSION "0.5.0"

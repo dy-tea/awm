@@ -105,8 +105,6 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
             cursor->pressed_buttons &= ~(1 << (event->button - 272));
         } else {
             // handle cursor focus
-            Server *server = cursor->server;
-
             double sx, sy;
             wlr_surface *surface = nullptr;
 
@@ -125,20 +123,18 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
 
             // add to pressed buttons
             cursor->pressed_buttons |= 1 << (event->button - 272);
-        }
 
-        // emit a keyboard event for the pressed button
-        Keyboard *keyboard =
-            wl_container_of(server->keyboards.next, keyboard, link);
-        uint32_t time_msec = event->time_msec;
-        wlr_keyboard_key_event *key_event = new wlr_keyboard_key_event{
-            time_msec,
-            0,
-            false,
-            static_cast<wl_keyboard_key_state>(event->state),
-        };
-        wl_signal_emit(&keyboard->wlr_keyboard->events.key, key_event);
-        delete key_event;
+            // perform mouse binds
+            Keyboard *keyboard =
+                wl_container_of(server->keyboards.next, keyboard, link);
+            uint32_t modifiers =
+                wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
+            for (uint32_t i = 0; i != 5; ++i)
+                if (cursor->pressed_buttons & (1 << i))
+                    server->handle_bind(
+                        Bind{BIND_NONE, modifiers,
+                             static_cast<xkb_keysym_t>(i + 0x20000000 + 272)});
+        }
     };
     wl_signal_add(&cursor->events.button, &button);
 

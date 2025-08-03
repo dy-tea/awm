@@ -27,6 +27,7 @@ enum IPCMessage {
     IPC_BIND_LIST,
     IPC_BIND_RUN,
     IPC_BIND_DISPLAY,
+    IPC_RULE_LIST
 };
 
 struct IPC {

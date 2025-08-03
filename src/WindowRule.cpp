@@ -7,7 +7,8 @@
 
 WindowRule::WindowRule(std::string title_match, std::string class_match,
                        std::string tag_match, uint8_t matches_present)
-    : title_re(std::regex(title_match)), class_re(std::regex(class_match)),
+    : title(title_match), class_(class_match), tag(tag_match),
+      title_re(std::regex(title_match)), class_re(std::regex(class_match)),
       tag_re(std::regex(tag_match)), matches_present(matches_present) {
     geometry = new wlr_box;
 }
@@ -18,8 +19,22 @@ WindowRule::~WindowRule() {
     delete geometry;
 }
 
+// boolean variant
+void WindowRule::add_rule(Rules rule_name) {
+    ++rule_count;
+
+    switch (rule_name) {
+    case RULES_TOPLEVEL_PIN:
+        pinned = true;
+        break;
+    default:
+        throw std::runtime_error("Invalid rule type for bool");
+    }
+}
+
+// integer variant
 void WindowRule::add_rule(Rules rule_name, int data) {
-    rule_count++;
+    ++rule_count;
 
     switch (rule_name) {
     case RULES_WORKSPACE: {
@@ -47,19 +62,21 @@ void WindowRule::add_rule(Rules rule_name, int data) {
     }
 }
 
+// string variant
 void WindowRule::add_rule(Rules rule_name, const std::string &data) {
     if (rule_name == RULES_OUTPUT) {
         output = data;
-        rule_count++;
+        ++rule_count;
     } else {
         throw std::runtime_error("Invalid rule type for std::string");
     }
 }
 
+// xdg_toplevel_state variant
 void WindowRule::add_rule(Rules rule_name, xdg_toplevel_state *data) {
     if (rule_name == RULES_TOPLEVEL_STATE) {
         toplevel_state = data;
-        rule_count++;
+        ++rule_count;
     } else {
         throw std::runtime_error("Invalid rule type for xdg_toplevel_state*");
     }
@@ -97,6 +114,9 @@ void WindowRule::apply(Toplevel *toplevel) {
     target_workspace->add_toplevel(toplevel, false);
     if (target_output->get_active() != target_workspace)
         toplevel->set_hidden(true);
+
+    // set toplevel pinned state
+    toplevel->pinned = pinned;
 
     // set toplevel geometry
     if (geometry)

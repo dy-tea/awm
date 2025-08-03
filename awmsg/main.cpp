@@ -51,7 +51,9 @@ void print_usage() {
                  "\t[b]ind\n"
                  "\t\t- [l]ist\n"
                  "\t\t- [r]un <name> <arg>\n"
-                 "\t\t- [d]isplay <name>\n");
+                 "\t\t- [d]isplay <name>\n"
+                 "\twindow[r]ule\n"
+                 "\t\t- [l]ist\n");
 }
 
 int arg_index = 0;
@@ -199,6 +201,15 @@ int main(int argc, char **argv) {
             message = "b d " + group;
             break;
         }
+        goto unknown;
+    case 'r': // windowrule
+        group = next(argc, argv);
+
+        if (group[0] == 'l') { // windowrule list
+            message = "r l";
+            break;
+        }
+
         [[fallthrough]];
     default:
     unknown:

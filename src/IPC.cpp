@@ -5,6 +5,7 @@
 #include "Server.h"
 #include "Toplevel.h"
 #include "WorkspaceManager.h"
+#include "backward.hpp"
 #include "util.h"
 #include <string>
 #include <sys/socket.h>
@@ -222,6 +223,18 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
                         message = IPC_BIND_DISPLAY;
                         break;
                     }
+                default:
+                    goto unknown;
+                }
+                break;
+            }
+            goto unknown;
+        case 'r': // windowrule
+            if (std::getline(ss, token, ' ')) {
+                switch (token[0]) {
+                case 'l': // windowrule list
+                    message = IPC_RULE_LIST;
+                    break;
                 default:
                     goto unknown;
                 }
@@ -594,6 +607,46 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 break;
             }
         }
+        break;
+    }
+    case IPC_RULE_LIST: {
+        std::vector<WindowRule *> rules = server->config->window_rules;
+        for (unsigned long i = 0; i != rules.size(); ++i) {
+            json res = {{"title", rules[i]->title},
+                        {"class", rules[i]->class_},
+                        {"tag", rules[i]->tag},
+                        {"rule_count", rules[i]->rule_count}};
+
+            if (rules[i]->workspace)
+                res["workspace"] = rules[i]->workspace;
+
+            if (!rules[i]->output.empty())
+                res["output"] = rules[i]->output;
+
+            if (rules[i]->toplevel_state)
+                switch (*rules[i]->toplevel_state) {
+                case XDG_TOPLEVEL_STATE_FULLSCREEN:
+                    res["toplevel_state"] = "fullscreen";
+                    break;
+                case XDG_TOPLEVEL_STATE_MAXIMIZED:
+                    res["toplevel_state"] = "maximized";
+                    break;
+                default:
+                    break;
+                }
+
+            if (rules[i]->pinned)
+                res["pinned"] = rules[i]->pinned;
+
+            if (rules[i]->geometry)
+                res["geometry"] = {{"x", rules[i]->geometry->x},
+                                   {"y", rules[i]->geometry->y},
+                                   {"width", rules[i]->geometry->width},
+                                   {"height", rules[i]->geometry->height}};
+
+            j[i] = res;
+        }
+
         break;
     }
     case IPC_NONE:

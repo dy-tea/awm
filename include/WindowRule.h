@@ -14,6 +14,7 @@ enum Rules {
     RULES_WORKSPACE,
     RULES_OUTPUT,
     RULES_TOPLEVEL_STATE,
+    RULES_TOPLEVEL_PIN,
     RULES_TOPLEVEL_X,
     RULES_TOPLEVEL_Y,
     RULES_TOPLEVEL_W,
@@ -23,22 +24,23 @@ enum Rules {
 struct Toplevel;
 
 struct WindowRule {
-    std::regex title_re;
-    std::regex class_re;
-    std::regex tag_re;
-    uint8_t matches_present; // WindowRuleFlags
+    std::string title, class_, tag;        // uncompiled
+    std::regex title_re, class_re, tag_re; // compiled
+    uint8_t matches_present;               // WindowRuleFlags
 
     size_t rule_count{0};
 
     int workspace{0};
     std::string output{};
     xdg_toplevel_state *toplevel_state{nullptr};
-    wlr_box *geometry{};
+    bool pinned{false};
+    wlr_box *geometry{nullptr};
 
     WindowRule(std::string title_match, std::string class_match,
                std::string tag_match, uint8_t matches_present);
     ~WindowRule();
 
+    void add_rule(Rules rule_name); // set bool to true
     void add_rule(Rules rule_name, int data);
     void add_rule(Rules rule_name, const std::string &data);
     void add_rule(Rules rule_name, xdg_toplevel_state *data);

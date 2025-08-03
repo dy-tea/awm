@@ -5,7 +5,7 @@ _awmsg_cmd_0 () {
 }
 
 _awmsg () {
-    local -a literals=("-h" "--help" "-v" "--version" "exit" "spawn" "-c" "--continuous" "-1" "--1-line" "-s" "--socket" "output" "list" "toplevels" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "none" "maximize" "fullscreen" "previous" "next" "move" "up" "down" "left" "right" "close" "swap_up" "swap_down" "swap_left" "swap_right" "half_up" "half_down" "half_left" "half_right" "tile" "tile_sans" "open" "window_to" "display")
+    local -a literals=("-h" "--help" "-v" "--version" "exit" "spawn" "-c" "--continuous" "-1" "--1-line" "-s" "--socket" "output" "list" "toplevels" "modes" "workspace" "list" "set" "toplevel" "list" "keyboard" "list" "device" "list" "current" "bind" "list" "run" "none" "maximize" "fullscreen" "previous" "next" "move" "up" "down" "left" "right" "close" "swap_up" "swap_down" "swap_left" "swap_right" "half_up" "half_down" "half_left" "half_right" "tile" "tile_sans" "open" "window_to" "display" "rule" "list")
 
     local -A descriptions
     descriptions[1]="show help"
@@ -55,20 +55,22 @@ _awmsg () {
     descriptions[51]="focus workspace N"
     descriptions[52]="move the active window to workspace N"
     descriptions[53]="display key binding for name"
+    descriptions[55]="list windowrules"
 
     local -A literal_transitions
-    literal_transitions[1]="([1]=2 [2]=2 [3]=2 [4]=2 [5]=2 [6]=3 [7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [17]=7 [20]=8 [22]=9 [24]=10 [27]=11)"
-    literal_transitions[4]="([7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [17]=7 [20]=8 [22]=9 [24]=10 [27]=11)"
+    literal_transitions[1]="([1]=2 [2]=2 [3]=2 [4]=2 [5]=2 [6]=3 [7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [17]=7 [20]=8 [22]=9 [24]=10 [27]=11 [54]=12)"
+    literal_transitions[4]="([7]=4 [8]=4 [9]=4 [10]=4 [11]=5 [12]=5 [13]=6 [17]=7 [20]=8 [22]=9 [24]=10 [27]=11 [54]=12)"
     literal_transitions[6]="([14]=2 [15]=2 [16]=2)"
-    literal_transitions[7]="([18]=2 [19]=14)"
+    literal_transitions[7]="([18]=2 [19]=15)"
     literal_transitions[8]="([21]=2)"
     literal_transitions[9]="([23]=2)"
     literal_transitions[10]="([25]=2 [26]=2)"
-    literal_transitions[11]="([28]=2 [29]=12 [53]=12)"
-    literal_transitions[12]="([5]=2 [30]=2 [31]=2 [32]=2 [33]=2 [34]=2 [35]=2 [36]=2 [37]=2 [38]=2 [39]=2 [40]=2 [41]=2 [42]=2 [43]=2 [44]=2 [45]=2 [46]=2 [47]=2 [48]=2 [49]=2 [50]=2 [51]=13 [52]=13)"
+    literal_transitions[11]="([28]=2 [29]=13 [53]=13)"
+    literal_transitions[12]="([55]=2)"
+    literal_transitions[13]="([5]=2 [30]=2 [31]=2 [32]=2 [33]=2 [34]=2 [35]=2 [36]=2 [37]=2 [38]=2 [39]=2 [40]=2 [41]=2 [42]=2 [43]=2 [44]=2 [45]=2 [46]=2 [47]=2 [48]=2 [49]=2 [50]=2 [51]=14 [52]=14)"
 
     local -A match_anything_transitions
-    match_anything_transitions=([3]=2 [13]=2 [5]=4 [14]=2)
+    match_anything_transitions=([3]=2 [14]=2 [5]=4 [15]=2)
 
     declare -A subword_transitions
 
@@ -104,7 +106,7 @@ _awmsg () {
 
         return 1
     done
-    declare -A literal_transitions_level_0=([12]="5 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52" [7]="18 19" [8]="21" [1]="1 2 3 4 5 6 7 8 9 10 11 12 13 17 20 22 24 27" [9]="23" [10]="25 26" [6]="14 15 16" [4]="7 8 9 10 11 12 13 17 20 22 24 27" [11]="28 29 53")
+    declare -A literal_transitions_level_0=([12]="55" [7]="18 19" [8]="21" [1]="1 2 3 4 5 6 7 8 9 10 11 12 13 17 20 22 24 27 54" [9]="23" [4]="7 8 9 10 11 12 13 17 20 22 24 27 54" [6]="14 15 16" [10]="25 26" [11]="28 29 53" [13]="5 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52")
     declare -A subword_transitions_level_0=()
     declare -A commands_level_0=()
     declare -A specialized_commands_level_0=([5]="0")

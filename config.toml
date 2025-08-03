@@ -140,3 +140,7 @@ geometry.height = 500
 [[windowrules]]
 tag = "sometag"     # regex match tag (only for wayland windows)
 state = "maximized" # maximized, fullscreen
+
+[[windowrules]]
+class = "org.gnome.gedit"
+pinned = true

@@ -72,7 +72,7 @@ function _awmsg
         set COMP_CWORD (count $COMP_WORDS)
     end
 
-    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes workspace list set toplevel list keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans open window_to display
+    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes workspace list set toplevel list keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans open window_to display rule list
 
     set descriptions
     set descriptions[1] "show help"
@@ -122,16 +122,17 @@ function _awmsg
     set descriptions[51] "focus workspace N"
     set descriptions[52] "move the active window to workspace N"
     set descriptions[53] "display key binding for name"
+    set descriptions[55] "list windowrules"
 
     set literal_transitions_inputs
-    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 11 12 13 17 20 22 24 27"
-    set literal_transitions_tos[1] "2 2 2 2 2 3 4 4 4 4 5 5 6 7 8 9 10 11"
-    set literal_transitions_inputs[4] "7 8 9 10 11 12 13 17 20 22 24 27"
-    set literal_transitions_tos[4] "4 4 4 4 5 5 6 7 8 9 10 11"
+    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 11 12 13 17 20 22 24 27 54"
+    set literal_transitions_tos[1] "2 2 2 2 2 3 4 4 4 4 5 5 6 7 8 9 10 11 12"
+    set literal_transitions_inputs[4] "7 8 9 10 11 12 13 17 20 22 24 27 54"
+    set literal_transitions_tos[4] "4 4 4 4 5 5 6 7 8 9 10 11 12"
     set literal_transitions_inputs[6] "14 15 16"
     set literal_transitions_tos[6] "2 2 2"
     set literal_transitions_inputs[7] "18 19"
-    set literal_transitions_tos[7] "2 14"
+    set literal_transitions_tos[7] "2 15"
     set literal_transitions_inputs[8] 21
     set literal_transitions_tos[8] 2
     set literal_transitions_inputs[9] 23
@@ -139,11 +140,13 @@ function _awmsg
     set literal_transitions_inputs[10] "25 26"
     set literal_transitions_tos[10] "2 2"
     set literal_transitions_inputs[11] "28 29 53"
-    set literal_transitions_tos[11] "2 12 12"
-    set literal_transitions_inputs[12] "5 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52"
-    set literal_transitions_tos[12] "2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 13 13"
+    set literal_transitions_tos[11] "2 13 13"
+    set literal_transitions_inputs[12] 55
+    set literal_transitions_tos[12] 2
+    set literal_transitions_inputs[13] "5 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52"
+    set literal_transitions_tos[13] "2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 14 14"
 
-    set match_anything_transitions_from 3 13 5 14
+    set match_anything_transitions_from 3 14 5 15
     set match_anything_transitions_to 2 2 4 2
 
     set state 1
@@ -174,8 +177,8 @@ function _awmsg
         return 1
     end
 
-    set literal_froms_level_0 12 7 8 1 9 10 6 4 11
-    set literal_inputs_level_0 "5 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52|18 19|21|1 2 3 4 5 6 7 8 9 10 11 12 13 17 20 22 24 27|23|25 26|14 15 16|7 8 9 10 11 12 13 17 20 22 24 27|28 29 53"
+    set literal_froms_level_0 12 7 8 1 9 4 6 10 11 13
+    set literal_inputs_level_0 "55|18 19|21|1 2 3 4 5 6 7 8 9 10 11 12 13 17 20 22 24 27 54|23|7 8 9 10 11 12 13 17 20 22 24 27 54|14 15 16|25 26|28 29 53|5 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52"
     set command_froms_level_0 5
     set commands_level_0 "0"
 

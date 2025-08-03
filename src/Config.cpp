@@ -4,7 +4,9 @@
 #include "Seat.h"
 #include "Server.h"
 #include "util.h"
+#include "xdg-shell-protocol.h"
 #include <libinput.h>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -715,48 +717,43 @@ bool Config::load() {
                     w->add_rule(RULES_OUTPUT, initial_output.second);
 
                 // state
-                xdg_toplevel_state *state = new xdg_toplevel_state;
+                int state = 0;
                 set_option("windowrules.state", {"maximized", "fullscreen"},
                            {XDG_TOPLEVEL_STATE_MAXIMIZED,
                             XDG_TOPLEVEL_STATE_FULLSCREEN},
-                           table.getString("state"), state);
-                if (state)
-                    w->add_rule(RULES_TOPLEVEL_STATE, state);
-                else
-                    delete state;
+                           table.getString("state"), &state);
+                if (state) {
+                    xdg_toplevel_state *st = new xdg_toplevel_state;
+                    *st = static_cast<xdg_toplevel_state>(state);
+                    w->add_rule(RULES_TOPLEVEL_STATE, st);
+                }
+
+                // toplevel pinned
+                if (auto pin = table.getBool("pinned"); pin.first && pin.second)
+                    w->add_rule(RULES_TOPLEVEL_PIN);
 
                 // geometry
                 if (auto geometry_table = table.getTable("geometry")) {
-                    int *x = new int;
-                    int *y = new int;
-                    int *width = new int;
-                    int *height = new int;
+                    int x = 0, y = 0, width = 0, height = 0;
+                    w->geometry = new wlr_box;
 
                     // x
-                    connect<int>(geometry_table->getInt("x"), x);
-                    if (x)
-                        w->add_rule(RULES_TOPLEVEL_X, *x);
+                    connect<int>(geometry_table->getInt("x"), &x, 0);
+                    w->add_rule(RULES_TOPLEVEL_X, x);
 
                     // y
-                    connect<int>(geometry_table->getInt("y"), y);
-                    if (y)
-                        w->add_rule(RULES_TOPLEVEL_Y, *y);
+                    connect<int>(geometry_table->getInt("y"), &y, 0);
+                    w->add_rule(RULES_TOPLEVEL_Y, y);
 
                     // width
-                    connect<int>(geometry_table->getInt("width"), width);
-                    if (width)
-                        w->add_rule(RULES_TOPLEVEL_W, *width);
+                    connect<int>(geometry_table->getInt("width"), &width, 0);
+                    w->add_rule(RULES_TOPLEVEL_W, width);
 
                     // height
-                    connect<int>(geometry_table->getInt("height"), height);
-                    if (height)
-                        w->add_rule(RULES_TOPLEVEL_H, *height);
-
-                    delete x;
-                    delete y;
-                    delete width;
-                    delete height;
-                }
+                    connect<int>(geometry_table->getInt("height"), &height, 0);
+                    w->add_rule(RULES_TOPLEVEL_H, height);
+                } else
+                    w->geometry = nullptr;
 
                 if (w->rule_count)
                     window_rules.emplace_back(w);

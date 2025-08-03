@@ -707,66 +707,47 @@ bool Config::load() {
                         tag_result.first << 2);
 
                 // workspace
-                if (auto initial_workspace = table.getInt("workspace");
-                    initial_workspace.first)
-                    w->add_rule(RULES_WORKSPACE, initial_workspace.second);
+                connect<int>(table.getInt("workspace"), &w->workspace, 0);
 
                 // output
-                if (auto initial_output = table.getString("output");
-                    initial_output.first)
-                    w->add_rule(RULES_OUTPUT, initial_output.second);
+                connect(table.getString("output"), &w->output);
 
                 // state
-                int state = 0;
-                set_option("windowrules.state", {"maximized", "fullscreen"},
-                           {XDG_TOPLEVEL_STATE_MAXIMIZED,
-                            XDG_TOPLEVEL_STATE_FULLSCREEN},
-                           table.getString("state"), &state);
-                if (state) {
-                    xdg_toplevel_state *st = new xdg_toplevel_state;
-                    *st = static_cast<xdg_toplevel_state>(state);
-                    w->add_rule(RULES_TOPLEVEL_STATE, st);
+                if (auto state_source = table.getString("state");
+                    state_source.first) {
+                    w->toplevel_state = new xdg_toplevel_state;
+                    set_option("windowrules.state", {"maximized", "fullscreen"},
+                               {XDG_TOPLEVEL_STATE_MAXIMIZED,
+                                XDG_TOPLEVEL_STATE_FULLSCREEN},
+                               state_source, w->toplevel_state);
                 }
 
                 // toplevel pinned
-                if (auto pin = table.getBool("pinned"); pin.first && pin.second)
-                    w->add_rule(RULES_TOPLEVEL_PIN);
+                connect(table.getBool("pinned"), &w->pinned);
 
                 // geometry
                 if (auto geometry_table = table.getTable("geometry")) {
-                    int x = 0, y = 0, width = 0, height = 0;
                     w->geometry = new wlr_box;
 
                     // x
-                    connect<int>(geometry_table->getInt("x"), &x, 0);
-                    w->add_rule(RULES_TOPLEVEL_X, x);
+                    connect<int>(geometry_table->getInt("x"), &w->geometry->x,
+                                 0);
 
                     // y
-                    connect<int>(geometry_table->getInt("y"), &y, 0);
-                    w->add_rule(RULES_TOPLEVEL_Y, y);
+                    connect<int>(geometry_table->getInt("y"), &w->geometry->y,
+                                 0);
 
                     // width
-                    connect<int>(geometry_table->getInt("width"), &width, 0);
-                    w->add_rule(RULES_TOPLEVEL_W, width);
+                    connect<int>(geometry_table->getInt("width"),
+                                 &w->geometry->width, 0);
 
                     // height
-                    connect<int>(geometry_table->getInt("height"), &height, 0);
-                    w->add_rule(RULES_TOPLEVEL_H, height);
+                    connect<int>(geometry_table->getInt("height"),
+                                 &w->geometry->height, 0);
                 } else
                     w->geometry = nullptr;
 
-                if (w->rule_count)
-                    window_rules.emplace_back(w);
-                else {
-                    notify_send(
-                        "Config",
-                        "No rules found for window_rule with title: "
-                        "%s, class: %s, tag: %s",
-                        title_result.first ? title_result.second.c_str() : "",
-                        class_result.first ? class_result.second.c_str() : "",
-                        tag_result.first ? tag_result.second.c_str() : "");
-                    delete w;
-                }
+                window_rules.emplace_back(w);
             }
         }
     }

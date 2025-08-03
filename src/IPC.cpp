@@ -5,7 +5,6 @@
 #include "Server.h"
 #include "Toplevel.h"
 #include "WorkspaceManager.h"
-#include "backward.hpp"
 #include "util.h"
 #include <string>
 #include <sys/socket.h>
@@ -614,8 +613,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         for (unsigned long i = 0; i != rules.size(); ++i) {
             json res = {{"title", rules[i]->title},
                         {"class", rules[i]->class_},
-                        {"tag", rules[i]->tag},
-                        {"rule_count", rules[i]->rule_count}};
+                        {"tag", rules[i]->tag}};
 
             if (rules[i]->workspace)
                 res["workspace"] = rules[i]->workspace;

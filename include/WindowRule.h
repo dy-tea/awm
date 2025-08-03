@@ -28,8 +28,6 @@ struct WindowRule {
     std::regex title_re, class_re, tag_re; // compiled
     uint8_t matches_present;               // WindowRuleFlags
 
-    size_t rule_count{0};
-
     int workspace{0};
     std::string output{};
     xdg_toplevel_state *toplevel_state{nullptr};
@@ -40,10 +38,6 @@ struct WindowRule {
                std::string tag_match, uint8_t matches_present);
     ~WindowRule();
 
-    void add_rule(Rules rule_name); // set bool to true
-    void add_rule(Rules rule_name, int data);
-    void add_rule(Rules rule_name, const std::string &data);
-    void add_rule(Rules rule_name, xdg_toplevel_state *data);
     bool matches(Toplevel *toplevel);
     void apply(Toplevel *toplevel);
 };

@@ -19,69 +19,6 @@ WindowRule::~WindowRule() {
     delete geometry;
 }
 
-// boolean variant
-void WindowRule::add_rule(Rules rule_name) {
-    ++rule_count;
-
-    switch (rule_name) {
-    case RULES_TOPLEVEL_PIN:
-        pinned = true;
-        break;
-    default:
-        throw std::runtime_error("Invalid rule type for bool");
-    }
-}
-
-// integer variant
-void WindowRule::add_rule(Rules rule_name, int data) {
-    ++rule_count;
-
-    switch (rule_name) {
-    case RULES_WORKSPACE: {
-        workspace = data;
-        break;
-    }
-    case RULES_TOPLEVEL_X: {
-        geometry->x = data;
-        break;
-    }
-    case RULES_TOPLEVEL_Y: {
-        geometry->y = data;
-        break;
-    }
-    case RULES_TOPLEVEL_W: {
-        geometry->width = data;
-        break;
-    }
-    case RULES_TOPLEVEL_H: {
-        geometry->height = data;
-        break;
-    }
-    default:
-        throw std::runtime_error("Invalid rule type for int");
-    }
-}
-
-// string variant
-void WindowRule::add_rule(Rules rule_name, const std::string &data) {
-    if (rule_name == RULES_OUTPUT) {
-        output = data;
-        ++rule_count;
-    } else {
-        throw std::runtime_error("Invalid rule type for std::string");
-    }
-}
-
-// xdg_toplevel_state variant
-void WindowRule::add_rule(Rules rule_name, xdg_toplevel_state *data) {
-    if (rule_name == RULES_TOPLEVEL_STATE) {
-        toplevel_state = data;
-        ++rule_count;
-    } else {
-        throw std::runtime_error("Invalid rule type for xdg_toplevel_state*");
-    }
-}
-
 // see if toplevel matches window rule
 bool WindowRule::matches(Toplevel *toplevel) {
     bool match = true;

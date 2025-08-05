@@ -131,7 +131,6 @@ Unstable:
 - [XDG output](https://wayland.app/protocols/xdg-output-unstable-v1)
 
 WLR Unstable:
-- [wlr data control](https://wayland.app/protocols/wlr-data-control-unstable-v1)
 - [wlr export DMA-BUF](https://wayland.app/protocols/wlr-export-dmabuf-unstable-v1)
 - [wlr foreign toplevel management](https://wayland.app/protocols/wlr-foreign-toplevel-management-unstable-v1)
 - [wlr gamma control](https://wayland.app/protocols/wlr-gamma-control-unstable-v1)

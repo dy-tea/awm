@@ -917,8 +917,7 @@ Server::Server(Config *config) : config(config) {
     // screencopy manager
     wlr_screencopy_manager_v1_create(display);
 
-    // data control manager
-    wlr_data_control_manager_v1_create(display);
+    // ext data control manager
     wlr_ext_data_control_manager_v1_create(display, 1);
 
     // gamma control manager

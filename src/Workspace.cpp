@@ -198,8 +198,8 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
 // set the toplevel to take up half the screen in the given direction
 void Workspace::set_half_in_direction(Toplevel *toplevel,
                                       wlr_direction direction) {
-    int x = output->usable_area.x;
-    int y = output->usable_area.y;
+    int x = output->layout_geometry.x + output->usable_area.x;
+    int y = output->layout_geometry.y + output->usable_area.y;
     int width = output->usable_area.width;
     int height = output->usable_area.height;
     switch (direction) {

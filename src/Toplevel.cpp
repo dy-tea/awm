@@ -17,11 +17,11 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     Output *output = nullptr;
 
     // apply rule
-    WindowRule *matching = nullptr;
+    WindowRule *matching_rule = nullptr;
     for (WindowRule *rule : server->config->window_rules)
         if (rule->matches(toplevel)) {
-            matching = rule;
-            output = server->output_manager->get_output(matching->output);
+            matching_rule = rule;
+            output = server->output_manager->get_output(matching_rule->output);
             break;
         }
 
@@ -30,12 +30,12 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
     // xdg toplevel
     if (const wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel) {
+        wlr_surface *base = xdg_toplevel->base->surface;
+
         // set the fractional scale for this surface
         const float scale = output->wlr_output->scale;
-        wlr_fractional_scale_v1_notify_scale(xdg_toplevel->base->surface,
-                                             scale);
-        wlr_surface_set_preferred_buffer_scale(xdg_toplevel->base->surface,
-                                               ceil(scale));
+        wlr_fractional_scale_v1_notify_scale(base, scale);
+        wlr_surface_set_preferred_buffer_scale(base, ceil(scale));
 
         // get usable area of the output
         wlr_box usable_area = output->usable_area;
@@ -50,8 +50,8 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
         // set current width and height if not scheduled
         if (!width || !height) {
-            width = xdg_toplevel->base->surface->current.width;
-            height = xdg_toplevel->base->surface->current.height;
+            width = base->current.width;
+            height = base->current.height;
         }
 
         // ensure size does not exceed output
@@ -77,6 +77,8 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         if (!xwayland_surface->surface)
             return;
 
+        wlr_surface *base = xwayland_surface->surface;
+
         // add commit listener
         toplevel->commit.notify = [](wl_listener *listener,
                                      [[maybe_unused]] void *data) {
@@ -96,16 +98,15 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
                 toplevel->set_position_size(*current);
             }
         };
-        wl_signal_add(&toplevel->xwayland_surface->surface->events.commit,
-                      &toplevel->commit);
+        wl_signal_add(&base->events.commit, &toplevel->commit);
 
         // create scene surface
-        toplevel->scene_surface = wlr_scene_surface_create(
-            toplevel->scene_tree, xwayland_surface->surface);
+        toplevel->scene_surface =
+            wlr_scene_surface_create(toplevel->scene_tree, base);
 
         // create image capture scene surface
-        toplevel->image_capture_surface = wlr_scene_surface_create(
-            &toplevel->image_capture->tree, xwayland_surface->surface);
+        toplevel->image_capture_surface =
+            wlr_scene_surface_create(&toplevel->image_capture->tree, base);
 
         // get usable area of the output
         wlr_box area = output->usable_area;
@@ -147,9 +148,10 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             wlr_xwayland_set_seat(server->xwayland, server->seat->wlr_seat);
     }
 #endif
-    if (matching)
+
+    if (matching_rule)
         // apply window rule
-        matching->apply(toplevel);
+        matching_rule->apply(toplevel);
     else
         // add toplevel to active workspace and focus it
         output->get_active()->add_toplevel(toplevel, true);

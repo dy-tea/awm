@@ -3,6 +3,7 @@
 #include "OutputManager.h"
 #include "Popup.h"
 #include "Seat.h"
+#include "wlr.h"
 
 LayerSurface::LayerSurface(Output *output,
                            wlr_layer_surface_v1 *wlr_layer_surface)
@@ -32,11 +33,12 @@ LayerSurface::LayerSurface(Output *output,
     map.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         // get seat and pointer focus on map
         LayerSurface *surface = wl_container_of(listener, surface, map);
+        Output *output = surface->output;
         const wlr_layer_surface_v1 *layer_surface = surface->wlr_layer_surface;
 
         // rearrange layers and outputs
-        surface->output->arrange_layers();
-        surface->output->server->output_manager->arrange();
+        output->arrange_layers();
+        output->server->output_manager->arrange();
 
         // handle focus
         if (layer_surface->current.keyboard_interactive &&

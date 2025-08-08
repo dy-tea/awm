@@ -153,16 +153,7 @@ void OutputManager::apply_config(wlr_output_configuration_v1 *cfg,
 
 // get output by wlr_output
 Output *OutputManager::get_output(const wlr_output *wlr_output) {
-    // check each output
-    Output *output, *tmp;
-    wl_list_for_each_safe(output, tmp, &outputs,
-                          link) if (output->wlr_output ==
-                                    wlr_output) return output;
-
-    // no output found
-    wlr_log(WLR_ERROR, "could not find output of pointer %p",
-            (void *)wlr_output);
-    return nullptr;
+    return static_cast<Output *>(wlr_output->data);
 }
 
 // get output by name
@@ -180,14 +171,11 @@ Output *OutputManager::get_output(const std::string &name) {
 
 // get the output based on screen coordinates
 Output *OutputManager::output_at(const double x, const double y) {
-    const wlr_output *wlr_output = wlr_output_layout_output_at(layout, x, y);
-
-    // no output found
+    wlr_output *wlr_output = wlr_output_layout_output_at(layout, x, y);
     if (!wlr_output)
         return nullptr;
 
-    // get associated output
-    return get_output(wlr_output);
+    return static_cast<Output *>(wlr_output->data);
 }
 
 // arrange layer shell layers on each output

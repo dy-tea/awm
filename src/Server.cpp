@@ -2,23 +2,11 @@
 #include "IdleInhibitor.h"
 #include "Keyboard.h"
 #include "SessionLock.h"
-#include "color-management-v1-protocol.h"
 #include "wlr.h"
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
-    Output *output, *tmp;
-    Workspace *workspace, *tmp1;
-
-    // check each output
-    // for each output check each workspace
-    wl_list_for_each_safe(output, tmp, &output_manager->outputs, link)
-        wl_list_for_each_safe(
-            workspace, tmp1, &workspace_manager->workspaces,
-            link) if (workspace->contains(toplevel)) return workspace;
-
-    // no workspace found
-    return nullptr;
+    return workspace_manager->get_workspace_for_toplevel(toplevel);
 }
 
 // get a node tree surface from its location and cast it to the generic
@@ -93,26 +81,23 @@ Output *Server::get_output(const wlr_output *wlr_output) const {
 
 // get toplevel by wlr_surface
 Toplevel *Server::get_toplevel(wlr_surface *surface) const {
-    // check each toplevel in each workspace in each output
+    // check each toplevel in each workspace
     // get the toplevel by the surface
     // optionally get xwayland toplevels
     //
-    // O(n^3) search my beloved
-    Output *output, *tmp;
-    Workspace *workspace, *tmp1;
-    Toplevel *toplevel, *tmp2;
-    wl_list_for_each_safe(output, tmp, &output_manager->outputs, link)
-        wl_list_for_each_safe(workspace, tmp1, &workspace_manager->workspaces,
-                              link)
-            wl_list_for_each_safe(
-                toplevel, tmp2, &workspace->toplevels,
-                link) if ((toplevel->xdg_toplevel &&
-                           toplevel->xdg_toplevel->base->surface == surface)
+    // O(n^2) search my beloved
+    Workspace *workspace, *tmp;
+    Toplevel *toplevel, *tmp1;
+    wl_list_for_each_safe(workspace, tmp, &workspace_manager->workspaces, link)
+        wl_list_for_each_safe(
+            toplevel, tmp1, &workspace->toplevels,
+            link) if ((toplevel->xdg_toplevel &&
+                       toplevel->xdg_toplevel->base->surface == surface)
 #ifdef XWAYLAND
-                          || (toplevel->xwayland_surface &&
-                              toplevel->xwayland_surface->surface == surface)
+                      || (toplevel->xwayland_surface &&
+                          toplevel->xwayland_surface->surface == surface)
 #endif
-                              ) return toplevel;
+                          ) return toplevel;
 
     return nullptr;
 }
@@ -616,11 +601,9 @@ Server::Server(Config *config) : config(config) {
         Server *server = wl_container_of(listener, server, new_xdg_dialog);
         wlr_xdg_dialog_v1 *dialog = static_cast<wlr_xdg_dialog_v1 *>(data);
 
-        // find toplevel associated with the dialog
+        // get associated toplevel
         Toplevel *toplevel =
-            server->get_toplevel(dialog->xdg_toplevel->base->surface);
-        if (!toplevel)
-            return;
+            static_cast<Toplevel *>(dialog->xdg_toplevel->base->data);
 
         // a toplevel should only have one dialog, technically I should raise
         // error already_used but I'm unsure how to do this with wlroots
@@ -817,10 +800,7 @@ Server::Server(Config *config) : config(config) {
             static_cast<wlr_xdg_toplevel_tag_manager_v1_set_tag_event *>(data);
 
         Toplevel *toplevel =
-            server->get_toplevel(event->toplevel->base->surface);
-        if (!toplevel)
-            return;
-
+            static_cast<Toplevel *>(event->toplevel->base->data);
         toplevel->tag = event->tag;
     };
     wl_signal_add(&wlr_xdg_toplevel_tag_manager->events.set_tag,

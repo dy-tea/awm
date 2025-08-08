@@ -127,7 +127,7 @@ struct Server {
     Server(Config *config);
     ~Server();
 
-    void exit() const;
+    void exit();
 
     void spawn(const std::string &command) const;
 

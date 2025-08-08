@@ -183,7 +183,7 @@ struct Config {
 
     Config();
     explicit Config(const std::string &path);
-    ~Config() = default;
+    ~Config();
 
     void set_bind(const std::string &name, toml::Table *source,
                   const BindName target);

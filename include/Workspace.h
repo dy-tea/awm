@@ -11,7 +11,7 @@ struct Workspace {
     struct Toplevel *active_toplevel{nullptr};
 
     Workspace(Output *output, uint32_t num);
-    ~Workspace() = default;
+    ~Workspace();
 
     void add_toplevel(Toplevel *toplevel, bool focus);
     void close(Toplevel *toplevel);

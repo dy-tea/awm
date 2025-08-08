@@ -9,6 +9,11 @@ WorkspaceManager::WorkspaceManager(Server *server) : server(server) {
 WorkspaceManager::~WorkspaceManager() {
     Workspace *workspace, *tmp;
     wl_list_for_each_safe(workspace, tmp, &workspaces, link) delete workspace;
+
+    // delete orphaned workspaces
+    for (auto [a, b] : orphaned_outputs_map)
+        for (Workspace *workspace : b.workspaces)
+            delete workspace;
 }
 
 // Create a new workspace for an output

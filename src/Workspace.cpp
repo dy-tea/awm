@@ -14,6 +14,11 @@ Workspace::Workspace(Output *output, const uint32_t num)
     wl_list_init(&toplevels);
 }
 
+Workspace::~Workspace() {
+    Toplevel *toplevel, *tmp;
+    wl_list_for_each_safe(toplevel, tmp, &toplevels, link) delete toplevel;
+}
+
 // add a toplevel to the workspace
 void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
     // ensure toplevel is not already in workspace

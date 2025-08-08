@@ -1060,7 +1060,7 @@ Server::Server(Config *config) : config(config) {
 }
 
 // stop server and run exit commands
-void Server::exit() const {
+void Server::exit() {
     wl_display_terminate(display);
 
     // run exit commands
@@ -1068,8 +1068,10 @@ void Server::exit() const {
         spawn(command);
 
     // stop IPC
-    if (ipc)
+    if (ipc) {
         ipc->stop();
+        ipc = nullptr;
+    }
 }
 
 Server::~Server() {
@@ -1078,9 +1080,14 @@ Server::~Server() {
     Keyboard *kb, *kbt;
     wl_list_for_each_safe(kb, kbt, &keyboards, link) delete kb;
 
+    LayerSurface *ls, *lst;
+    wl_list_for_each_safe(ls, lst, &layer_surfaces, link) delete ls;
+
     delete seat;
     delete cursor;
+    delete workspace_manager;
     delete output_manager;
+    workspace_manager = nullptr;
 
     wl_list_remove(&renderer_lost.link);
 
@@ -1104,9 +1111,6 @@ Server::~Server() {
 #ifdef XDG_DECORATION
     wl_list_remove(&new_xdg_decoration.link);
 #endif
-
-    LayerSurface *ls, *lst;
-    wl_list_for_each_safe(ls, lst, &layer_surfaces, link) delete ls;
 
 #ifdef XWAYLAND
     wl_list_remove(&xwayland_ready.link);

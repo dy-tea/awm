@@ -121,7 +121,8 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
 }
 
 Output::~Output() {
-    server->workspace_manager->orphanize_workspaces(this);
+    if (server->workspace_manager)
+        server->workspace_manager->orphanize_workspaces(this);
 
     wl_list_remove(&frame.link);
     wl_list_remove(&request_state.link);

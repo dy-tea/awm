@@ -727,8 +727,6 @@ bool Config::load() {
 
                 // geometry
                 if (auto geometry_table = table.getTable("geometry")) {
-                    w->geometry = new wlr_box;
-
                     // x
                     connect<int>(geometry_table->getInt("x"), &w->geometry->x,
                                  0);
@@ -744,8 +742,10 @@ bool Config::load() {
                     // height
                     connect<int>(geometry_table->getInt("height"),
                                  &w->geometry->height, 0);
-                } else
+                } else {
+                    delete w->geometry;
                     w->geometry = nullptr;
+                }
 
                 window_rules.emplace_back(w);
             }
@@ -753,6 +753,14 @@ bool Config::load() {
     }
 
     return true;
+}
+
+Config::~Config() {
+    for (OutputConfig *output_config : outputs)
+        delete output_config;
+
+    for (WindowRule *rule : window_rules)
+        delete rule;
 }
 
 // update the config

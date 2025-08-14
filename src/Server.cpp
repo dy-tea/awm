@@ -917,6 +917,9 @@ Server::Server(Config *config) : config(config) {
     // single pixel buffer
     wlr_single_pixel_buffer_manager_v1_create(display);
 
+    // fixes
+    wlr_fixes_create(display, 1);
+
     // avoid using "wayland-0" as display socket
     std::string socket;
     for (unsigned int i = 1; i <= 32; i++) {

@@ -13,7 +13,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: dependencies
         run: |
@@ -23,28 +23,28 @@ jobs:
 
       - name: pixman-1
         run: |
-          git clone https://gitlab.freedesktop.org/pixman/pixman.git
+          git clone --depth 1 https://gitlab.freedesktop.org/pixman/pixman.git
           cd pixman
           meson setup build/
           sudo ninja -C build/ install
 
       - name: libinput
         run: |
-          git clone https://gitlab.freedesktop.org/libinput/libinput.git
+          git clone --depth 1 https://gitlab.freedesktop.org/libinput/libinput.git
           cd libinput
           meson setup -Ddebug-gui=false -Dtests=false build/
           sudo ninja -C build/ install
 
       - name: xkbcommon
         run: |
-          git clone https://github.com/xkbcommon/libxkbcommon.git
+          git clone --depth 1 https://github.com/xkbcommon/libxkbcommon.git
           cd libxkbcommon
           meson setup -Denable-x11=false build/
           sudo ninja -C build/ install
 
       - name: wayland
         run: |
-          git clone https://gitlab.freedesktop.org/wayland/wayland.git
+          git clone --depth 1 https://gitlab.freedesktop.org/wayland/wayland.git
           cd wayland
           meson setup -Dtests=false -Ddocumentation=false -Ddtd_validation=false build/
           sudo ninja -C build/ install
@@ -58,14 +58,14 @@ jobs:
 
       - name: wayland-protocols
         run: |
-          git clone https://gitlab.freedesktop.org/wayland/wayland-protocols.git
+          git clone --depth 1 https://gitlab.freedesktop.org/wayland/wayland-protocols.git
           cd wayland-protocols
           meson setup -Dtests=false build/
           sudo ninja -C build/ install
 
       - name: wlroots
         run: |
-          git clone https://gitlab.freedesktop.org/wlroots/wlroots.git
+          git clone --depth 1 https://gitlab.freedesktop.org/wlroots/wlroots.git
           cd wlroots
           meson setup -Dxwayland=enabled build/
           sudo ninja -C build/ install

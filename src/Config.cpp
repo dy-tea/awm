@@ -4,7 +4,6 @@
 #include "Seat.h"
 #include "Server.h"
 #include "util.h"
-#include "xdg-shell-protocol.h"
 #include <libinput.h>
 #include <memory>
 #include <optional>

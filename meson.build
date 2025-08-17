@@ -30,17 +30,9 @@ endif
 # programs
 wayland_scanner = find_program('wayland-scanner')
 
-# wayland dirs
-wl_protocols_dep = dependency('wayland-protocols', version: '>=1.41', default_options: ['tests=false'])
-wl_protocols_dir = wl_protocols_dep.get_variable(pkgconfig: 'pkgdatadir')
-
-protocol_sources = []
-protocol_code = []
-
 # wayland protocols
+protocol_sources = []
 protocols = [
-  wl_protocols_dir / 'stable' / 'xdg-shell' / 'xdg-shell.xml',
-  wl_protocols_dir / 'unstable' / 'xdg-output' / 'xdg-output-unstable-v1.xml',
   'protocols' / 'wlr-layer-shell-unstable-v1.xml',
   'protocols' / 'wlr-output-power-management-unstable-v1.xml',
 ]
@@ -55,15 +47,6 @@ foreach protocol : protocols
     command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
   )
   protocol_sources += [header]
-
-  out_c = '@0@-protocol.c'.format(protocol)
-  code = custom_target(
-    out_c.underscorify() + '_c',
-    input: protocol,
-    output: '@BASENAME@-protocol.c',
-    command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
-  )
-  protocol_code += [code]
 endforeach
 
 # dependencies
@@ -145,7 +128,6 @@ executable(
     'src' / 'InputMethod.cpp',
     'src' / 'InputMethodPopup.cpp',
     protocol_sources,
-    protocol_code,
   ],
   include_directories: include,
   dependencies: libs,

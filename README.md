@@ -13,7 +13,6 @@ https://github.com/user-attachments/assets/ebbc565e-4f09-4ac7-b204-8dea5832f9e3
 - `wlroots-git` **0.20**
 - `xkbcommon`
 - `wayland-server`
-- `wayland-protocols`
 - `nlohmann-json`
 - `xwayland` (can be disabled in build)
 

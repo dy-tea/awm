@@ -127,6 +127,7 @@ executable(
     'src' / 'InputRelay.cpp',
     'src' / 'InputMethod.cpp',
     'src' / 'InputMethodPopup.cpp',
+    'src' / 'TearingController.cpp',
     protocol_sources,
   ],
   include_directories: include,

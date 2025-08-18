@@ -103,6 +103,7 @@ Staging:
 - [Idle notify](https://wayland.app/protocols/ext-idle-notify-v1)
 - [Image Capture Source](https://wayland.app/protocols/ext-image-capture-source-v1)
 - [Image Copy Capture](https://wayland.app/protocols/ext-image-copy-capture-v1)
+- [Tearing control](https://wayland.app/protocols/tearing-control-v1)
 - [Xwayland shell](https://wayland.app/protocols/xwayland-shell-v1) **WIP**
 - [Fractional scale](https://wayland.app/protocols/fractional-scale-v1) ?
 - [Cursor shape](https://wayland.app/protocols/cursor-shape-v1)

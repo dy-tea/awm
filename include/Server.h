@@ -16,6 +16,7 @@
 #include "Toplevel.h"
 #include "Workspace.h"
 #include "WorkspaceManager.h"
+#include "wlr.h"
 
 struct Server {
     Config *config;
@@ -105,6 +106,10 @@ struct Server {
 
     wlr_xdg_toplevel_tag_manager_v1 *wlr_xdg_toplevel_tag_manager;
     wl_listener xdg_toplevel_set_tag;
+
+    wlr_tearing_control_manager_v1 *wlr_tearing_control_manager;
+    wl_list tearing_controllers;
+    wl_listener new_tearing_control;
 
     wlr_input_method_manager_v2 *wlr_input_method_manager;
     wlr_text_input_manager_v3 *wlr_text_input_manager;

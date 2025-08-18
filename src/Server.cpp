@@ -2,6 +2,7 @@
 #include "IdleInhibitor.h"
 #include "Keyboard.h"
 #include "SessionLock.h"
+#include "TearingController.h"
 #include "wlr.h"
 
 // get workspace by toplevel
@@ -806,6 +807,21 @@ Server::Server(Config *config) : config(config) {
     wl_signal_add(&wlr_xdg_toplevel_tag_manager->events.set_tag,
                   &xdg_toplevel_set_tag);
 
+    // tearing control
+    wlr_tearing_control_manager =
+        wlr_tearing_control_manager_v1_create(display, 1);
+    wl_list_init(&tearing_controllers);
+
+    new_tearing_control.notify = [](wl_listener *listener, void *data) {
+        Server *server = wl_container_of(listener, server, new_tearing_control);
+        wlr_tearing_control_v1 *tearing_control =
+            static_cast<wlr_tearing_control_v1 *>(data);
+
+        new TearingController(server, tearing_control);
+    };
+    wl_signal_add(&wlr_tearing_control_manager->events.new_object,
+                  &new_tearing_control);
+
     // color manager
     if (renderer->features.input_color_transform) {
         const struct wlr_color_manager_v1_features color_manager_features = {
@@ -1110,6 +1126,10 @@ Server::~Server() {
     wl_list_remove(&new_idle_inhibitor.link);
     wl_list_remove(&new_toplevel_capture_request.link);
     wl_list_remove(&xdg_toplevel_set_tag.link);
+
+    TearingController *tc, *tct;
+    wl_list_for_each_safe(tc, tct, &tearing_controllers, link) delete tc;
+    wl_list_remove(&new_tearing_control.link);
 
 #ifdef XDG_DECORATION
     wl_list_remove(&new_xdg_decoration.link);

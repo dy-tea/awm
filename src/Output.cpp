@@ -4,6 +4,68 @@
 #include "OutputManager.h"
 #include "Server.h"
 #include "WorkspaceManager.h"
+#include "wlr.h"
+#include <drm_fourcc.h>
+#include <wayland-server-core.h>
+
+RenderBitDepth bit_depth_from_format(uint32_t format) {
+    switch (format) {
+    case DRM_FORMAT_XRGB2101010:
+    case DRM_FORMAT_XBGR2101010:
+        return RENDER_BIT_DEPTH_10;
+    case DRM_FORMAT_XRGB8888:
+    case DRM_FORMAT_ARGB8888:
+        return RENDER_BIT_DEPTH_8;
+    case DRM_FORMAT_RGB565:
+        return RENDER_BIT_DEPTH_6;
+    default:
+        return RENDER_BIT_DEPTH_DEFAULT;
+    }
+}
+
+static int output_repaint_timer(void *data) {
+    Output *output = static_cast<Output *>(data);
+
+    output->wlr_output->frame_pending = false;
+    if (!output->wlr_output->enabled)
+        return 0;
+
+    // // FIXME: uncomment when we have ICC profile support
+    // color_transform_wlr_scene_output_state_options opts = {nullptr,
+    // output->color_transform,
+    //                                        nullptr};
+
+    wlr_scene_output *scene_output = output->scene_output;
+    if (!wlr_scene_output_needs_frame(scene_output))
+        return 0;
+
+    wlr_output_state pending;
+    wlr_output_state_init(&pending);
+    // wlr_scene_output_state_options opts = {};
+    // if (!wlr_scene_output_build_state(output->scene_output, &pending, &opts))
+    // {
+    //     wlr_output_state_finish(&pending);
+    //     return 0;
+    // }
+
+    if (Workspace *workspace = output->get_active()) {
+        if (workspace->fullscreen_toplevel &&
+            workspace->fullscreen_toplevel->tearing_hint ==
+                WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC) {
+            // enable tearing
+            pending.tearing_page_flip = true;
+            if (!wlr_output_test_state(output->wlr_output, &pending))
+                pending.tearing_page_flip = false;
+        }
+    }
+
+    if (!wlr_output_commit_state(output->wlr_output, &pending))
+        wlr_log(WLR_ERROR, "failed to page-flip on output %s",
+                output->wlr_output->name);
+
+    wlr_output_state_finish(&pending);
+    return 0;
+}
 
 Output::Output(Server *server, struct wlr_output *wlr_output)
     : server(server), wlr_output(wlr_output) {
@@ -37,12 +99,44 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     frame.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         // called once per frame
         Output *output = wl_container_of(listener, output, frame);
-        wlr_scene *scene = output->server->scene;
+        if (!output->enabled || !output->wlr_output->enabled)
+            return;
 
-        wlr_scene_output *scene_output =
-            wlr_scene_get_scene_output(scene, output->wlr_output);
+        // calculate delay
+        int msec_re = 0;
+        if (output->max_render_time) {
+            timespec now{};
+            clock_gettime(CLOCK_MONOTONIC, &now);
+
+            const long NSEC_IN_SEC = 1000000000;
+            timespec predicted_re = output->last_present;
+            predicted_re.tv_nsec += output->refresh_nsec % NSEC_IN_SEC;
+            predicted_re.tv_sec += output->refresh_nsec / NSEC_IN_SEC;
+            if (predicted_re.tv_nsec >= NSEC_IN_SEC) {
+                predicted_re.tv_nsec -= NSEC_IN_SEC;
+                predicted_re.tv_sec++;
+            }
+
+            if (predicted_re.tv_nsec >= now.tv_nsec) {
+                long nsec_re =
+                    (predicted_re.tv_sec - now.tv_sec) * NSEC_IN_SEC +
+                    (predicted_re.tv_nsec - now.tv_nsec);
+                msec_re = nsec_re / 1000000;
+            }
+        }
+
+        // send repaint
+        int delay = msec_re - output->max_render_time;
+        if (delay < 1)
+            wl_event_source_timer_update(output->repaint_timer, 0);
+        else {
+            output->wlr_output->frame_pending = true;
+            wl_event_source_timer_update(output->repaint_timer, delay);
+        }
 
         // render scene
+        wlr_scene_output *scene_output = wlr_scene_get_scene_output(
+            output->server->scene, output->wlr_output);
         wlr_scene_output_commit(scene_output, nullptr);
 
         // get frame time
@@ -51,6 +145,18 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
         wlr_scene_output_send_frame_done(scene_output, &now);
     };
     wl_signal_add(&wlr_output->events.frame, &frame);
+
+    // present
+    present.notify = [](wl_listener *listener, void *data) {
+        Output *output = wl_container_of(listener, output, present);
+        auto *event = static_cast<wlr_output_event_present *>(data);
+        if (!output->enabled || !event->presented)
+            return;
+
+        output->last_present = event->when;
+        output->refresh_nsec = event->refresh;
+    };
+    wl_signal_add(&wlr_output->events.present, &present);
 
     // request_state
     request_state.notify = [](wl_listener *listener, void *data) {
@@ -118,6 +224,10 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
     // set geometry
     wlr_output_layout_get_box(manager->layout, wlr_output, &layout_geometry);
     memcpy(&usable_area, &layout_geometry, sizeof(wlr_box));
+
+    // initialize repaint timer
+    repaint_timer =
+        wl_event_loop_add_timer(server->event_loop, output_repaint_timer, this);
 }
 
 Output::~Output() {
@@ -125,9 +235,13 @@ Output::~Output() {
         server->workspace_manager->orphanize_workspaces(this);
 
     wl_list_remove(&frame.link);
+    wl_list_remove(&present.link);
     wl_list_remove(&request_state.link);
     wl_list_remove(&destroy.link);
     wl_list_remove(&link);
+
+    wl_event_source_remove(repaint_timer);
+    repaint_timer = nullptr;
 }
 
 // arrange all layers
@@ -245,7 +359,7 @@ void Output::update_position() {
 }
 
 // apply a config to the output
-bool Output::apply_config(const OutputConfig *config, const bool test_only) {
+bool Output::apply_config(OutputConfig *config, const bool test_only) {
     // create output state
     wlr_output_state state{};
     wlr_output_state_init(&state);
@@ -290,15 +404,61 @@ bool Output::apply_config(const OutputConfig *config, const bool test_only) {
 
         // scale
         if (config->scale > 0.0)
-            wlr_output_state_set_scale(&state, config->scale);
+            wlr_output_state_set_scale(&state,
+                                       round(config->scale * 120) / 120);
+        else
+            wlr_output_state_set_scale(&state, 1);
 
         // transform
         wlr_output_state_set_transform(&state, config->transform);
 
         // adaptive sync
-        wlr_output_state_set_adaptive_sync_enabled(&state,
-                                                   config->adaptive_sync);
+        wlr_output_state_set_adaptive_sync_enabled(
+            &state, wlr_output->adaptive_sync_supported ? config->adaptive_sync
+                                                        : false);
+
+        // render format
+        RenderBitDepth render_bit_depth =
+            config->render_bit_depth != RENDER_BIT_DEPTH_DEFAULT
+                ? config->render_bit_depth
+                : (config->hdr ? RENDER_BIT_DEPTH_10 : RENDER_BIT_DEPTH_8);
+        if (config->hdr && bit_depth_from_format(wlr_output->render_format) ==
+                               RENDER_BIT_DEPTH_10)
+            wlr_output_state_set_render_format(&state,
+                                               wlr_output->render_format);
+        else if (render_bit_depth == RENDER_BIT_DEPTH_10)
+            wlr_output_state_set_render_format(&state, DRM_FORMAT_XRGB2101010);
+        else if (wlr_output->render_format == RENDER_BIT_DEPTH_6)
+            wlr_output_state_set_render_format(&state, DRM_FORMAT_RGB565);
+        else if (wlr_output->render_format == RENDER_BIT_DEPTH_8)
+            wlr_output_state_set_render_format(&state, DRM_FORMAT_RGB888);
+        else
+            wlr_output_state_set_render_format(&state, DRM_FORMAT_XRGB8888);
+
+        // hdr
+
+        // if (config->hdr && config->color_transform) {
+        //    wlr_log(WLR_ERROR,
+        //            "cannot enable both HDR and color transform on output %s",
+        //            wlr_output->name);
+        //    config->hdr = false;
+        //}
+        if (config->hdr) {
+            const wlr_output_image_description image_desc{
+                WLR_COLOR_NAMED_PRIMARIES_BT2020,
+                WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ,
+                {},
+                {},
+                {},
+                {}};
+            wlr_output_state_set_image_description(&state, &image_desc);
+        } else if (wlr_output->supported_primaries ||
+                   wlr_output->supported_transfer_functions)
+            wlr_output_state_set_image_description(&state, nullptr);
     }
+
+    // max render time
+    max_render_time = config->max_render_time;
 
     bool success;
     if (test_only)

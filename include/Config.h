@@ -62,6 +62,13 @@ struct Bind {
     }
 };
 
+enum RenderBitDepth {
+    RENDER_BIT_DEPTH_DEFAULT,
+    RENDER_BIT_DEPTH_6,
+    RENDER_BIT_DEPTH_8,
+    RENDER_BIT_DEPTH_10,
+};
+
 struct OutputConfig {
     std::string name;
     bool enabled{true};
@@ -71,6 +78,10 @@ struct OutputConfig {
     enum wl_output_transform transform { WL_OUTPUT_TRANSFORM_NORMAL };
     float scale{1.0};
     bool adaptive_sync{false};
+    bool allow_tearing{false};
+    bool hdr{false};
+    RenderBitDepth render_bit_depth{RENDER_BIT_DEPTH_DEFAULT};
+    uint32_t max_render_time{0};
 
     OutputConfig() = default;
 

@@ -831,11 +831,19 @@ bool Toplevel::fullscreen() const {
 // set the toplevel to be fullscreened
 void Toplevel::set_fullscreen(const bool fullscreen) {
     // get output from toplevel's current workspace, fallback to focused output
-    const Output *output = nullptr;
-    if (Workspace *workspace = server->get_workspace(this))
+    Output *output = nullptr;
+    Workspace *workspace = server->get_workspace(this);
+    if (workspace)
         output = workspace->output;
-    else
+    else {
         output = server->focused_output();
+        workspace = server->workspace_manager->get_active_workspace(output);
+    }
+
+    // only allow fullscreening one toplevel per workspace
+    if (workspace->fullscreen_toplevel &&
+        workspace->fullscreen_toplevel != this)
+        return;
 
     // get output geometry
     const wlr_box output_box = output->layout_geometry;
@@ -859,6 +867,8 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
         // set to top left of output, width and height the size of output
         set_position_size(output_box.x, output_box.y, output_box.width,
                           output_box.height);
+
+        workspace->fullscreen_toplevel = this;
     } else {
         // move scene tree node to toplevel tree
         wlr_scene_node_reparent(&scene_tree->node, server->layers.floating);
@@ -872,6 +882,8 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
             // use half of output geometry
             set_position_size(output_box.x, output_box.y, output_box.width / 2,
                               output_box.height / 2);
+
+        workspace->fullscreen_toplevel = nullptr;
     }
 }
 

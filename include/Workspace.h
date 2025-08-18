@@ -9,6 +9,7 @@ struct Workspace {
     struct Output *output;
     wl_list toplevels;
     struct Toplevel *active_toplevel{nullptr};
+    struct Toplevel *fullscreen_toplevel{nullptr};
 
     Workspace(Output *output, uint32_t num);
     ~Workspace();

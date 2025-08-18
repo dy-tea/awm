@@ -98,15 +98,19 @@ workspace.window_to = "Alt Shift Number" # move the active window to the workspa
 # see output names with `awmsg output list`
 [[monitors]]
 name = "HDMI-A-1"
-enabled = true     # true by default
+enabled = true            # true by default
 width = 1920
 height = 1080
 refresh = 60.0
-x = 2560           # 0 by default
-y = 720            # 0 by default
-transform = "none" # "none", "90", "180", "270", "f", "f90", "f180", f270"
-scale = 1.0        # 1.0 by default
-adaptive = false   # adaptive sync, false by default
+x = 2560                  # 0 by default
+y = 720                   # 0 by default
+transform = "none"        # "none", "90", "180", "270", "f", "f90", "f180", f270"
+scale = 1.0               # 1.0 by default
+adaptive = false          # adaptive sync, false by default
+tearing = false           # allow tearing, false by default
+render_bit_depth = "none" # "none", "6", "8", "10"
+hdr = false
+max_render_time = 0
 
 [[monitors]]
 name = "DP-1"

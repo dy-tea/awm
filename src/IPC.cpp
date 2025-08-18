@@ -277,8 +277,24 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             // shorter for convenience
             wlr_output *o = output->wlr_output;
 
+            std::function<std::string(uint32_t)> reverse_fourcc =
+                [](uint32_t fourcc) {
+                    return std::string{
+                        static_cast<char>(fourcc & 0xff),
+                        static_cast<char>((fourcc >> 8) & 0xff),
+                        static_cast<char>((fourcc >> 16) & 0xff),
+                        static_cast<char>((fourcc >> 24) & 0xff)};
+                };
+
+            auto format_binary = [](uint32_t value) {
+                return std::bitset<32>(value).to_string();
+            };
+
             // outputs are distinguished by name
             j[o->name] = {
+                {"enabled", o->enabled},
+                {"focused", output == server->focused_output()},
+                {"workspace", output->get_active()->num},
                 {"layout",
                  {
                      {"x", output->layout_geometry.x},
@@ -296,11 +312,11 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"refresh", o->refresh / 1000.0},
                 {"scale", o->scale},
                 {"transform", o->transform},
-                {"adaptive", o->adaptive_sync_supported},
-                {"enabled", o->enabled},
-                {"focused", output == server->focused_output()},
-                {"workspace", output->get_active()->num},
-            };
+                {"adaptive_sync_supported", o->adaptive_sync_supported},
+                {"render_format", reverse_fourcc(o->render_format)},
+                {"supported_primaries", format_binary(o->supported_primaries)},
+                {"supported_transfer_functions",
+                 format_binary(o->supported_transfer_functions)}};
 
             // below values may be null (e.g. virtual outputs)
             // they are generally set on physical displays though

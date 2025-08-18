@@ -67,6 +67,9 @@ struct Toplevel {
     wlr_scene_tree *image_capture_tree;
     wlr_scene_surface *image_capture_surface;
 
+    wp_tearing_control_v1_presentation_hint tearing_hint{
+        WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC};
+
     wlr_box geometry{};
     wlr_box saved_geometry{};
 

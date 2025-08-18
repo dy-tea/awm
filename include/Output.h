@@ -10,6 +10,7 @@ struct Output {
     wlr_scene_output *scene_output;
 
     wl_listener frame;
+    wl_listener present;
     wl_listener request_state;
     wl_listener destroy;
 
@@ -26,7 +27,13 @@ struct Output {
     wlr_session_lock_surface_v1 *lock_surface{nullptr};
     wl_listener destroy_lock_surface;
 
+    wl_event_source *repaint_timer;
+
+    timespec last_present{};
+    int refresh_nsec{};
+    uint32_t max_render_time{0};
     bool enabled{true};
+
     Output(Server *server, struct wlr_output *wlr_output);
     ~Output();
 
@@ -34,7 +41,7 @@ struct Output {
     void arrange_layers();
 
     void update_position();
-    bool apply_config(const struct OutputConfig *config, bool test_only);
+    bool apply_config(struct OutputConfig *config, bool test_only);
 
     static void arrange_layer_surface(const wlr_box *full_area,
                                       wlr_box *usable_area,

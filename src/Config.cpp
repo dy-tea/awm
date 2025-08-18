@@ -663,6 +663,24 @@ bool Config::load() {
                 // adaptive sync
                 connect(table.getBool("adaptive"), &oc->adaptive_sync);
 
+                // tearing
+                connect(table.getBool("tearing"), &oc->allow_tearing, {false});
+
+                // render bit depth
+                set_option("monitors.render_bit_depth",
+                           {"none", "6", "8", "10"},
+                           {RENDER_BIT_DEPTH_DEFAULT, RENDER_BIT_DEPTH_6,
+                            RENDER_BIT_DEPTH_8, RENDER_BIT_DEPTH_10},
+                           table.getString("render_bit_depth"),
+                           &oc->render_bit_depth, {RENDER_BIT_DEPTH_DEFAULT});
+
+                // hdr
+                connect(table.getBool("hdr"), &oc->hdr, {true});
+
+                // max render time
+                connect<uint32_t>(table.getInt("max_render_time"),
+                                  &oc->max_render_time, {0});
+
                 // add to output configs if enough values are set
                 if (oc->name.empty() || !oc->width || !oc->height ||
                     oc->refresh <= 0.0) {

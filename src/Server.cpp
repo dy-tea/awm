@@ -82,23 +82,15 @@ Output *Server::get_output(const wlr_output *wlr_output) const {
 
 // get toplevel by wlr_surface
 Toplevel *Server::get_toplevel(wlr_surface *surface) const {
-    // check each toplevel in each workspace
-    // get the toplevel by the surface
-    // optionally get xwayland toplevels
-    //
-    // O(n^2) search my beloved
-    Workspace *workspace, *tmp;
-    Toplevel *toplevel, *tmp1;
-    wl_list_for_each_safe(workspace, tmp, &workspace_manager->workspaces, link)
-        wl_list_for_each_safe(
-            toplevel, tmp1, &workspace->toplevels,
-            link) if ((toplevel->xdg_toplevel &&
-                       toplevel->xdg_toplevel->base->surface == surface)
+    if (wlr_xdg_surface *xdg_surface =
+            wlr_xdg_surface_try_from_wlr_surface(surface))
+        return static_cast<Toplevel *>(xdg_surface->data);
+
 #ifdef XWAYLAND
-                      || (toplevel->xwayland_surface &&
-                          toplevel->xwayland_surface->surface == surface)
+    if (wlr_xwayland_surface *xsurface =
+            wlr_xwayland_surface_try_from_wlr_surface(surface))
+        return static_cast<Toplevel *>(xsurface->data);
 #endif
-                          ) return toplevel;
 
     return nullptr;
 }

@@ -411,6 +411,8 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     image_capture = wlr_scene_create();
     image_capture_tree = wlr_scene_tree_create(server->layers.floating);
 
+    xwayland_surface->data = this;
+
     // destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);

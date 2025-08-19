@@ -48,15 +48,14 @@ static int output_repaint_timer(void *data) {
     //     return 0;
     // }
 
-    if (Workspace *workspace = output->get_active()) {
-        if (workspace->fullscreen_toplevel &&
-            workspace->fullscreen_toplevel->tearing_hint ==
-                WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC) {
-            // enable tearing
-            pending.tearing_page_flip = true;
-            if (!wlr_output_test_state(output->wlr_output, &pending))
-                pending.tearing_page_flip = false;
-        }
+    // enable tearing
+    Workspace *workspace = output->get_active();
+    if (workspace && output->allow_tearing && workspace->fullscreen_toplevel &&
+        workspace->fullscreen_toplevel->tearing_hint ==
+            WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC) {
+        pending.tearing_page_flip = true;
+        if (!wlr_output_test_state(output->wlr_output, &pending))
+            pending.tearing_page_flip = false;
     }
 
     if (!wlr_output_commit_state(output->wlr_output, &pending))
@@ -456,6 +455,9 @@ bool Output::apply_config(OutputConfig *config, const bool test_only) {
                    wlr_output->supported_transfer_functions)
             wlr_output_state_set_image_description(&state, nullptr);
     }
+
+    // tearing
+    allow_tearing = config->allow_tearing;
 
     // max render time
     max_render_time = config->max_render_time;

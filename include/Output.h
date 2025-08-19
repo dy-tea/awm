@@ -31,7 +31,9 @@ struct Output {
 
     timespec last_present{};
     int refresh_nsec{};
+
     uint32_t max_render_time{0};
+    bool allow_tearing{false};
     bool enabled{true};
 
     Output(Server *server, struct wlr_output *wlr_output);

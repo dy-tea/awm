@@ -106,6 +106,13 @@ OutputManager::OutputManager(Server *server) : server(server) {
 }
 
 OutputManager::~OutputManager() {
+    // headless outputs need to be removed manually
+    Output *o, *ot;
+    wl_list_for_each_safe(o, ot, &outputs, link) if (o->headless) {
+        wlr_output_destroy(o->wlr_output);
+        delete o;
+    }
+
     wl_list_remove(&apply.link);
     wl_list_remove(&test.link);
     wl_list_remove(&destroy.link);

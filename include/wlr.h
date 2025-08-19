@@ -29,8 +29,11 @@ extern "C" {
 
 // backend
 #include <wlr/backend.h>
+#include <wlr/backend/headless.h>
 #include <wlr/backend/libinput.h>
+#include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
+#include <wlr/backend/wayland.h>
 
 // render
 #include <wlr/render/allocator.h>

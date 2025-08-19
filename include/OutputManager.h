@@ -21,6 +21,8 @@ struct OutputManager {
     wl_listener change;
     wl_listener set_mode;
 
+    uint32_t max_headless{0};
+
     OutputManager(Server *server);
     ~OutputManager();
 

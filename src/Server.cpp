@@ -928,32 +928,6 @@ Server::Server(Config *config) : config(config) {
     // fixes
     wlr_fixes_create(display, 1);
 
-    // avoid using "wayland-0" as display socket
-    std::string socket;
-    for (unsigned int i = 1; i <= 32; i++) {
-        socket = "wayland-" + std::to_string(i);
-        if (const int ret = wl_display_add_socket(display, socket.c_str());
-            !ret)
-            break;
-        else
-            wlr_log(WLR_ERROR,
-                    "wl_display_add_socket for %s returned %d: skipping",
-                    socket.c_str(), ret);
-    }
-
-    if (socket.empty()) {
-        wlr_log(WLR_DEBUG, "%s", "Unable to open wayland socket");
-        wlr_backend_destroy(backend);
-        return;
-    }
-
-    // backend start
-    if (!wlr_backend_start(backend)) {
-        wlr_backend_destroy(backend);
-        wl_display_destroy(display);
-        ::exit(1);
-    }
-
 #ifdef XWAYLAND
     // init xwayland
     if ((xwayland = wlr_xwayland_create(display, compositor, true))) {
@@ -997,6 +971,41 @@ Server::Server(Config *config) : config(config) {
         unsetenv("DISPLAY");
     }
 #endif
+
+    // avoid using "wayland-0" as display socket
+    std::string socket;
+    for (unsigned int i = 1; i <= 32; i++) {
+        socket = "wayland-" + std::to_string(i);
+        if (const int ret = wl_display_add_socket(display, socket.c_str());
+            !ret)
+            break;
+        else
+            wlr_log(WLR_ERROR,
+                    "wl_display_add_socket for %s returned %d: skipping",
+                    socket.c_str(), ret);
+    }
+
+    if (socket.empty()) {
+        wlr_log(WLR_DEBUG, "%s", "Unable to open wayland socket");
+        wlr_backend_destroy(backend);
+        return;
+    }
+
+    // headless backend
+    headless_backend = wlr_headless_backend_create(event_loop);
+    if (headless_backend)
+        wlr_multi_backend_add(backend, headless_backend);
+    else {
+        wlr_backend_destroy(backend);
+        ::exit(1);
+    }
+
+    // backend start
+    if (!wlr_backend_start(backend)) {
+        wlr_log(WLR_ERROR, "%s", "Failed to start backend");
+        wlr_backend_destroy(backend);
+        ::exit(1);
+    }
 
     // start IPC
     if (config->ipc.enabled)

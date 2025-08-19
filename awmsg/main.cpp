@@ -38,6 +38,8 @@ void print_usage() {
                  "\t\t- [l]ist\n"
                  "\t\t- [t]oplevels\n"
                  "\t\t- [m]odes\n"
+                 "\t\t- [c]reate <width>x<height>\n"
+                 "\t\t- [d]estroy <name>\n"
                  "\t[w]orkspace\n"
                  "\t\t- [l]ist\n"
                  "\t\t- [s]et <num>\n"
@@ -122,20 +124,44 @@ int main(int argc, char **argv) {
     case 'e': // exit
         message = "exit";
         break;
-    case 'o': // output
+    case 'o': { // output
         group = next(argc, argv);
 
-        if (group[0] == 'l') { // output list
+        switch (group[0]) {
+        case 'l': // output list
             message = "o l";
             break;
-        } else if (group[0] == 't') { // output toplevels
+        case 't': // output toplevels
             message = "o t";
             break;
-        } else if (group[0] == 'm') { // output modes
+        case 'm': // output modes
             message = "o m";
             break;
+        case 'c': { // output create
+            if (argc == arg_index + 1) {
+                print_err("Expected resolution (e.g. 1920x1080) after 'c'");
+                return 1;
+            }
+
+            group = next(argc, argv);
+            message = "o c " + group;
+            break;
         }
-        goto unknown;
+        case 'd': { // output destroy
+            if (argc == arg_index + 1) {
+                print_err("Expected name after 'd'");
+                return 1;
+            }
+
+            group = next(argc, argv);
+            message = "o d " + group;
+            break;
+        }
+        default:
+            goto unknown;
+        }
+        break;
+    }
     case 'w': // workspace
         group = next(argc, argv);
 

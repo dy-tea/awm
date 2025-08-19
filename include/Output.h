@@ -27,6 +27,8 @@ struct Output {
     wlr_session_lock_surface_v1 *lock_surface{nullptr};
     wl_listener destroy_lock_surface;
 
+    bool headless{false};
+
     wl_event_source *repaint_timer;
 
     timespec last_present{};

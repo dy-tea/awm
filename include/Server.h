@@ -118,6 +118,8 @@ struct Server {
     wlr_idle_notifier_v1 *wlr_idle_notifier;
     wlr_content_type_manager_v1 *wlr_content_type_manager;
 
+    wlr_backend *headless_backend{nullptr};
+
 #ifdef XWAYLAND
     wlr_xwayland *xwayland;
     wl_listener xwayland_ready;

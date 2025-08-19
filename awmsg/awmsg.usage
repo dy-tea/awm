@@ -15,7 +15,9 @@ awmsg [<FLAGS>]... (rule) <RULE-OPTION>;
 
 <OUTPUT-OPTION> ::= (list) "list outputs"
                   | (toplevels) "list toplevels on outputs"
-                  | (modes) "list output modes";
+                  | (modes) "list output modes"
+                  | (create <WIDTH>x<HEIGHT>) "create an output with the given width and height"
+                  | (destroy <NAME>) "destroy an output with the given name";
 
 <WORKSPACE-OPTION> ::= (list) "list workspaces"
                      | (set <NUM>) "set current workspace to num";
@@ -53,7 +55,7 @@ awmsg [<FLAGS>]... (rule) <RULE-OPTION>;
                | (window_to <N>) "move the active window to workspace N";
 
 <BIND-OPTION> ::= (list) "list key bindings"
-                | (run [<BIND_NAMES>]) "run key binding for name"
-                | (display [<BIND_NAMES>]) "display key binding for name";
+                | (run <BIND_NAMES>) "run key binding for name"
+                | (display <BIND_NAMES>) "display key binding for name";
 
 <RULE-OPTION> ::= (list) "list windowrules";

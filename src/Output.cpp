@@ -6,7 +6,6 @@
 #include "WorkspaceManager.h"
 #include "wlr.h"
 #include <drm_fourcc.h>
-#include <wayland-server-core.h>
 
 RenderBitDepth bit_depth_from_format(uint32_t format) {
     switch (format) {
@@ -68,12 +67,36 @@ static int output_repaint_timer(void *data) {
 
 Output::Output(Server *server, struct wlr_output *wlr_output)
     : server(server), wlr_output(wlr_output) {
-    // set allocator and renderer for output
-    wlr_output_init_render(wlr_output, server->allocator, server->renderer);
-
     // add to outputs list
     OutputManager *manager = server->output_manager;
     wl_list_insert(&manager->outputs, &link);
+
+    // name headless outputs
+    if (wlr_output_is_headless(wlr_output)) {
+        headless = true;
+        std::string name =
+            "HEADLESS-" + std::to_string(manager->max_headless++);
+        wlr_output_set_name(wlr_output, name.c_str());
+    }
+
+    wlr_log(WLR_INFO, "new output %s", wlr_output->name);
+
+    // do not configure non-desktop outputs
+    if (wlr_output->non_desktop) {
+        if (server->wlr_drm_lease_manager)
+            wlr_drm_lease_v1_manager_offer_output(server->wlr_drm_lease_manager,
+                                                  wlr_output);
+        return;
+    }
+
+    // set allocator and renderer for output
+    if (!wlr_output_init_render(wlr_output, server->allocator,
+                                server->renderer)) {
+        wlr_log(WLR_ERROR, "failed to init render on output %s",
+                wlr_output->name);
+        delete this;
+        return;
+    }
 
     // create initial workspaces through WorkspaceManager
     if (!server->workspace_manager->adopt_workspaces(this)) {
@@ -230,6 +253,10 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
 }
 
 Output::~Output() {
+    wl_list_remove(&link);
+    if (wlr_output->non_desktop)
+        return;
+
     if (server->workspace_manager)
         server->workspace_manager->orphanize_workspaces(this);
 
@@ -237,7 +264,6 @@ Output::~Output() {
     wl_list_remove(&present.link);
     wl_list_remove(&request_state.link);
     wl_list_remove(&destroy.link);
-    wl_list_remove(&link);
 
     wl_event_source_remove(repaint_timer);
     repaint_timer = nullptr;

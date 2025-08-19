@@ -154,6 +154,20 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
                 case 'm': // output modes
                     message = IPC_OUTPUT_MODES;
                     break;
+                case 'c': // output create
+                    if (std::getline(ss, token, ' ')) {
+                        data = token;
+                        message = IPC_OUTPUT_CREATE;
+                        break;
+                    }
+                    goto unknown;
+                case 'd': // output destroy
+                    if (std::getline(ss, token, ' ')) {
+                        data = token;
+                        message = IPC_OUTPUT_DESTROY;
+                        break;
+                    }
+                    [[fallthrough]];
                 default:
                     goto unknown;
                 }
@@ -312,6 +326,9 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"refresh", o->refresh / 1000.0},
                 {"scale", o->scale},
                 {"transform", o->transform},
+                {"non_desktop", o->non_desktop},
+                {"headless", output->headless},
+                {"max_render_time", output->max_render_time},
                 {"adaptive_sync_supported", o->adaptive_sync_supported},
                 {"render_format", reverse_fourcc(o->render_format)},
                 {"supported_primaries", format_binary(o->supported_primaries)},
@@ -368,6 +385,55 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             }
         }
 
+        break;
+    }
+    case IPC_OUTPUT_CREATE: {
+        if (!data.empty()) {
+            // parse resolution from data
+            int width = 0, height = 0;
+            if (sscanf(data.c_str(), "%dx%d", &width, &height) != 2) {
+                notify_send("IPC", "Invalid resolution format: %s",
+                            data.c_str());
+                break;
+            }
+            int dat[] = {0, width, height};
+
+            wlr_multi_for_each_backend(
+                server->backend,
+                [](wlr_backend *backend, void *data) {
+                    int *dat = static_cast<int *>(data);
+                    if (dat[0])
+                        return;
+
+                    if (wlr_backend_is_wl(backend)) {
+                        wlr_wl_output_create(backend);
+                        dat[0] = 1;
+                    } else if (wlr_backend_is_headless(backend)) {
+                        wlr_headless_add_output(backend, dat[1], dat[2]);
+                        dat[0] = 1;
+                    }
+#ifdef WLR_HAS_X11_BACKEND
+                    else if (wlr_backend_is_x11(backend)) {
+                        wlr_x11_output_create(backend, dat[1], dat[2]);
+                        dat[0] = 1;
+                    }
+#endif
+                },
+                &dat);
+        }
+        break;
+    }
+    case IPC_OUTPUT_DESTROY: {
+        if (!data.empty()) {
+            // output name starts with HEADLESS-
+            if (strncmp(data.c_str(), "HEADLESS-", 9) == 0) {
+                Output *output = server->output_manager->get_output(data);
+                if (output)
+                    wlr_output_destroy(output->wlr_output);
+                else
+                    notify_send("IPC", "No such output: %s", data.c_str());
+            }
+        }
         break;
     }
     case IPC_WORKSPACE_LIST: {

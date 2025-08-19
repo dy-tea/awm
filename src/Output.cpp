@@ -328,6 +328,24 @@ Output::shell_layer(const enum zwlr_layer_shell_v1_layer layer) const {
     }
 }
 
+bool Output::supports_hdr() {
+    std::string reason = "";
+    if (!(wlr_output->supported_primaries & WLR_COLOR_NAMED_PRIMARIES_BT2020))
+        reason = "BT2020 primaries not supported";
+    else if (!(wlr_output->supported_transfer_functions &
+               WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ))
+        reason = "ST2084 PQ transfer function not supported";
+    else if (!server->renderer->features.output_color_transform)
+        reason = "renderer does not support output color transform";
+
+    bool supported = reason.empty();
+    if (!supported)
+        wlr_log(WLR_ERROR, "output %s does not support HDR: %s",
+                wlr_output->name, reason.c_str());
+
+    return supported;
+}
+
 // create a new workspace for this output
 Workspace *Output::new_workspace() {
     return server->workspace_manager->new_workspace(this);
@@ -435,6 +453,7 @@ bool Output::apply_config(OutputConfig *config, const bool test_only) {
             wlr_output_state_set_render_format(&state, DRM_FORMAT_XRGB8888);
 
         // hdr
+        bool hdr = config->hdr ? supports_hdr() : false;
 
         // if (config->hdr && config->color_transform) {
         //    wlr_log(WLR_ERROR,
@@ -442,7 +461,7 @@ bool Output::apply_config(OutputConfig *config, const bool test_only) {
         //            wlr_output->name);
         //    config->hdr = false;
         //}
-        if (config->hdr) {
+        if (hdr) {
             const wlr_output_image_description image_desc{
                 WLR_COLOR_NAMED_PRIMARIES_BT2020,
                 WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ,

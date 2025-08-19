@@ -51,6 +51,8 @@ struct Output {
                                       bool exclusive);
     wlr_scene_tree *shell_layer(enum zwlr_layer_shell_v1_layer layer) const;
 
+    bool supports_hdr();
+
     Workspace *new_workspace();
     Workspace *get_active();
     Workspace *get_workspace(uint32_t n);

@@ -109,5 +109,5 @@ struct Toplevel {
     void toggle_fullscreen();
     void toggle_maximized();
     void save_geometry();
-    void close() const;
+    void close();
 };

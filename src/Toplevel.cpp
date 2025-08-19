@@ -1071,7 +1071,12 @@ void Toplevel::update_app_id() {
 }
 
 // tell the toplevel to close
-void Toplevel::close() const {
+void Toplevel::close() {
+    // remove fullscreen toplevel
+    Workspace *workspace = server->get_workspace(this);
+    if (workspace && workspace->fullscreen_toplevel == this)
+        workspace->fullscreen_toplevel = nullptr;
+
 #ifdef XWAYLAND
     if (xdg_toplevel)
 #endif

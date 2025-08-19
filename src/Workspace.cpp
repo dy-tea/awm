@@ -82,37 +82,39 @@ bool Workspace::contains(const Toplevel *toplevel) const {
 // false on no movement or failure
 bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
     // no movement
-    if (workspace == this)
+    if (workspace == this || workspace->fullscreen_toplevel ||
+        !contains(toplevel))
         return false;
 
-    // ensure toplevel is part of workspace
-    if (contains(toplevel)) {
-        // only hide toplevel if moving to a workspace on the same output
-        if (output == output->server->focused_output())
-            toplevel->set_hidden(true);
+    // only hide toplevel if moving to a workspace on the same output
+    if (output == output->server->focused_output())
+        toplevel->set_hidden(true);
 
-        // update active_toplevel if necessary
-        if (toplevel == active_toplevel) {
-            if (wl_list_length(&toplevels) > 1)
-                // focus the next toplevel
-                focus_next();
-            else
-                // no more active toplevel
-                active_toplevel = nullptr;
-        }
-
-        // move to other workspace
-        wl_list_remove(&toplevel->link);
-        workspace->add_toplevel(toplevel, true);
-
-        // notify clients
-        if (IPC *ipc = toplevel->server->ipc)
-            ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
-
-        return true;
+    // update active_toplevel if necessary
+    if (toplevel == active_toplevel) {
+        if (wl_list_length(&toplevels) > 1)
+            // focus the next toplevel
+            focus_next();
+        else
+            // no more active toplevel
+            active_toplevel = nullptr;
     }
 
-    return false;
+    // move to other workspace
+    wl_list_remove(&toplevel->link);
+    workspace->add_toplevel(toplevel, true);
+
+    // update fullscreen_toplevel if necessary
+    if (fullscreen_toplevel == toplevel) {
+        workspace->fullscreen_toplevel = toplevel;
+        fullscreen_toplevel = nullptr;
+    }
+
+    // notify clients
+    if (IPC *ipc = toplevel->server->ipc)
+        ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
+
+    return true;
 }
 
 // set the workspace visibility

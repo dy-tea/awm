@@ -179,10 +179,11 @@ Output *OutputManager::get_output(const std::string &name) {
 // get the output based on screen coordinates
 Output *OutputManager::output_at(const double x, const double y) {
     wlr_output *wlr_output = wlr_output_layout_output_at(layout, x, y);
-    if (!wlr_output)
-        return nullptr;
+    if (wlr_output)
+        return static_cast<Output *>(wlr_output->data);
 
-    return static_cast<Output *>(wlr_output->data);
+    Output *output = wl_container_of(&outputs, output, link);
+    return output;
 }
 
 // arrange layer shell layers on each output

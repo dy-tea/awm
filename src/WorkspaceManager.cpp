@@ -108,7 +108,11 @@ WorkspaceManager::get_workspace_for_toplevel(Toplevel *toplevel) const {
 
 // turn all workspaces into orphans
 void WorkspaceManager::orphanize_workspaces(Output *output) {
-    uint32_t active_num = get_active_workspace(output)->num;
+    Workspace *active_workspace = get_active_workspace(output);
+    if (!active_workspace)
+        return;
+
+    uint32_t active_num = active_workspace->num;
     std::vector<Workspace *> orphans;
 
     Workspace *ws, *tmp;

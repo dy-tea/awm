@@ -17,6 +17,8 @@ Workspace::Workspace(Output *output, const uint32_t num)
 Workspace::~Workspace() {
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) delete toplevel;
+
+    wl_list_remove(&link);
 }
 
 // add a toplevel to the workspace

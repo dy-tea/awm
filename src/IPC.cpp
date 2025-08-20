@@ -797,5 +797,8 @@ void IPC::stop() {
         wlr_log(WLR_ERROR, "failed to unlink IPC socket at path `%s`",
                 path.c_str());
 
+    // remove from event loop
+    wl_event_source_remove(source);
+
     delete this;
 }

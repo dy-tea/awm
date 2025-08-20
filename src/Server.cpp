@@ -1142,6 +1142,8 @@ Server::~Server() {
     wlr_xwayland_destroy(xwayland);
 #endif
 
+    wl_event_source_remove(config_update_timer);
+
     wlr_allocator_destroy(allocator);
     wlr_renderer_destroy(renderer);
     wlr_backend_destroy(backend);

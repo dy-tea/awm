@@ -38,6 +38,24 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
         toplevel->focus();
 }
 
+Toplevel *Workspace::get_topmost_toplevel(Toplevel *sans) const {
+    wlr_scene_tree *floating_layer = output->server->layers.floating;
+    wlr_scene_node *node;
+    wl_list_for_each_reverse(node, &floating_layer->children, link) {
+        if (!node->data)
+            continue;
+
+        Toplevel *toplevel = static_cast<Toplevel *>(node->data);
+
+        if (sans == toplevel || !contains(toplevel))
+            continue;
+
+        return toplevel;
+    }
+
+    return nullptr;
+}
+
 // close a toplevel
 void Workspace::close(Toplevel *toplevel) {
     if (!toplevel)
@@ -45,10 +63,11 @@ void Workspace::close(Toplevel *toplevel) {
 
     // active toplevels need extra handling
     if (toplevel == active_toplevel) {
-        if (wl_list_length(&toplevels) > 1)
-            // focus the next toplevel
-            focus_next();
-        else {
+        if (wl_list_length(&toplevels) > 1) {
+            // focus the topmost toplevel
+            if (Toplevel *topmost = get_topmost_toplevel(toplevel))
+                focus_toplevel(topmost);
+        } else {
             // no more active toplevel
             active_toplevel = nullptr;
 

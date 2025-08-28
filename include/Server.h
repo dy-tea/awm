@@ -126,7 +126,7 @@ struct Server {
     wl_listener new_xwayland_surface;
 #endif
 
-    struct sigaction sa{};
+    wl_event_source *signal_handler{nullptr};
     wl_event_source *config_update_timer{nullptr};
 
     IPC *ipc{nullptr};

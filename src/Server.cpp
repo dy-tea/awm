@@ -4,6 +4,7 @@
 #include "SessionLock.h"
 #include "TearingController.h"
 #include "wlr.h"
+#include <sys/signalfd.h>
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -1011,21 +1012,44 @@ Server::Server(Config *config) : config(config) {
     if (config->ipc.enabled)
         ipc = new IPC(this, config->ipc.path);
 
-    // set up signal handler
-    sa.sa_handler = [](int sig) {
-        Server *server = wl_container_of(sig, server, sa);
-        if (sig == SIGCHLD)
-            while (waitpid(-1, nullptr, WNOHANG) > 0)
-                ;
-        else if (sig == SIGINT || sig == SIGTERM)
-            server->exit();
-    };
-    sa.sa_flags = SA_RESTART;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGCHLD, &sa, nullptr);
-    sigaction(SIGINT, &sa, nullptr);
-    sigaction(SIGTERM, &sa, nullptr);
-    sigaction(SIGPIPE, &sa, nullptr);
+    // create signalfd
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+    sigaddset(&mask, SIGINT);
+    sigaddset(&mask, SIGTERM);
+
+    // block signals for all threads
+    sigprocmask(SIG_BLOCK, &mask, nullptr);
+
+    int sfd = signalfd(-1, &mask, SFD_CLOEXEC);
+    signal_handler = wl_event_loop_add_fd(
+        event_loop, sfd, WL_EVENT_READABLE,
+        []([[maybe_unused]] int fd, uint32_t mask, void *data) {
+            if (!(mask & WL_EVENT_READABLE))
+                return 0;
+
+            struct signalfd_siginfo fdsi;
+            ssize_t s = read(fd, &fdsi, sizeof(fdsi));
+            if (s != sizeof(fdsi))
+                return 0;
+
+            Server *server = static_cast<Server *>(data);
+            switch (fdsi.ssi_signo) {
+            case SIGCHLD:
+                while (waitpid(-1, nullptr, WNOHANG) > 0)
+                    ;
+                break;
+            case SIGINT:
+            case SIGTERM:
+                server->exit();
+                break;
+            default:
+                break;
+            }
+            return 0;
+        },
+        this);
 
     // set stdout to non-blocking
     if (int flags = fcntl(STDOUT_FILENO, F_GETFL);
@@ -1141,6 +1165,7 @@ Server::~Server() {
     LayerSurface *ls, *lst;
     wl_list_for_each_safe(ls, lst, &layer_surfaces, link) delete ls;
 
+    wl_event_source_remove(signal_handler);
     wl_event_source_remove(config_update_timer);
 
     wlr_allocator_destroy(allocator);

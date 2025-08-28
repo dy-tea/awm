@@ -90,8 +90,8 @@ struct Toplevel {
     void create_ext_foreign();
     void update_ext_foreign() const;
 
-    std::string_view title() const;
-    std::string_view app_id() const;
+    std::string_view get_title() const;
+    std::string_view get_app_id() const;
     void update_title();
     void update_app_id();
 

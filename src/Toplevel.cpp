@@ -161,9 +161,10 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     toplevel->create_ext_foreign();
 
     // set app id for foreign toplevel
-    if (std::string_view app_id = toplevel->app_id(); !app_id.data()) {
+    if (std::string app_id = std::string(toplevel->get_app_id());
+        !app_id.empty()) {
         wlr_foreign_toplevel_handle_v1_set_app_id(toplevel->foreign_handle,
-                                                  app_id.data());
+                                                  app_id.c_str());
     }
 
     toplevel->update_ext_foreign();
@@ -972,9 +973,11 @@ void Toplevel::create_foreign() {
 
 // create ext foreign toplevel
 void Toplevel::create_ext_foreign() {
+    const std::string title = std::string(get_title());
+    const std::string app_id = std::string(get_app_id());
     wlr_ext_foreign_toplevel_handle_v1_state state{
-        title().data(),
-        app_id().data(),
+        title.c_str(),
+        app_id.c_str(),
     };
     ext_foreign_handle = wlr_ext_foreign_toplevel_handle_v1_create(
         server->wlr_foreign_toplevel_list, &state);
@@ -993,9 +996,11 @@ void Toplevel::create_ext_foreign() {
 
 // update ext foreign toplevel
 void Toplevel::update_ext_foreign() const {
+    const std::string title = std::string(get_title());
+    const std::string app_id = std::string(get_app_id());
     wlr_ext_foreign_toplevel_handle_v1_state state{
-        title().data(),
-        app_id().data(),
+        title.c_str(),
+        app_id.c_str(),
     };
     wlr_ext_foreign_toplevel_handle_v1_update_state(ext_foreign_handle, &state);
 }
@@ -1031,7 +1036,7 @@ void Toplevel::save_geometry() {
 }
 
 // get the title of the toplevel
-std::string_view Toplevel::title() const {
+std::string_view Toplevel::get_title() const {
 #ifdef XWAYLAND
     if (xwayland_surface)
         return xwayland_surface->title ? xwayland_surface->title : "";
@@ -1040,7 +1045,7 @@ std::string_view Toplevel::title() const {
 }
 
 // get the app id of the toplevel
-std::string_view Toplevel::app_id() const {
+std::string_view Toplevel::get_app_id() const {
 #ifdef XWAYLAND
     if (xwayland_surface)
         return xwayland_surface->class_ ? xwayland_surface->class_ : "";
@@ -1050,7 +1055,7 @@ std::string_view Toplevel::app_id() const {
 
 // update the title of the toplevel
 void Toplevel::update_title() {
-    const std::string title = std::string(this->title());
+    const std::string title = std::string(get_title());
 
     if (foreign_handle && !title.empty())
         wlr_foreign_toplevel_handle_v1_set_title(foreign_handle, title.c_str());
@@ -1061,7 +1066,7 @@ void Toplevel::update_title() {
 
 // update the app id of the toplevel
 void Toplevel::update_app_id() {
-    const std::string id = std::string(app_id());
+    const std::string id = std::string(get_app_id());
 
     if (foreign_handle && !id.empty())
         wlr_foreign_toplevel_handle_v1_set_app_id(foreign_handle, id.c_str());

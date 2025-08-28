@@ -492,8 +492,8 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             // toplevels are indexed by their pointer as title is
             // non-unique
             j[string_format("%p", t)] = {
-                {"title", t->title()},
-                {"class", t->app_id()},
+                {"title", t->get_title()},
+                {"class", t->get_app_id()},
                 {"tag", t->tag},
                 {"x", t->geometry.x},
                 {"y", t->geometry.y},

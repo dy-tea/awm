@@ -23,9 +23,10 @@ WindowRule::~WindowRule() {
 bool WindowRule::matches(Toplevel *toplevel) {
     bool match = true;
     if (matches_present & WINDOW_RULE_TITLE)
-        match &= std::regex_match(std::string(toplevel->title()), title_re);
+        match &= std::regex_match(std::string(toplevel->get_title()), title_re);
     if (matches_present & WINDOW_RULE_CLASS)
-        match &= std::regex_match(std::string(toplevel->app_id()), class_re);
+        match &=
+            std::regex_match(std::string(toplevel->get_app_id()), class_re);
     if (matches_present & WINDOW_RULE_TAG)
         match &= std::regex_match(toplevel->tag, tag_re);
     return match;

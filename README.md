@@ -137,7 +137,6 @@ WLR Unstable:
 - [wlr layer shell](https://wayland.app/protocols/wlr-layer-shell-unstable-v1)
 - [wlr output management](https://wayland.app/protocols/wlr-output-management-unstable-v1)
 - [wlr output power management](https://wayland.app/protocols/wlr-output-power-management-unstable-v1)
-- [wlr screencopy](https://wayland.app/protocols/wlr-screencopy-unstable-v1)
 - [wlr virtual pointer](https://wayland.app/protocols/wlr-virtual-pointer-unstable-v1)
 
 External:

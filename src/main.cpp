@@ -5,7 +5,52 @@
 
 #ifdef BACKWARD
 #include <backward.hpp>
-backward::SignalHandling sh;
+#include <ctime>
+#include <fstream>
+#include <sstream>
+
+void signal_handler(int sig) {
+    auto now = std::time(nullptr);
+    auto tm = *std::localtime(&now);
+
+    std::ostringstream filename;
+    filename << "/tmp/awm_crash_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << "_"
+             << getpid() << ".txt";
+
+    std::ofstream crash_file(filename.str());
+
+    if (crash_file.is_open()) {
+        crash_file << "AWM Crash Report\n";
+        crash_file << "Signal: " << sig << "\n";
+        crash_file << "Time: " << std::put_time(&tm, "%Y-%m-%d %H:%M:%S")
+                   << "\n";
+        crash_file << "PID: " << getpid() << "\n\n";
+
+        backward::StackTrace st;
+        st.load_here(32);
+
+        backward::Printer p;
+        p.object = true;
+        p.color_mode = backward::ColorMode::never;
+        p.address = true;
+
+        p.print(st, crash_file);
+        crash_file.close();
+        std::cerr << "Crash dump written to: " << filename.str() << std::endl;
+    }
+
+    exit(EXIT_FAILURE);
+}
+
+struct SignalSetup {
+    SignalSetup() {
+        signal(SIGSEGV, signal_handler);
+        signal(SIGABRT, signal_handler);
+        signal(SIGFPE, signal_handler);
+        signal(SIGILL, signal_handler);
+        signal(SIGBUS, signal_handler);
+    }
+} signal_setup;
 #endif
 
 int main(const int argc, char *argv[]) {

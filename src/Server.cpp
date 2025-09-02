@@ -762,22 +762,20 @@ Server::Server(Config *config) : config(config) {
             data);
         Toplevel *toplevel =
             static_cast<Toplevel *>(request->toplevel_handle->data);
-        wlr_ext_image_capture_source_v1 *capture_source =
-            toplevel->image_capture_source;
 
-        if (!capture_source) {
+        if (!toplevel->image_capture_source) {
             // no image capture source, create one
-            capture_source =
+            toplevel->image_capture_source =
                 wlr_ext_image_capture_source_v1_create_with_scene_node(
                     &toplevel->image_capture->tree.node, server->event_loop,
                     server->allocator, server->renderer);
 
-            if (!capture_source)
+            if (!toplevel->image_capture_source)
                 return;
         }
 
         wlr_ext_foreign_toplevel_image_capture_source_manager_v1_request_accept(
-            request, capture_source);
+            request, toplevel->image_capture_source);
     };
     wl_signal_add(&wlr_ext_foreign_toplevel_image_capture_source_manager->events
                        .new_request,

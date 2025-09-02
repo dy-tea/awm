@@ -63,7 +63,7 @@ struct Toplevel {
         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE};
 
     wlr_scene *image_capture;
-    wlr_ext_image_capture_source_v1 *image_capture_source;
+    wlr_ext_image_capture_source_v1 *image_capture_source{nullptr};
     wlr_scene_tree *image_capture_tree;
     wlr_scene_surface *image_capture_surface;
 

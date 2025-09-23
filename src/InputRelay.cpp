@@ -38,7 +38,7 @@ InputRelay::InputRelay(Seat *seat)
 
         relay->input_method = new InputMethod(relay, input_method);
     };
-    wl_signal_add(&seat->server->wlr_input_method_manager->events.input_method,
+    wl_signal_add(&seat->server->wlr_input_method_manager->events.new_input_method,
                   &new_input_method);
 
     focused_surface_destroy.notify = [](wl_listener *listener,

@@ -430,12 +430,6 @@ Server::Server(Config *config) : config(config) {
     if (wlr_linux_dmabuf)
         wlr_scene_set_linux_dmabuf_v1(scene, wlr_linux_dmabuf);
 
-    // presentation interface
-    if (!wlr_presentation_create(display, backend, 2)) {
-        wlr_log(WLR_ERROR, "%s", "could not create presentation interface");
-        ::exit(1);
-    }
-
     // create xdg shell
     xdg_shell = wlr_xdg_shell_create(display, 6);
 

@@ -549,8 +549,11 @@ Server::Server(Config *config) : config(config) {
 
         // get toplevel associated with surface
         Toplevel *toplevel = server->get_toplevel(event->surface);
-        if (!toplevel || !toplevel->xdg_toplevel ||
-            !toplevel->xdg_toplevel->base->surface->mapped)
+        if (!toplevel)
+            return;
+        if (!toplevel->xdg_toplevel)
+            return;
+        if (!toplevel->xdg_toplevel->base->surface->mapped)
             return;
 
         // get the workspace and output that contain the toplevel

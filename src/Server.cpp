@@ -1,10 +1,39 @@
 #include "Server.h"
+#include "ActivationToken.h"
 #include "IdleInhibitor.h"
 #include "Keyboard.h"
 #include "SessionLock.h"
 #include "TearingController.h"
 #include "wlr.h"
 #include <sys/signalfd.h>
+
+static pid_t get_parent_pid(pid_t child) {
+    pid_t parent = -1;
+    char file_name[100];
+    char *buffer = NULL;
+    const char *sep = " ";
+    FILE *stat = NULL;
+    size_t buf_size = 0;
+
+    snprintf(file_name, sizeof(file_name), "/proc/%d/stat", child);
+
+    if ((stat = fopen(file_name, "r"))) {
+        if (getline(&buffer, &buf_size, stat) != -1) {
+            strtok(buffer, sep);             // pid
+            strtok(NULL, sep);               // executable name
+            strtok(NULL, sep);               // state
+            char *token = strtok(NULL, sep); // parent pid
+            parent = strtol(token, NULL, 10);
+        }
+        free(buffer);
+        fclose(stat);
+    }
+
+    if (parent)
+        return (parent == child) ? -1 : parent;
+
+    return -1;
+}
 
 // get workspace by toplevel
 Workspace *Server::get_workspace(Toplevel *toplevel) const {
@@ -296,6 +325,32 @@ void Server::update_idle_inhibitors(wlr_surface *sans) {
     wlr_idle_notifier_v1_set_inhibited(wlr_idle_notifier, inhibited);
 }
 
+// find activation token for a given pid
+ActivationToken *Server::find_activation_token(pid_t pid) {
+    if (wl_list_empty(&pending_activation_tokens))
+        return nullptr;
+
+    ActivationToken *token = nullptr;
+    do {
+        ActivationToken *t = nullptr;
+        wl_list_for_each(t, &pending_activation_tokens, link) {
+            if (pid == t->pid) {
+                token = t;
+                break;
+            }
+        }
+        pid = get_parent_pid(pid);
+    } while (pid > 1);
+
+    return token;
+}
+
+void Server::clean_activation_tokens() {
+    ActivationToken *token, *tmp;
+    wl_list_for_each_safe(token, tmp, &pending_activation_tokens,
+                          link) if (!token->token) delete token;
+}
+
 // run a command with sh
 void Server::spawn(const std::string &command) const {
     if (fork() == 0)
@@ -539,6 +594,7 @@ Server::Server(Config *config) : config(config) {
     wl_list_init(&keyboards);
 
     // xdg activation
+    wl_list_init(&pending_activation_tokens);
     wlr_xdg_activation = wlr_xdg_activation_v1_create(display);
 
     xdg_activation_activate.notify = [](wl_listener *listener, void *data) {
@@ -553,11 +609,33 @@ Server::Server(Config *config) : config(config) {
             return;
         if (!toplevel->xdg_toplevel)
             return;
-        if (!toplevel->xdg_toplevel->base->surface->mapped)
+
+        auto *token = static_cast<ActivationToken *>(event->token->data);
+        if (!token)
             return;
 
-        // get the workspace and output that contain the toplevel
+        bool had_focus_and_seat =
+            token->had_focus && token->token && token->token->seat;
+        token->token = nullptr;
+
+        // xdg surface already valid at this point
+        wlr_xdg_surface *xdg_surface =
+            wlr_xdg_surface_try_from_wlr_surface(event->surface);
+        if (!xdg_surface->surface->mapped) {
+            if (!token->activated) {
+                token->activated = true;
+                toplevel->activation_token = token;
+            }
+            return;
+        }
+
+        if (!had_focus_and_seat)
+            return;
+
+        // get the workspace and output that contains the toplevel
         Workspace *workspace = server->get_workspace(toplevel);
+        if (!workspace)
+            return;
         Output *output = workspace->output;
 
         // focus on window activate
@@ -581,9 +659,23 @@ Server::Server(Config *config) : config(config) {
         default:
             break;
         }
+
+        server->clean_activation_tokens();
     };
     wl_signal_add(&wlr_xdg_activation->events.request_activate,
                   &xdg_activation_activate);
+
+    xdg_activation_new_token.notify = [](wl_listener *listener, void *data) {
+        Server *server =
+            wl_container_of(listener, server, xdg_activation_new_token);
+        auto *token = static_cast<wlr_xdg_activation_token_v1 *>(data);
+
+        new ActivationToken(server, token);
+
+        server->clean_activation_tokens();
+    };
+    wl_signal_add(&wlr_xdg_activation->events.new_token,
+                  &xdg_activation_new_token);
 
     // xdg dialog
     wlr_xdg_wm_dialog = wlr_xdg_wm_dialog_v1_create(display, 1);
@@ -1121,7 +1213,11 @@ Server::~Server() {
     wl_list_remove(&new_session_lock.link);
     wl_list_remove(&new_pointer_constraint.link);
 
+    ActivationToken *tk, *tkt;
+    wl_list_for_each_safe(tk, tkt, &pending_activation_tokens, link) delete tkt;
+
     wl_list_remove(&xdg_activation_activate.link);
+    wl_list_remove(&xdg_activation_new_token.link);
     wl_list_remove(&new_xdg_dialog.link);
     wl_list_remove(&new_keyboard_shortcuts_inhibit.link);
     wl_list_remove(&ring_system_bell.link);

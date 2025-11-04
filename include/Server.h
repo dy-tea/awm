@@ -74,8 +74,10 @@ struct Server {
     wlr_scene_rect *lock_background;
     bool locked{false};
 
+    wl_list pending_activation_tokens;
     wlr_xdg_activation_v1 *wlr_xdg_activation;
     wl_listener xdg_activation_activate;
+    wl_listener xdg_activation_new_token;
 
     wlr_xdg_wm_dialog_v1 *wlr_xdg_wm_dialog;
     wl_listener new_xdg_dialog;
@@ -154,4 +156,6 @@ struct Server {
 
     bool handle_bind(Bind bind);
     void update_idle_inhibitors(wlr_surface *sans);
+    ActivationToken *find_activation_token(pid_t pid);
+    void clean_activation_tokens();
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ActivationToken.h"
 #include "Cursor.h"
 #include "Decoration.h"
 #include "wlr.h"
@@ -70,6 +71,10 @@ struct Toplevel {
     wp_tearing_control_v1_presentation_hint tearing_hint{
         WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC};
 
+    ActivationToken *activation_token{nullptr};
+
+    pid_t pid;
+
     wlr_box geometry{};
     wlr_box saved_geometry{};
 
@@ -94,6 +99,9 @@ struct Toplevel {
     std::string_view get_app_id() const;
     void update_title();
     void update_app_id();
+
+    void update_pid();
+    void set_token(ActivationToken *token);
 
     void focus() const;
     void begin_interactive(CursorMode mode, uint32_t edges);

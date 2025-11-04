@@ -16,6 +16,9 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     Server *server = toplevel->server;
     Output *output = nullptr;
 
+    // update pid
+    toplevel->update_pid();
+
     // apply rule
     WindowRule *matching_rule = nullptr;
     for (WindowRule *rule : server->config->window_rules)
@@ -27,6 +30,11 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
     if (!output)
         output = server->focused_output();
+
+    // set activation token if found
+    if (!toplevel->activation_token)
+        toplevel->activation_token =
+            server->find_activation_token(toplevel->pid);
 
     // xdg toplevel
     if (const wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel) {
@@ -395,6 +403,9 @@ Toplevel::~Toplevel() {
         delete decoration;
         decoration = nullptr;
     }
+
+    if (activation_token)
+        delete activation_token;
 
     wl_list_remove(&destroy.link);
 }
@@ -1003,6 +1014,34 @@ void Toplevel::update_ext_foreign() const {
         app_id.c_str(),
     };
     wlr_ext_foreign_toplevel_handle_v1_update_state(ext_foreign_handle, &state);
+}
+
+// update activation token with new one
+void Toplevel::set_token(ActivationToken *token) {
+    if (!token)
+        return;
+
+    if (activation_token) {
+        delete activation_token;
+        activation_token = nullptr;
+    }
+
+    token->consume();
+    activation_token = token;
+}
+
+void Toplevel::update_pid() {
+#ifdef XWAYLAND
+    if (xwayland_surface) {
+        pid = xwayland_surface->pid;
+    } else {
+#endif
+        struct wl_client *client =
+            wl_resource_get_client(xdg_toplevel->base->resource);
+        wl_client_get_credentials(client, &pid, nullptr, nullptr);
+#ifdef XWAYLAND
+    }
+#endif
 }
 
 // toggle maximized

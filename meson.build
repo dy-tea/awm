@@ -128,6 +128,7 @@ executable(
     'src' / 'InputMethod.cpp',
     'src' / 'InputMethodPopup.cpp',
     'src' / 'TearingController.cpp',
+    'src' / 'ActivationToken.cpp',
     protocol_sources,
   ],
   include_directories: include,

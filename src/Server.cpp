@@ -625,6 +625,7 @@ Server::Server(Config *config) : config(config) {
             if (!token->activated) {
                 token->activated = true;
                 toplevel->activation_token = token;
+                token->owning_toplevel = toplevel;
             }
             return;
         }

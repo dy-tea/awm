@@ -32,9 +32,12 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         output = server->focused_output();
 
     // set activation token if found
-    if (!toplevel->activation_token)
+    if (!toplevel->activation_token) {
         toplevel->activation_token =
             server->find_activation_token(toplevel->pid);
+        if (toplevel->activation_token)
+            toplevel->activation_token->owning_toplevel = toplevel;
+    }
 
     // xdg toplevel
     if (const wlr_xdg_toplevel *xdg_toplevel = toplevel->xdg_toplevel) {
@@ -404,8 +407,10 @@ Toplevel::~Toplevel() {
         decoration = nullptr;
     }
 
-    if (activation_token)
+    if (activation_token) {
+        activation_token->owning_toplevel = nullptr;
         delete activation_token;
+    }
 
     wl_list_remove(&destroy.link);
 }
@@ -1022,12 +1027,14 @@ void Toplevel::set_token(ActivationToken *token) {
         return;
 
     if (activation_token) {
+        activation_token->owning_toplevel = nullptr;
         delete activation_token;
         activation_token = nullptr;
     }
 
     token->consume();
     activation_token = token;
+    token->owning_toplevel = this;
 }
 
 void Toplevel::update_pid() {

@@ -1,5 +1,6 @@
 #include "ActivationToken.h"
 #include "Server.h"
+#include "Toplevel.h"
 
 ActivationToken::ActivationToken(Server *server,
                                  wlr_xdg_activation_token_v1 *token)
@@ -13,6 +14,9 @@ ActivationToken::ActivationToken(Server *server,
 }
 
 ActivationToken::~ActivationToken() {
+    if (owning_toplevel)
+        owning_toplevel->activation_token = nullptr;
+
     if (!wl_list_empty(&link))
         wl_list_remove(&link);
 

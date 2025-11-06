@@ -8,6 +8,7 @@
 #include "Server.h"
 #include "Toplevel.h"
 #include "Workspace.h"
+#include "wlr.h"
 #include <pixman.h>
 
 Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
@@ -327,12 +328,6 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
             server->wlr_relative_pointer_manager, seat,
             static_cast<uint64_t>(time) * 1000, dx, dy, unaccel_dx, unaccel_dy);
 
-        // constrain cursor
-        wlr_pointer_constraint_v1 *constraint;
-        wl_list_for_each(constraint,
-                         &server->wlr_pointer_constraints->constraints, link)
-            constrain(constraint);
-
         if (active_constraint && cursor_mode != CURSORMODE_RESIZE &&
             cursor_mode != CURSORMODE_MOVE) {
             // get the toplevel which the constraint is applied to
@@ -359,7 +354,9 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
                 // if pointer is locked, do not move it
                 if (active_constraint->type == WLR_POINTER_CONSTRAINT_V1_LOCKED)
                     return;
-            }
+            } else
+                // surface hidden, clear constraint
+                constrain(nullptr);
         }
     }
 
@@ -568,7 +565,7 @@ void Cursor::constrain(wlr_pointer_constraint_v1 *constraint) {
     active_constraint = constraint;
 
     if (!constraint) {
-        wl_list_init(&constraint->link);
+        wl_list_init(&constraint_commit.link);
         return;
     }
 

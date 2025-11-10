@@ -112,8 +112,8 @@ Staging:
 - [Alpha modifier protocol](https://wayland.app/protocols/alpha-modifier-v1)
 - [Data control protocol](https://wayland.app/protocols/ext-data-control-v1)
 - [System bell protocol](https://wayland.app/protocols/xdg-system-bell-v1)
-- [Color management](https://wayland.app/protocols/color-management-v1) ?
-- [Color representation](https://wayland.app/protocols/color-representation-v1) ?
+- [Color management](https://wayland.app/protocols/color-management-v1)
+- [Color representation](https://wayland.app/protocols/color-representation-v1)
 - [XDG toplevel tag](https://wayland.app/protocols/xdg-toplevel-tag-v1) ?
 
 Experimental:
@@ -137,7 +137,6 @@ WLR Unstable:
 - [wlr layer shell](https://wayland.app/protocols/wlr-layer-shell-unstable-v1)
 - [wlr output management](https://wayland.app/protocols/wlr-output-management-unstable-v1)
 - [wlr output power management](https://wayland.app/protocols/wlr-output-power-management-unstable-v1)
-- [wlr screencopy](https://wayland.app/protocols/wlr-screencopy-unstable-v1)
 - [wlr virtual pointer](https://wayland.app/protocols/wlr-virtual-pointer-unstable-v1)
 
 External:

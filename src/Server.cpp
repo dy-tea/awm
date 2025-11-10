@@ -991,9 +991,6 @@ Server::Server(Config *config) : config(config) {
     // export dmabuf manager
     wlr_export_dmabuf_manager_v1_create(display);
 
-    // screencopy manager
-    wlr_screencopy_manager_v1_create(display);
-
     // ext data control manager
     wlr_ext_data_control_manager_v1_create(display, 1);
 

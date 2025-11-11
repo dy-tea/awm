@@ -9,19 +9,45 @@
 #include <fstream>
 #include <sstream>
 
+std::string signal_to_string(int sig) {
+    switch (sig) {
+    case SIGSEGV:
+        return "SIGSEGV";
+    case SIGABRT:
+        return "SIGABRT";
+    case SIGFPE:
+        return "SIGFPE";
+    case SIGILL:
+        return "SIGILL";
+    case SIGBUS:
+        return "SIGBUS";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 void signal_handler(int sig) {
     auto now = std::time(nullptr);
     auto tm = *std::localtime(&now);
 
+    const std::string home_dir = std::getenv("HOME");
+    const std::string log_dir = home_dir + "/.cache/awm";
+
+    // create log directory if not exists
+    if (!std::filesystem::exists(log_dir))
+        std::filesystem::create_directory(log_dir);
+
+    // generate filename
     std::ostringstream filename;
-    filename << "/tmp/awm_crash_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << "_"
-             << getpid() << ".txt";
+    filename << log_dir << "/awm_crash_"
+             << std::put_time(&tm, "%Y-%m-%d_%H:%M:%S") << ".txt";
 
     std::ofstream crash_file(filename.str());
 
+    // generate crash report
     if (crash_file.is_open()) {
         crash_file << "AWM Crash Report\n";
-        crash_file << "Signal: " << sig << "\n";
+        crash_file << "Signal: " << signal_to_string(sig) << "\n";
         crash_file << "Time: " << std::put_time(&tm, "%Y-%m-%d %H:%M:%S")
                    << "\n";
         crash_file << "PID: " << getpid() << "\n\n";
@@ -36,9 +62,12 @@ void signal_handler(int sig) {
 
         p.print(st, crash_file);
         crash_file.close();
+
+        // print crash dump location to tty
         std::cerr << "Crash dump written to: " << filename.str() << std::endl;
     }
 
+    // exit or we will get stuck
     exit(EXIT_FAILURE);
 }
 

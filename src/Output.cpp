@@ -238,8 +238,7 @@ Output::Output(Server *server, struct wlr_output *wlr_output)
             : wlr_output_layout_add_auto(manager->layout, wlr_output);
 
     // add to scene output
-    wlr_scene_output *scene_output =
-        wlr_scene_output_create(server->scene, wlr_output);
+    scene_output = wlr_scene_output_create(server->scene, wlr_output);
     wlr_scene_output_layout_add_output(server->scene_layout,
                                        output_layout_output, scene_output);
 

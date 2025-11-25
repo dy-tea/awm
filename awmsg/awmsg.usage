@@ -22,7 +22,8 @@ awmsg [<FLAGS>]... (rule) <RULE-OPTION>;
 <WORKSPACE-OPTION> ::= (list) "list workspaces"
                      | (set <NUM>) "set current workspace to num";
 
-<TOPLEVEL-OPTION> ::= (list) "list toplevels";
+<TOPLEVEL-OPTION> ::= (list) "list toplevels"
+                    | (focused) "show focused toplevel info";
 
 <KEYBOARD-OPTION> ::= (list) "list keyboards";
 

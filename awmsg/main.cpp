@@ -45,6 +45,7 @@ void print_usage() {
                  "\t\t- [s]et <num>\n"
                  "\t[t]oplevel\n"
                  "\t\t- [l]ist\n"
+                 "\t\t- [f]ocused\n"
                  "\t[k]eyboard\n"
                  "\t\t- [l]ist\n"
                  "\t[d]evice\n"
@@ -186,6 +187,9 @@ int main(int argc, char **argv) {
 
         if (group[0] == 'l') { // toplevel list
             message = "t l";
+            break;
+        } else if (group[0] == 'f') { // toplevel focused
+            message = "t f";
             break;
         }
         goto unknown;

@@ -131,11 +131,11 @@ end
 function __complgen_match
     set prefix $argv[1]
 
-    set candidates
+    set completions
     set descriptions
     while read c
         set a (string split --max 1 -- "	" $c)
-        set --append candidates $a[1]
+        set --append completions $a[1]
         if set --query a[2]
             set --append descriptions $a[2]
         else
@@ -143,7 +143,7 @@ function __complgen_match
         end
     end
 
-    if test -z "$candidates"
+    if test -z "$completions"
         return 1
     end
 
@@ -152,9 +152,9 @@ function __complgen_match
 
     set matches_case_sensitive
     set descriptions_case_sensitive
-    for i in (seq 1 (count $candidates))
-        if string match --regex --quiet --entire -- $regex $candidates[$i]
-            set --append matches_case_sensitive $candidates[$i]
+    for i in (seq 1 (count $completions))
+        if string match --regex --quiet --entire -- $regex $completions[$i]
+            set --append matches_case_sensitive $completions[$i]
             set --append descriptions_case_sensitive $descriptions[$i]
         end
     end
@@ -168,9 +168,9 @@ function __complgen_match
 
     set matches_case_insensitive
     set descriptions_case_insensitive
-    for i in (seq 1 (count $candidates))
-        if string match --regex --quiet --ignore-case --entire -- $regex $candidates[$i]
-            set --append matches_case_insensitive $candidates[$i]
+    for i in (seq 1 (count $completions))
+        if string match --regex --quiet --ignore-case --entire -- $regex $completions[$i]
+            set --append matches_case_insensitive $completions[$i]
             set --append descriptions_case_insensitive $descriptions[$i]
         end
     end
@@ -197,7 +197,7 @@ function _awmsg
         set COMP_CWORD (count $COMP_WORDS)
     end
 
-    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans open window_to display rule list
+    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list focused keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans open window_to display rule list
 
     set descriptions
     set descriptions[1] "show help"
@@ -220,63 +220,64 @@ function _awmsg
     set descriptions[20] "list workspaces"
     set descriptions[21] "set current workspace to num"
     set descriptions[23] "list toplevels"
-    set descriptions[25] "list keyboards"
-    set descriptions[27] "list devices"
-    set descriptions[28] "show current device"
-    set descriptions[30] "list key bindings"
-    set descriptions[31] "run key binding for name"
-    set descriptions[32] "do nothing"
-    set descriptions[33] "maximize the active window"
-    set descriptions[34] "fullscreen the active window"
-    set descriptions[35] "focus the previous window"
-    set descriptions[36] "focus the next window"
-    set descriptions[37] "start an interactive move with the active window"
-    set descriptions[38] "focus the window in the up direction"
-    set descriptions[39] "focus the window in the down direction"
-    set descriptions[40] "focus the window in the left direction"
-    set descriptions[41] "focus the window in the right direction"
-    set descriptions[42] "close the active window"
-    set descriptions[43] "swap the active window with the window in the up direction"
-    set descriptions[44] "swap the active window with the window in the down direction"
-    set descriptions[45] "swap the active window with the window in the left direction"
-    set descriptions[46] "swap the active window with the window in the right direction"
-    set descriptions[47] "half the active window in the up direction"
-    set descriptions[48] "half the active window in the down direction"
-    set descriptions[49] "half the active window in the left direction"
-    set descriptions[50] "half the active window in the right direction"
-    set descriptions[51] "tile all windows in the active workspace"
-    set descriptions[52] "tile all windows in the active workspace excluding the active one"
-    set descriptions[53] "focus workspace N"
-    set descriptions[54] "move the active window to workspace N"
-    set descriptions[55] "display key binding for name"
-    set descriptions[57] "list windowrules"
+    set descriptions[24] "show focused toplevel info"
+    set descriptions[26] "list keyboards"
+    set descriptions[28] "list devices"
+    set descriptions[29] "show current device"
+    set descriptions[31] "list key bindings"
+    set descriptions[32] "run key binding for name"
+    set descriptions[33] "do nothing"
+    set descriptions[34] "maximize the active window"
+    set descriptions[35] "fullscreen the active window"
+    set descriptions[36] "focus the previous window"
+    set descriptions[37] "focus the next window"
+    set descriptions[38] "start an interactive move with the active window"
+    set descriptions[39] "focus the window in the up direction"
+    set descriptions[40] "focus the window in the down direction"
+    set descriptions[41] "focus the window in the left direction"
+    set descriptions[42] "focus the window in the right direction"
+    set descriptions[43] "close the active window"
+    set descriptions[44] "swap the active window with the window in the up direction"
+    set descriptions[45] "swap the active window with the window in the down direction"
+    set descriptions[46] "swap the active window with the window in the left direction"
+    set descriptions[47] "swap the active window with the window in the right direction"
+    set descriptions[48] "half the active window in the up direction"
+    set descriptions[49] "half the active window in the down direction"
+    set descriptions[50] "half the active window in the left direction"
+    set descriptions[51] "half the active window in the right direction"
+    set descriptions[52] "tile all windows in the active workspace"
+    set descriptions[53] "tile all windows in the active workspace excluding the active one"
+    set descriptions[54] "focus workspace N"
+    set descriptions[55] "move the active window to workspace N"
+    set descriptions[56] "display key binding for name"
+    set descriptions[58] "list windowrules"
 
     set literal_transitions_inputs
-    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 24 26 29 56"
+    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 25 27 30 57"
     set literal_transitions_tos[1] "2 2 2 2 2 3 4 4 4 4 5 5 6 7 8 9 10 11 12"
-    set literal_transitions_inputs[4] "7 8 9 10 11 12 13 19 22 24 26 29 56"
+    set literal_transitions_inputs[4] "7 8 9 10 11 12 13 19 22 25 27 30 57"
     set literal_transitions_tos[4] "4 4 4 4 5 5 6 7 8 9 10 11 12"
     set literal_transitions_inputs[6] "14 15 16 17 18"
-    set literal_transitions_tos[6] "2 2 2 15 16"
+    set literal_transitions_tos[6] "2 2 2 16 17"
     set literal_transitions_inputs[7] "20 21"
-    set literal_transitions_tos[7] "2 17"
-    set literal_transitions_inputs[8] 23
-    set literal_transitions_tos[8] 2
-    set literal_transitions_inputs[9] 25
+    set literal_transitions_tos[7] "2 13"
+    set literal_transitions_inputs[8] "23 24"
+    set literal_transitions_tos[8] "2 2"
+    set literal_transitions_inputs[9] 26
     set literal_transitions_tos[9] 2
-    set literal_transitions_inputs[10] "27 28"
+    set literal_transitions_inputs[10] "28 29"
     set literal_transitions_tos[10] "2 2"
-    set literal_transitions_inputs[11] "30 31 55"
-    set literal_transitions_tos[11] "2 13 13"
-    set literal_transitions_inputs[12] 57
+    set literal_transitions_inputs[11] "31 32 56"
+    set literal_transitions_tos[11] "2 14 14"
+    set literal_transitions_inputs[12] 58
     set literal_transitions_tos[12] 2
-    set literal_transitions_inputs[13] "5 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54"
-    set literal_transitions_tos[13] "2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 14 14"
+    set literal_transitions_inputs[14] "5 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55"
+    set literal_transitions_tos[14] "2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 15 15"
 
-    set match_anything_transitions_from 5 3 14 16 17
-    set match_anything_transitions_to 4 2 2 2 2
-    set subword_transitions_ids[15] 1
-    set subword_transitions_tos[15] 2
+    set match_anything_transitions_from 15 3 13 5 17
+    set match_anything_transitions_to 2 2 2 4 2
+    set subword_transitions_ids[16] 1
+    set subword_transitions_tos[16] 2
 
     set state 1
     set word_index 2
@@ -324,9 +325,9 @@ function _awmsg
         return 1
     end
 
-    set literal_froms_level_0 12 7 8 1 4 9 10 6 11 13
-    set literal_inputs_level_0 "57|20 21|23|1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 24 26 29 56|7 8 9 10 11 12 13 19 22 24 26 29 56|25|27 28|14 15 16 17 18|30 31 55|5 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54"
-    set subword_froms_level_0 15
+    set literal_froms_level_0 10 1 4 9 14 11 12 6 8 7
+    set literal_inputs_level_0 "28 29|1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 25 27 30 57|7 8 9 10 11 12 13 19 22 25 27 30 57|26|5 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55|31 32 56|58|14 15 16 17 18|23 24|20 21"
+    set subword_froms_level_0 16
     set subwords_level_0 "1"
     set command_froms_level_0 5
     set commands_level_0 "0"

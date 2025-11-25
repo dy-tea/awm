@@ -54,7 +54,6 @@ _awmsg_subword () {
                         state=${state_transitions[$literal_id]}
                         char_index=$((char_index + literal_len))
                         literal_matched=1
-                        break
                     fi
                 fi
             done
@@ -63,27 +62,8 @@ _awmsg_subword () {
             fi
         fi
 
-        if [[ -v "nontail_transitions[$state]" ]]; then
-            declare -A state_nontails
-            eval "state_nontails=${nontail_transitions[$state]}"
-            local nontail_matched=0
-            for regex_id in "${!state_nontails[@]}"; do
-                local regex="(${regexes[$regex_id]})(.*)"
-                if [[ ${subword} =~ $regex && -n ${BASH_REMATCH[1]} ]]; then
-                    match="${BASH_REMATCH[1]}"
-                    match_len=${#match}
-                    char_index=$((char_index + match_len))
-                    state=${state_nontails[$regex_id]}
-                    nontail_matched=1
-                    break
-                fi
-            done
-            if [[ $nontail_matched -ne 0 ]]; then
-                continue
-            fi
-        fi
-
         if [[ -v "match_anything_transitions[$state]" ]]; then
+            state=${match_anything_transitions[$state]}
             matched=1
             break
         fi
@@ -99,7 +79,7 @@ _awmsg_subword () {
     local matched_prefix="${word:0:$char_index}"
     local completed_prefix="${word:$char_index}"
 
-    local -a candidates=()
+    local -a completions=()
     local -a matches=()
     local ignore_case=$(bind -v | grep completion-ignore-case | cut -d' ' -f3)
     for (( subword_fallback_level=0; subword_fallback_level <= max_fallback_level; subword_fallback_level++ )) {
@@ -107,26 +87,26 @@ _awmsg_subword () {
         eval "declare -a transitions=(\${$literal_transitions_name[$state]})"
         for literal_id in "${transitions[@]}"; do
             local literal=${literals[$literal_id]}
-            candidates+=("$matched_prefix$literal")
+            completions+=("$matched_prefix$literal")
         done
-        if [[ ${#candidates[@]} -gt 0 ]]; then
-            readarray -t matches < <(printf "%s\n" "${candidates[@]}" | __complgen_match "$ignore_case" "$matched_prefix$completed_prefix")
+        if [[ ${#completions[@]} -gt 0 ]]; then
+            readarray -t matches < <(printf "%s\n" "${completions[@]}" | __complgen_match "$ignore_case" "$matched_prefix$completed_prefix")
         fi
 
         eval "declare commands_name=commands_level_${subword_fallback_level}"
         eval "declare -a transitions=(\${$commands_name[$state]})"
         for command_id in "${transitions[@]}"; do
-            readarray -t candidates < <(_awmsg_cmd_$command_id "$matched_prefix" | cut -f1)
-            for item in "${candidates[@]}"; do
+            readarray -t completions < <(_awmsg_cmd_$command_id "$matched_prefix" | cut -f1)
+            for item in "${completions[@]}"; do
                 matches+=("$matched_prefix$item")
             done
         done
 
-        eval "declare nontail_commands_name=nontail_commands_level_${subword_fallback_level}"
-        eval "declare -a transitions=(\${$nontail_commands_name[$state]})"
+        eval "declare specialized_commands_name=specialized_commands_level_$subword_fallback_level"
+        eval "declare -a transitions=(\${$specialized_commands_name[$state]})"
         for command_id in "${transitions[@]}"; do
-            readarray -t candidates < <(_awmsg_cmd_$command_id "$matched_prefix" | cut -f1)
-            for item in "${candidates[@]}"; do
+            readarray -t completions < <(_awmsg_cmd_$command_id "$prefix" | cut -f1)
+            for item in "${completions[@]}"; do
                 matches+=("$matched_prefix$item")
             done
         done
@@ -141,14 +121,10 @@ _awmsg_subword () {
 
 _awmsg_subword_0 () {
     declare -a literals=(x)
-    declare -a regexes=()
     declare -A literal_transitions=()
-    declare -A nontail_transitions=()
     literal_transitions[1]="([0]=2)"
     declare -A match_anything_transitions=([0]=1 [2]=3)
     declare -A literal_transitions_level_0=([1]="0")
-    declare -A nontail_commands_level_0=()
-    declare -A nontail_regexes_level_0=()
     declare -A commands_level_0=()
     declare max_fallback_level=0
     declare state=0
@@ -157,30 +133,28 @@ _awmsg_subword_0 () {
 
 _awmsg () {
     if [[ $(type -t _get_comp_words_by_ref) != function ]]; then
-        echo _get_comp_words_by_ref: function not defined.  Make sure the bash-candidates system package is installed
+        echo _get_comp_words_by_ref: function not defined.  Make sure the bash-completions system package is installed
         return 1
     fi
 
     local words cword
     _get_comp_words_by_ref -n "$COMP_WORDBREAKS" words cword
 
-    declare -a literals=(-h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans open window_to display rule list)
-    declare -a regexes=()
+    declare -a literals=(-h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list focused keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans open window_to display rule list)
     declare -A literal_transitions=()
-    declare -A nontail_transitions=()
-    literal_transitions[0]="([0]=1 [1]=1 [2]=1 [3]=1 [4]=1 [5]=2 [6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [23]=8 [25]=9 [28]=10 [55]=11)"
-    literal_transitions[3]="([6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [23]=8 [25]=9 [28]=10 [55]=11)"
-    literal_transitions[5]="([13]=1 [14]=1 [15]=1 [16]=14 [17]=15)"
-    literal_transitions[6]="([19]=1 [20]=16)"
-    literal_transitions[7]="([22]=1)"
-    literal_transitions[8]="([24]=1)"
-    literal_transitions[9]="([26]=1 [27]=1)"
-    literal_transitions[10]="([29]=1 [30]=12 [54]=12)"
-    literal_transitions[11]="([56]=1)"
-    literal_transitions[12]="([4]=1 [31]=1 [32]=1 [33]=1 [34]=1 [35]=1 [36]=1 [37]=1 [38]=1 [39]=1 [40]=1 [41]=1 [42]=1 [43]=1 [44]=1 [45]=1 [46]=1 [47]=1 [48]=1 [49]=1 [50]=1 [51]=1 [52]=13 [53]=13)"
-    declare -A match_anything_transitions=([4]=3 [2]=1 [13]=1 [15]=1 [16]=1)
+    literal_transitions[0]="([0]=1 [1]=1 [2]=1 [3]=1 [4]=1 [5]=2 [6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [24]=8 [26]=9 [29]=10 [56]=11)"
+    literal_transitions[3]="([6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [24]=8 [26]=9 [29]=10 [56]=11)"
+    literal_transitions[5]="([13]=1 [14]=1 [15]=1 [16]=15 [17]=16)"
+    literal_transitions[6]="([19]=1 [20]=12)"
+    literal_transitions[7]="([22]=1 [23]=1)"
+    literal_transitions[8]="([25]=1)"
+    literal_transitions[9]="([27]=1 [28]=1)"
+    literal_transitions[10]="([30]=1 [31]=13 [55]=13)"
+    literal_transitions[11]="([57]=1)"
+    literal_transitions[13]="([4]=1 [32]=1 [33]=1 [34]=1 [35]=1 [36]=1 [37]=1 [38]=1 [39]=1 [40]=1 [41]=1 [42]=1 [43]=1 [44]=1 [45]=1 [46]=1 [47]=1 [48]=1 [49]=1 [50]=1 [51]=1 [52]=1 [53]=14 [54]=14)"
+    declare -A match_anything_transitions=([14]=1 [2]=1 [12]=1 [4]=3 [16]=1)
     declare -A subword_transitions
-    subword_transitions[14]="([0]=1)"
+    subword_transitions[15]="([0]=1)"
 
     local state=0
     local word_index=1
@@ -234,11 +208,11 @@ _awmsg () {
         return 1
     done
 
-    declare -A literal_transitions_level_0=([11]="56" [6]="19 20" [7]="22" [0]="0 1 2 3 4 5 6 7 8 9 10 11 12 18 21 23 25 28 55" [3]="6 7 8 9 10 11 12 18 21 23 25 28 55" [8]="24" [9]="26 27" [5]="13 14 15 16 17" [10]="29 30 54" [12]="4 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53")
-    declare -A subword_transitions_level_0=([14]="0")
+    declare -A literal_transitions_level_0=([9]="27 28" [0]="0 1 2 3 4 5 6 7 8 9 10 11 12 18 21 24 26 29 56" [3]="6 7 8 9 10 11 12 18 21 24 26 29 56" [8]="25" [13]="4 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54" [10]="30 31 55" [11]="57" [5]="13 14 15 16 17" [7]="22 23" [6]="19 20")
+    declare -A subword_transitions_level_0=([15]="0")
     declare -A commands_level_0=([4]="0")
 
-    local -a candidates=()
+    local -a completions=()
     local -a matches=()
     local ignore_case=$(bind -v | grep completion-ignore-case | cut -d' ' -f3)
     local max_fallback_level=0
@@ -248,10 +222,10 @@ _awmsg () {
         eval "declare -a transitions=(\${$literal_transitions_name[$state]})"
         for literal_id in "${transitions[@]}"; do
             local literal="${literals[$literal_id]}"
-            candidates+=("$literal ")
+            completions+=("$literal ")
         done
-        if [[ ${#candidates[@]} -gt 0 ]]; then
-            readarray -t matches < <(printf "%s\n" "${candidates[@]}" | __complgen_match "$ignore_case" "$prefix")
+        if [[ ${#completions[@]} -gt 0 ]]; then
+            readarray -t matches < <(printf "%s\n" "${completions[@]}" | __complgen_match "$ignore_case" "$prefix")
         fi
 
         eval "declare subword_transitions_name=subword_transitions_level_${fallback_level}"
@@ -263,9 +237,18 @@ _awmsg () {
         eval "declare commands_name=commands_level_${fallback_level}"
         eval "declare -a transitions=(\${$commands_name[$state]})"
         for command_id in "${transitions[@]}"; do
-            readarray -t candidates < <(_awmsg_cmd_$command_id "$prefix" | cut -f1)
-            if [[ ${#candidates[@]} -gt 0 ]]; then
-                readarray -t -O "${#matches[@]}" matches < <(printf "%s\n" "${candidates[@]}" | __complgen_match "$ignore_case" "$prefix")
+            readarray -t completions < <(_awmsg_cmd_$command_id "$prefix" | cut -f1)
+            if [[ ${#completions[@]} -gt 0 ]]; then
+                readarray -t -O "${#matches[@]}" matches < <(printf "%s\n" "${completions[@]}" | __complgen_match "$ignore_case" "$prefix")
+            fi
+        done
+
+        eval "declare specialized_commands_name=specialized_commands_level_${fallback_level}"
+        eval "declare -a transitions=(\${$specialized_commands_name[$state]})"
+        for command_id in "${transitions[@]}"; do
+            readarray -t completions < <(_awmsg_cmd_"${command_id}" "$prefix" | cut -f1)
+            if [[ ${#completions[@]} -gt 0 ]]; then
+                readarray -t -O "${#matches[@]}" matches < <(printf "%s\n" "${completions[@]}" | __complgen_match "$ignore_case" "$prefix")
             fi
         done
 

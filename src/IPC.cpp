@@ -188,11 +188,15 @@ std::string IPC::parse_command(const std::string &command, const int client_fd,
             }
             goto unknown;
         case 't': // toplevel
-            if (std::getline(ss, token, ' '))
+            if (std::getline(ss, token, ' ')) {
                 if (token[0] == 'l') { // toplevel list
                     message = IPC_TOPLEVEL_LIST;
                     break;
+                } else if (token[0] == 'f') { // toplevel focused
+                    message = IPC_TOPLEVEL_FOCUSED;
+                    break;
                 }
+            }
             goto unknown;
         case 'k': // keyboard
             if (std::getline(ss, token, ' '))
@@ -495,6 +499,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"title", t->get_title()},
                 {"class", t->get_app_id()},
                 {"tag", t->tag},
+                {"foreign", t->ext_foreign_handle ? t->ext_foreign_handle->identifier : "None"},
                 {"x", t->geometry.x},
                 {"y", t->geometry.y},
                 {"width", t->geometry.width},
@@ -508,6 +513,32 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
 #endif
             };
 
+        break;
+    }
+    case IPC_TOPLEVEL_FOCUSED: {
+        Output *o = server->focused_output();
+        if (!o)
+            break;
+        Workspace *w = server->workspace_manager->get_active_workspace(o);
+
+        if (const Toplevel *t = w->active_toplevel) {
+            j = {
+                {"title", t->get_title()},
+                {"class", t->get_app_id()},
+                {"tag", t->tag},
+                {"foreign", t->ext_foreign_handle ? t->ext_foreign_handle->identifier : "None"},
+                {"x", t->geometry.x},
+                {"y", t->geometry.y},
+                {"width", t->geometry.width},
+                {"height", t->geometry.height},
+                {"hidden", t->hidden},
+                {"maximized", t->maximized()},
+                {"fullscreen", t->fullscreen()},
+#ifdef XWAYLAND
+                {"xwayland", !t->xdg_toplevel},
+#endif
+            };
+        }
         break;
     }
     case IPC_KEYBOARD_LIST: {

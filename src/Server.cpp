@@ -1212,7 +1212,7 @@ Server::~Server() {
     wl_list_remove(&new_pointer_constraint.link);
 
     ActivationToken *tk, *tkt;
-    wl_list_for_each_safe(tk, tkt, &pending_activation_tokens, link) delete tkt;
+    wl_list_for_each_safe(tk, tkt, &pending_activation_tokens, link) delete tk;
 
     wl_list_remove(&xdg_activation_activate.link);
     wl_list_remove(&xdg_activation_new_token.link);

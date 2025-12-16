@@ -1,6 +1,7 @@
 #include "Config.h"
 #include "Server.h"
 #include "version.h"
+#include <filesystem>
 #include <wordexp.h>
 
 #ifdef BACKWARD
@@ -66,6 +67,11 @@ void signal_handler(int sig) {
         // print crash dump location to tty
         std::cerr << "Crash dump written to: " << filename.str() << std::endl;
     }
+
+    // unlink ipc socket
+    if (const char *socket = getenv("WAYLAND_DISPLAY"))
+        if (std::filesystem::exists(socket))
+            unlink(socket);
 
     // exit or we will get stuck
     exit(EXIT_FAILURE);

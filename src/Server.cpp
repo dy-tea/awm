@@ -916,6 +916,8 @@ Server::Server(Config *config) : config(config) {
                 WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
                 WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
                 WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
+                WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+                WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_BT1886,
             };
         const enum wp_color_manager_v1_primaries color_manager_primaries[] = {
             WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
@@ -933,7 +935,11 @@ Server::Server(Config *config) : config(config) {
             sizeof(color_manager_primaries) /
                 sizeof(color_manager_primaries[0]),
         };
-        wlr_color_manager_v1_create(display, 1, &color_manager_options);
+        wlr_color_manager_v1* color_manager = wlr_color_manager_v1_create(display, 1, &color_manager_options);
+        if (color_manager)
+            wlr_scene_set_color_manager_v1(scene, color_manager);
+        else
+            wlr_log(WLR_ERROR, "%s", "Failed to start color manager");
     }
 
     // color representation

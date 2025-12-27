@@ -83,6 +83,7 @@ struct Server {
     wl_listener new_xdg_dialog;
 
     wlr_xdg_system_bell_v1 *wlr_xdg_system_bell;
+    wl_event_source *system_bell_timer{nullptr};
     wl_listener ring_system_bell;
 
     wlr_keyboard_shortcuts_inhibit_manager_v1

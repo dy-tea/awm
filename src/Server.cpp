@@ -722,6 +722,18 @@ Server::Server(Config *config) : config(config) {
             return;
         }
 
+        // unfinished timer, do not execute command
+        if (server->system_bell_timer)
+            return;
+
+        // create 500ms second timer
+        server->system_bell_timer = wl_event_loop_add_timer(server->event_loop, [](void *data) {
+            Server *server = static_cast<Server*>(data);
+            server->system_bell_timer = nullptr;
+            return 0;
+        }, server);
+        wl_event_source_timer_update(server->system_bell_timer, 500);
+
         // get bell command defined in config
         const std::string &command = server->config->general.system_bell;
 

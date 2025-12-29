@@ -5,6 +5,7 @@
 #include "SessionLock.h"
 #include "TearingController.h"
 #include "wlr.h"
+#include <mutex>
 #include <sys/signalfd.h>
 
 static pid_t get_parent_pid(pid_t child) {
@@ -721,6 +722,9 @@ Server::Server(Config *config) : config(config) {
             wlr_log(WLR_ERROR, "%s", "system bell client is NULL");
             return;
         }
+
+        // ensure access to system bell timer is thread safe
+        std::lock_guard<std::mutex> lock(server->system_bell_mutex);
 
         // unfinished timer, do not execute command
         if (server->system_bell_timer)

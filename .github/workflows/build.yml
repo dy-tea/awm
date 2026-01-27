@@ -10,67 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v3
         with:
+          submodules: true
           fetch-depth: 1
 
-      - name: dependencies
-        run: |
-          sudo apt-get update
-          sudo apt install --fix-missing meson wayland-protocols wayland-utils \
-          libwlroots-dev xwayland nlohmann-json3-dev
-
-      - name: pixman-1
-        run: |
-          git clone --depth 1 https://gitlab.freedesktop.org/pixman/pixman.git
-          cd pixman
-          meson setup build/
-          sudo ninja -C build/ install
-
-      - name: libinput
-        run: |
-          git clone --depth 1 https://gitlab.freedesktop.org/libinput/libinput.git
-          cd libinput
-          meson setup -Ddebug-gui=false -Dtests=false build/
-          sudo ninja -C build/ install
-
-      - name: xkbcommon
-        run: |
-          git clone --depth 1 https://github.com/xkbcommon/libxkbcommon.git
-          cd libxkbcommon
-          meson setup -Denable-x11=false build/
-          sudo ninja -C build/ install
-
-      - name: wayland
-        run: |
-          git clone --depth 1 https://gitlab.freedesktop.org/wayland/wayland.git
-          cd wayland
-          meson setup -Dtests=false -Ddocumentation=false -Ddtd_validation=false build/
-          sudo ninja -C build/ install
-
-      - name: libdisplay-info
-        run: |
-          git clone https://gitlab.freedesktop.org/emersion/libdisplay-info
-          cd libdisplay-info
-          meson setup build/
-          sudo ninja -C build/ install
-
-      - name: wayland-protocols
-        run: |
-          git clone --depth 1 https://gitlab.freedesktop.org/wayland/wayland-protocols.git
-          cd wayland-protocols
-          meson setup -Dtests=false build/
-          sudo ninja -C build/ install
-
-      - name: wlroots
-        run: |
-          git clone --depth 1 https://gitlab.freedesktop.org/wlroots/wlroots.git
-          cd wlroots
-          meson setup -Dxwayland=enabled build/
-          sudo ninja -C build/ install
-
-      - name: build
-        run: |
-          meson setup build/
-          ninja -C build/
+      - name: Build
+        uses: docker://archlinux:latest
+        with:
+          args: |
+            /bin/sh -c "                                                              \
+            pacman -Sy --noconfirm git gcc cmake meson wayland wayland-protocols      \
+            pkgconf pixman libinput libdisplay-info libxkbcommon nlohmann-json libdrm \
+            seatd libxcb xorg xorg-xwayland sudo                                   && \
+                                                                                      \
+            # Build awm                                                               \
+            git clone --depth 1 https://gitlab.freedesktop.org/wlroots/wlroots.git    \
+            subprojects/wlroots                                                    && \
+            meson setup build/                                                     && \
+            ninja -C build/                                                           "

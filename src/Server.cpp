@@ -731,11 +731,14 @@ Server::Server(Config *config) : config(config) {
             return;
 
         // create 500ms second timer
-        server->system_bell_timer = wl_event_loop_add_timer(server->event_loop, [](void *data) {
-            Server *server = static_cast<Server*>(data);
-            server->system_bell_timer = nullptr;
-            return 0;
-        }, server);
+        server->system_bell_timer = wl_event_loop_add_timer(
+            server->event_loop,
+            [](void *data) {
+                Server *server = static_cast<Server *>(data);
+                server->system_bell_timer = nullptr;
+                return 0;
+            },
+            server);
         wl_event_source_timer_update(server->system_bell_timer, 500);
 
         // get bell command defined in config
@@ -951,7 +954,8 @@ Server::Server(Config *config) : config(config) {
             sizeof(color_manager_primaries) /
                 sizeof(color_manager_primaries[0]),
         };
-        wlr_color_manager_v1* color_manager = wlr_color_manager_v1_create(display, 1, &color_manager_options);
+        wlr_color_manager_v1 *color_manager =
+            wlr_color_manager_v1_create(display, 1, &color_manager_options);
         if (color_manager)
             wlr_scene_set_color_manager_v1(scene, color_manager);
         else
@@ -1051,11 +1055,10 @@ Server::Server(Config *config) : config(config) {
             wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
                 server->cursor->xcursor_manager, "default", 1);
             if (xcursor) {
-                wlr_xwayland_set_cursor(
-                    server->xwayland, xcursor->images[0]->buffer,
-                    xcursor->images[0]->width * 4, xcursor->images[0]->width,
-                    xcursor->images[0]->height, xcursor->images[0]->hotspot_x,
-                    xcursor->images[0]->hotspot_y);
+                wlr_xwayland_set_cursor(server->xwayland,
+                                        xcursor->images[0]->buffer,
+                                        xcursor->images[0]->hotspot_x,
+                                        xcursor->images[0]->hotspot_y);
             }
         };
         wl_signal_add(&xwayland->events.ready, &xwayland_ready);

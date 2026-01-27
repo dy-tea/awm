@@ -499,7 +499,9 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"title", t->get_title()},
                 {"class", t->get_app_id()},
                 {"tag", t->tag},
-                {"foreign", t->ext_foreign_handle ? t->ext_foreign_handle->identifier : "None"},
+                {"foreign", t->ext_foreign_handle
+                                ? t->ext_foreign_handle->identifier
+                                : "None"},
                 {"x", t->geometry.x},
                 {"y", t->geometry.y},
                 {"width", t->geometry.width},
@@ -526,7 +528,9 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"title", t->get_title()},
                 {"class", t->get_app_id()},
                 {"tag", t->tag},
-                {"foreign", t->ext_foreign_handle ? t->ext_foreign_handle->identifier : "None"},
+                {"foreign", t->ext_foreign_handle
+                                ? t->ext_foreign_handle->identifier
+                                : "None"},
                 {"x", t->geometry.x},
                 {"y", t->geometry.y},
                 {"width", t->geometry.width},

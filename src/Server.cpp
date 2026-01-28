@@ -1056,7 +1056,7 @@ Server::Server(Config *config) : config(config) {
                 server->cursor->xcursor_manager, "default", 1);
             if (xcursor) {
                 wlr_xwayland_set_cursor(server->xwayland,
-                                        xcursor->images[0]->buffer,
+                                        (wlr_buffer*)xcursor->images[0]->buffer,
                                         xcursor->images[0]->hotspot_x,
                                         xcursor->images[0]->hotspot_y);
             }

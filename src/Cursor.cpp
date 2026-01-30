@@ -127,7 +127,7 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
             wlr_scene_node *node =
                 wlr_scene_node_at(&server->scene->tree.node, cursor->cursor->x,
                                   cursor->cursor->y, &sx, &sy);
-            while (node->type == WLR_SCENE_NODE_RECT) {
+            while (node && node->type == WLR_SCENE_NODE_RECT) {
                 wlr_scene_rect *rect = wl_container_of(node, rect, node);
                 if (!rect)
                     break;

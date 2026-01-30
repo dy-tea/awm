@@ -177,6 +177,7 @@ struct Config {
         FocusOnWindowActivation fowa{FOWA_ACTIVE};
         std::string system_bell{""};
         int64_t minimize_to_workspace{0};
+        bool decorations{true};
     } general;
 
     struct {

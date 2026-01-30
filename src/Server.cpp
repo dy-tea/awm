@@ -834,12 +834,13 @@ Server::Server(Config *config) : config(config) {
                   &new_idle_inhibitor);
 
     // xdg decoration
-#ifdef XDG_DECORATION
     wl_list_init(&decorations);
     xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(display);
 
     new_xdg_decoration.notify = [](wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_xdg_decoration);
+        if (!server->config->general.decorations)
+            return;
         wlr_xdg_toplevel_decoration_v1 *decoration =
             static_cast<wlr_xdg_toplevel_decoration_v1 *>(data);
 
@@ -851,11 +852,10 @@ Server::Server(Config *config) : config(config) {
         }
 
         // create decoration
-        // new Decoration(server, decoration);
+        new Decoration(server, decoration);
     };
     wl_signal_add(&xdg_decoration_manager->events.new_toplevel_decoration,
                   &new_xdg_decoration);
-#endif
 
     // foreign toplevel image capture source
     wlr_ext_foreign_toplevel_image_capture_source_manager =
@@ -1055,10 +1055,11 @@ Server::Server(Config *config) : config(config) {
             wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
                 server->cursor->xcursor_manager, "default", 1);
             if (xcursor) {
-                wlr_xwayland_set_cursor(server->xwayland,
-                                        wlr_xcursor_image_get_buffer(xcursor->images[0]),
-                                        xcursor->images[0]->hotspot_x,
-                                        xcursor->images[0]->hotspot_y);
+                wlr_xwayland_set_cursor(
+                    server->xwayland,
+                    wlr_xcursor_image_get_buffer(xcursor->images[0]),
+                    xcursor->images[0]->hotspot_x,
+                    xcursor->images[0]->hotspot_y);
             }
         };
         wl_signal_add(&xwayland->events.ready, &xwayland_ready);
@@ -1255,10 +1256,7 @@ Server::~Server() {
     TearingController *tc, *tct;
     wl_list_for_each_safe(tc, tct, &tearing_controllers, link) delete tc;
     wl_list_remove(&new_tearing_control.link);
-
-#ifdef XDG_DECORATION
     wl_list_remove(&new_xdg_decoration.link);
-#endif
 
 #ifdef XWAYLAND
     wl_list_remove(&xwayland_ready.link);

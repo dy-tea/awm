@@ -60,6 +60,7 @@ focus_on_hover = false                                                          
 focus_on_activation = "active"                                                         # "none", "active", "any"
 system_bell = "ffplay -nodisp -autoexit /usr/share/sounds/freedesktop/stereo/bell.oga" # command for system bell sound, leave empty for no command, empty by default
 minimize_to_workspace = 0                                                              # move window to workspace 10 on minimize, if 0 move below all other windows in the workspace
+decorations = true
 
 [tiling]
 method = "grid" # "none", "grid", "master", "dwindle"

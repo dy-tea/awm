@@ -765,6 +765,9 @@ void Toplevel::set_position_size(const double x, const double y, int width,
 
     geometry = wlr_box{static_cast<int>(x), static_cast<int>(y), width, height};
 
+    if (decoration)
+        decoration->update_titlebar(geometry.width);
+
     // notify clients
     if (IPC *ipc = server->ipc)
         ipc->notify_clients({IPC_TOPLEVEL_LIST, IPC_WORKSPACE_LIST});
@@ -927,6 +930,11 @@ void Toplevel::set_maximized(const bool maximized) {
     wlr_box usable_area = output->usable_area;
     wlr_box output_box = output->layout_geometry;
 
+    // get deco height
+    int deco_height =
+        decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE ? 30
+                                                                           : 0;
+
     // set toplevel window mode to maximized
 #ifdef XWAYLAND
     if (xdg_toplevel)
@@ -946,8 +954,8 @@ void Toplevel::set_maximized(const bool maximized) {
 
         // set to top left of output, width and height the size of output
         set_position_size(usable_area.x + output_box.x,
-                          usable_area.y + output_box.y, usable_area.width,
-                          usable_area.height);
+                          usable_area.y + output_box.y + deco_height,
+                          usable_area.width, usable_area.height - deco_height);
     } else {
         // handles edge case where toplevel starts maximized
         if (saved_geometry.width && saved_geometry.height)
@@ -956,8 +964,9 @@ void Toplevel::set_maximized(const bool maximized) {
                               saved_geometry.width, saved_geometry.height);
         else
             // use half of output geometry
-            set_position_size(output_box.x, output_box.y, output_box.width / 2,
-                              output_box.height / 2);
+            set_position_size(output_box.x, output_box.y + deco_height,
+                              output_box.width / 2,
+                              output_box.height / 2 - deco_height);
     }
 }
 

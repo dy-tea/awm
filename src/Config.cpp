@@ -464,11 +464,15 @@ bool Config::load() {
         // minimize to workspace
         connect(general_table->getInt("minimize_to_workspace"),
                 &general.minimize_to_workspace, {(int64_t)0});
+
+        // decorations
+        connect(general_table->getBool("decorations"), &general.decorations, {true});
     } else {
         general.focus_on_hover = false;
         general.fowa = FOWA_ACTIVE;
         general.system_bell = "";
         general.minimize_to_workspace = 0;
+        general.decorations = true;
 
         wlr_log(WLR_INFO, "%s",
                 "no general configuration found, using defaults");

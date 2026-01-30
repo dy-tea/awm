@@ -1,5 +1,6 @@
 #include "Cursor.h"
 #include "Config.h"
+#include "Decoration.h"
 #include "IPC.h"
 #include "Keyboard.h"
 #include "LayerSurface.h"
@@ -10,6 +11,7 @@
 #include "Workspace.h"
 #include "wlr.h"
 #include <pixman.h>
+#include <wayland-util.h>
 
 Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
     // create wlr cursor and xcursor
@@ -121,6 +123,38 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
             if (toplevel && surface && surface->mapped)
                 server->focused_output()->get_active()->focus_toplevel(
                     toplevel);
+
+            wlr_scene_node *node =
+                wlr_scene_node_at(&server->scene->tree.node, cursor->cursor->x,
+                                  cursor->cursor->y, &sx, &sy);
+            while (node->type == WLR_SCENE_NODE_RECT) {
+                wlr_scene_rect *rect = wl_container_of(node, rect, node);
+                if (!rect)
+                    break;
+                Decoration *decoration =
+                    static_cast<Decoration *>(rect->node.parent->node.data);
+                if (!decoration)
+                    break;
+                toplevel = decoration->toplevel;
+
+                switch (decoration->get_part_from_node(node)) {
+                case DecorationPart::TITLEBAR:
+                    toplevel->begin_interactive(CURSORMODE_MOVE, 0);
+                    break;
+                case DecorationPart::CLOSE_BUTTON:
+                    toplevel->close();
+                    break;
+                case DecorationPart::MAXIMIZE_BUTTON:
+                    toplevel->toggle_maximized();
+                    break;
+                case DecorationPart::FULLSCREEN_BUTTON:
+                    toplevel->toggle_fullscreen();
+                    break;
+                default:
+                    break;
+                }
+                break;
+            }
 
             // add to pressed buttons
             cursor->pressed_buttons |= 1 << (event->button - 272);
@@ -540,6 +574,9 @@ void Cursor::process_resize() {
 #endif
 
     toplevel->geometry = {new_x, new_y, new_width, new_height};
+
+    if (toplevel->decoration)
+        toplevel->decoration->update_titlebar(new_width);
 
     // notify clients
     if (IPC *ipc = server->ipc)

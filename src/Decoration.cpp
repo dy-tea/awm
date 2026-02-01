@@ -86,7 +86,6 @@ Decoration::Decoration(Server *server,
             wlr_xdg_toplevel_decoration_v1_set_mode(deco->decoration,
                                                     client_mode);
         } else if (!deco->commit.notify) {
-            deco->create_nodes();
             deco->commit.notify = [](wl_listener *listener,
                                      [[maybe_unused]] void *data) {
                 Decoration *deco = wl_container_of(listener, deco, commit);
@@ -105,6 +104,8 @@ Decoration::Decoration(Server *server,
                 &deco->decoration->toplevel->base->surface->events.commit,
                 &deco->commit);
         }
+        if (!deco->titlebar)
+            deco->create_nodes();
         deco->toplevel->set_decoration_mode(client_mode);
     };
     wl_signal_add(&decoration->events.request_mode, &mode);

@@ -13,7 +13,7 @@ enum class DecorationPart {
 struct Decoration {
     wl_list link;
     struct Server *server;
-    struct Toplevel *toplevel;
+    struct Toplevel *toplevel{nullptr};
     wlr_xdg_toplevel_decoration_v1 *decoration;
     struct wlr_scene_tree *scene_tree;
 

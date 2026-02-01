@@ -10,6 +10,8 @@ enum class DecorationPart {
     FULLSCREEN_BUTTON
 };
 
+const int TITLEBAR_HEIGHT = 30;
+
 struct Decoration {
     wl_list link;
     struct Server *server;

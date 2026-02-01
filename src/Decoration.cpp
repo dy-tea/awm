@@ -3,7 +3,6 @@
 #include "Toplevel.h"
 #include "wlr.h"
 
-const int TITLEBAR_HEIGHT = 30;
 const int BTN_SIZE = 20;
 const int BTN_MARGIN = 5;
 

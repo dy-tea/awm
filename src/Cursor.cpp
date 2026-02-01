@@ -127,33 +127,83 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
             wlr_scene_node *node =
                 wlr_scene_node_at(&server->scene->tree.node, cursor->cursor->x,
                                   cursor->cursor->y, &sx, &sy);
-            while (node && node->type == WLR_SCENE_NODE_RECT) {
-                wlr_scene_rect *rect = wl_container_of(node, rect, node);
-                if (!rect)
-                    break;
-                Decoration *decoration =
-                    static_cast<Decoration *>(rect->node.parent->node.data);
-                if (!decoration)
-                    break;
-                toplevel = decoration->toplevel;
 
-                switch (decoration->get_part_from_node(node)) {
-                case DecorationPart::TITLEBAR:
-                    toplevel->begin_interactive(CURSORMODE_MOVE, 0);
-                    break;
-                case DecorationPart::CLOSE_BUTTON:
-                    toplevel->close();
-                    break;
-                case DecorationPart::MAXIMIZE_BUTTON:
-                    toplevel->toggle_maximized();
-                    break;
-                case DecorationPart::FULLSCREEN_BUTTON:
-                    toplevel->toggle_fullscreen();
-                    break;
-                default:
+            // hit detect decoration of toplevel
+            if (!toplevel && node && node->type == WLR_SCENE_NODE_RECT) {
+                wlr_scene_rect *rect = wl_container_of(node, rect, node);
+                if (rect && rect->node.parent && rect->node.parent->node.data) {
+                    Decoration *decoration =
+                        static_cast<Decoration *>(rect->node.parent->node.data);
+                    if (decoration && decoration->toplevel)
+                        toplevel = decoration->toplevel;
+                }
+            }
+
+            bool handled_edge_resize = false;
+            if (toplevel && !toplevel->fullscreen()) {
+                const int RESIZE_BORDER = 10;
+                wlr_box geo = toplevel->geometry;
+                double x = cursor->cursor->x;
+                double y = cursor->cursor->y;
+
+                // include titlebar if applicable
+                int visual_top = geo.y;
+                int visual_height = geo.height;
+                if (toplevel->decoration &&
+                    toplevel->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE &&
+                    toplevel->decoration->visible) {
+                    visual_top -= TITLEBAR_HEIGHT;
+                    visual_height += TITLEBAR_HEIGHT;
+                }
+
+                uint32_t edges = 0;
+                // left/right
+                if (x >= geo.x - RESIZE_BORDER && x <= geo.x + RESIZE_BORDER)
+                    edges |= WLR_EDGE_LEFT;
+                else if (x >= geo.x + geo.width - RESIZE_BORDER && x <= geo.x + geo.width + RESIZE_BORDER)
+                    edges |= WLR_EDGE_RIGHT;
+
+                // top/bottom
+                if (y >= visual_top - RESIZE_BORDER && y <= visual_top + RESIZE_BORDER)
+                    edges |= WLR_EDGE_TOP;
+                else if (y >= visual_top + visual_height - RESIZE_BORDER && y <= visual_top + visual_height + RESIZE_BORDER)
+                    edges |= WLR_EDGE_BOTTOM;
+
+                if (edges != 0) {
+                    toplevel->begin_interactive(CURSORMODE_RESIZE, edges);
+                    handled_edge_resize = true;
+                }
+            }
+
+            if (!handled_edge_resize) {
+                while (node && node->type == WLR_SCENE_NODE_RECT) {
+                    wlr_scene_rect *rect = wl_container_of(node, rect, node);
+                    if (!rect)
+                        break;
+                    Decoration *decoration =
+                        static_cast<Decoration *>(rect->node.parent->node.data);
+                    if (!decoration)
+                        break;
+                    toplevel = decoration->toplevel;
+
+                    switch (decoration->get_part_from_node(node)) {
+                    case DecorationPart::TITLEBAR:
+                        toplevel->begin_interactive(CURSORMODE_MOVE, 0);
+                        break;
+                    case DecorationPart::CLOSE_BUTTON:
+                        toplevel->close();
+                        break;
+                    case DecorationPart::MAXIMIZE_BUTTON:
+                        toplevel->toggle_maximized();
+                        break;
+                    case DecorationPart::FULLSCREEN_BUTTON:
+                        toplevel->toggle_fullscreen();
+                        break;
+                    default:
+                        break;
+                    }
                     break;
                 }
-                break;
             }
 
             // add to pressed buttons

@@ -707,7 +707,7 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 }
 
 // set the position and size of a toplevel, send a configure
-void Toplevel::set_position_size(const double x, const double y, int width,
+void Toplevel::set_position_size(double x, double y, int width,
                                  int height) {
     // xwayland surfaces can call fullscreen and maximize when unmapped so this
     // check is necessary
@@ -740,6 +740,12 @@ void Toplevel::set_position_size(const double x, const double y, int width,
     } else
         // save current geometry
         save_geometry();
+
+    if (decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE) {
+        int deco_height = 30;
+        y += deco_height;
+        height -= deco_height;
+    }
 
     // update geometry
 #ifdef XWAYLAND
@@ -930,11 +936,6 @@ void Toplevel::set_maximized(const bool maximized) {
     wlr_box usable_area = output->usable_area;
     wlr_box output_box = output->layout_geometry;
 
-    // get deco height
-    int deco_height =
-        decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE ? 30
-                                                                           : 0;
-
     // set toplevel window mode to maximized
 #ifdef XWAYLAND
     if (xdg_toplevel)
@@ -954,8 +955,8 @@ void Toplevel::set_maximized(const bool maximized) {
 
         // set to top left of output, width and height the size of output
         set_position_size(usable_area.x + output_box.x,
-                          usable_area.y + output_box.y + deco_height,
-                          usable_area.width, usable_area.height - deco_height);
+                          usable_area.y + output_box.y,
+                          usable_area.width, usable_area.height);
     } else {
         // handles edge case where toplevel starts maximized
         if (saved_geometry.width && saved_geometry.height)
@@ -964,9 +965,9 @@ void Toplevel::set_maximized(const bool maximized) {
                               saved_geometry.width, saved_geometry.height);
         else
             // use half of output geometry
-            set_position_size(output_box.x, output_box.y + deco_height,
+            set_position_size(output_box.x, output_box.y,
                               output_box.width / 2,
-                              output_box.height / 2 - deco_height);
+                              output_box.height / 2);
     }
 }
 

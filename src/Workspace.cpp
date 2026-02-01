@@ -226,6 +226,11 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
 // set the toplevel to take up half the screen in the given direction
 void Workspace::set_half_in_direction(Toplevel *toplevel,
                                       wlr_direction direction) {
+    // ensure decorations are shown for server-side decorations
+    if (toplevel->decoration && 
+        toplevel->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+        toplevel->decoration->set_visible(true);
+    
     int x = output->layout_geometry.x + output->usable_area.x;
     int y = output->layout_geometry.y + output->usable_area.y;
     int width = output->usable_area.width;
@@ -387,6 +392,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
             int x = output->layout_geometry.x + box.x + (col * width);
             int y = output->layout_geometry.y + box.y + (row * height);
 
+            // ensure decorations are shown for server-side decorations
+            if (tiled[i]->decoration && 
+                tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+                tiled[i]->decoration->set_visible(true);
+
             // set toplevel geometry
             tiled[i]->set_position_size(x, y, width, height);
         }
@@ -402,6 +412,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
         if (int area = cols * rows; area != toplevel_count)
             width *= (1 + area - toplevel_count);
 
+        // ensure decorations are shown for server-side decorations
+        if (tiled[i]->decoration && 
+            tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+            tiled[i]->decoration->set_visible(true);
+
         // set last toplevel geometry
         tiled[i]->set_position_size(x, y, width, height);
 
@@ -409,6 +424,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
     }
     case TILE_MASTER:
         if (toplevel_count == 1) {
+            // ensure decorations are shown for server-side decorations
+            if (tiled[0]->decoration && 
+                tiled[0]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+                tiled[0]->decoration->set_visible(true);
+            
             // take up full screen
             tiled[0]->set_position_size(box.x, box.y, box.width, box.height);
         } else {
@@ -424,6 +444,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
                 if ((*i)->geometry.x + (*i)->geometry.y <
                     (*it)->geometry.x + (*it)->geometry.y)
                     it = i;
+
+            // ensure decorations are shown for server-side decorations
+            if ((*it)->decoration && 
+                (*it)->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+                (*it)->decoration->set_visible(true);
 
             // set master toplevel geometry
             (*it)->set_position_size(box.x, box.y, width, box.height);
@@ -444,8 +469,14 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
             int y = output->layout_geometry.y + box.y;
 
             // set slave toplevel geometry
-            for (int i = 0; i != count; ++i)
+            for (int i = 0; i != count; ++i) {
+                // ensure decorations are shown for server-side decorations
+                if (tiled[i]->decoration && 
+                    tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+                    tiled[i]->decoration->set_visible(true);
+                
                 tiled[i]->set_position_size(x, y + i * height, width, height);
+            }
         }
 
         break;
@@ -472,6 +503,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
             width /= 2;
 
         for (int i = 0; i != toplevel_count; ++i) {
+            // ensure decorations are shown for server-side decorations
+            if (tiled[i]->decoration && 
+                tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+                tiled[i]->decoration->set_visible(true);
+            
             // set toplevel geometry
             tiled[i]->set_position_size(x, y, width, height);
 

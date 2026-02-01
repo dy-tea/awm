@@ -28,11 +28,14 @@ struct Decoration {
     wlr_scene_rect *btn_max{nullptr};
     wlr_scene_rect *btn_full{nullptr};
 
+    bool visible{true};
+
     Decoration(struct Server *server,
                wlr_xdg_toplevel_decoration_v1 *decoration);
     ~Decoration();
 
     void create_nodes();
+    void set_visible(bool visible);
     void update_titlebar(int width);
     DecorationPart get_part_from_node(struct wlr_scene_node *node);
 };

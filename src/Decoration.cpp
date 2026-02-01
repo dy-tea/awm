@@ -12,6 +12,7 @@ const float COL_CLOSE[4] = {0.8f, 0.2f, 0.2f, 1.0f};
 const float COL_MAX[4] = {0.2f, 0.8f, 0.2f, 1.0f};
 const float COL_FULL[4] = {0.2f, 0.2f, 0.8f, 1.0f};
 
+// creates the titlebar and all button nodes
 void Decoration::create_nodes() {
     titlebar =
         wlr_scene_rect_create(scene_tree, 400, TITLEBAR_HEIGHT, COL_TITLEBAR);
@@ -22,9 +23,11 @@ void Decoration::create_nodes() {
     btn_full = wlr_scene_rect_create(scene_tree, BTN_SIZE, BTN_SIZE, COL_FULL);
 }
 
+// resize the titlebar with a new width
 void Decoration::update_titlebar(int width) {
-    if (width <= 0)
+    if (width <= 0 || !titlebar)
         return;
+
     wlr_scene_rect_set_size(titlebar, width, TITLEBAR_HEIGHT);
 
     int x_pos = width - BTN_SIZE - BTN_MARGIN;
@@ -45,6 +48,12 @@ void Decoration::update_titlebar(int width) {
     wlr_scene_node_set_enabled(&btn_full->node, x_pos > 0);
 }
 
+void Decoration::set_visible(bool visible) {
+    this->visible = visible;
+    wlr_scene_node_set_enabled(&scene_tree->node, visible);
+}
+
+// returns the button corresponding to a given scene node
 DecorationPart Decoration::get_part_from_node(struct wlr_scene_node *node) {
     if (node == &titlebar->node)
         return DecorationPart::TITLEBAR;
@@ -86,6 +95,7 @@ Decoration::Decoration(Server *server,
             wlr_xdg_toplevel_decoration_v1_set_mode(deco->decoration,
                                                     client_mode);
         } else if (!deco->commit.notify) {
+            // listen to surface commits to update titlebar size
             deco->commit.notify = [](wl_listener *listener,
                                      [[maybe_unused]] void *data) {
                 Decoration *deco = wl_container_of(listener, deco, commit);
@@ -97,6 +107,8 @@ Decoration::Decoration(Server *server,
                 }
                 if (deco->toplevel->decoration_mode ==
                     WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE) {
+                    if (!deco->titlebar)
+                        deco->create_nodes();
                     deco->update_titlebar(deco->toplevel->geometry.width);
                 }
             };
@@ -104,8 +116,6 @@ Decoration::Decoration(Server *server,
                 &deco->decoration->toplevel->base->surface->events.commit,
                 &deco->commit);
         }
-        if (!deco->titlebar)
-            deco->create_nodes();
         deco->toplevel->set_decoration_mode(client_mode);
     };
     wl_signal_add(&decoration->events.request_mode, &mode);

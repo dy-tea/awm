@@ -28,8 +28,16 @@ struct Cursor {
 
     double grab_x, grab_y;
     wlr_box grab_geobox;
+    wlr_box resize_original_geo;
     uint32_t resize_edges;
     uint32_t pressed_buttons{0}; // CursorButton
+    struct Workspace *grab_source_workspace{nullptr};
+
+    wlr_scene_rect *swap_indicator_top{nullptr};
+    wlr_scene_rect *swap_indicator_bottom{nullptr};
+    wlr_scene_rect *swap_indicator_left{nullptr};
+    wlr_scene_rect *swap_indicator_right{nullptr};
+    struct Toplevel *swap_target{nullptr};
 
     wl_listener motion;
     wl_listener motion_absolute;
@@ -64,6 +72,8 @@ struct Cursor {
                         double dy, double unaccel_dx, double unaccel_dy);
     void process_move();
     void process_resize();
+    void update_swap_indicator();
+    void clear_swap_indicator();
     void constrain(wlr_pointer_constraint_v1 *constraint);
     void check_constraint_region();
     void warp_to_constraint_hint();

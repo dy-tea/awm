@@ -70,17 +70,24 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         width = std::min(width, static_cast<uint32_t>(usable_area.width));
         height = std::min(height, static_cast<uint32_t>(usable_area.height));
 
-        wlr_box output_box = output->layout_geometry;
+        Workspace *workspace = output->get_active();
+        if (!matching_rule && workspace && workspace->auto_tile &&
+            workspace->bsp_tree) {
+            toplevel->geometry.width = width;
+            toplevel->geometry.height = height;
+        } else {
+            wlr_box output_box = output->layout_geometry;
 
-        int32_t x = output_box.x + (usable_area.width - width) / 2;
-        int32_t y = output_box.y + (usable_area.height - height) / 2;
+            int32_t x = output_box.x + (usable_area.width - width) / 2;
+            int32_t y = output_box.y + (usable_area.height - height) / 2;
 
-        // ensure position falls in bounds
-        x = std::max(x, usable_area.x);
-        y = std::max(y, usable_area.y);
+            // ensure position falls in bounds
+            x = std::max(x, usable_area.x);
+            y = std::max(y, usable_area.y);
 
-        // set position and size
-        toplevel->set_position_size(x, y, width, height);
+            // set position and size
+            toplevel->set_position_size(x, y, width, height);
+        }
     }
 #ifdef XWAYLAND
     // xwayland surface
@@ -127,28 +134,38 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         int width = std::min((int)xwayland_surface->width, area.width);
         int height = std::min((int)xwayland_surface->height, area.height);
 
-        // get surface position
-        int x = xwayland_surface->x;
-        int y = xwayland_surface->y;
+        Workspace *workspace = output->get_active();
+        if (!matching_rule && workspace && workspace->auto_tile &&
+            workspace->bsp_tree) {
+            toplevel->geometry.x = 0;
+            toplevel->geometry.y = 0;
+            toplevel->geometry.width = width;
+            toplevel->geometry.height = height;
+        } else {
+            // get surface position
+            int x = xwayland_surface->x;
+            int y = xwayland_surface->y;
 
-        // center the surface to the focused output if zero
-        if (!x)
-            x += area.x + (output->layout_geometry.width - width) / 2;
-        if (!y)
-            y += area.y + (output->layout_geometry.height - height) / 2;
+            // center the surface to the focused output if zero
+            if (!x)
+                x += area.x + (output->layout_geometry.width - width) / 2;
+            if (!y)
+                y += area.y + (output->layout_geometry.height - height) / 2;
 
-        // send a configure event
-        wlr_xwayland_surface_configure(xwayland_surface, x, y, width, height);
+            // send a configure event
+            wlr_xwayland_surface_configure(xwayland_surface, x, y, width,
+                                           height);
 
-        // set the position
-        wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node, x,
-                                    y);
+            // set the position
+            wlr_scene_node_set_position(&toplevel->scene_surface->buffer->node,
+                                        x, y);
 
-        // set initial geometry
-        toplevel->geometry.x = x;
-        toplevel->geometry.y = y;
-        toplevel->geometry.width = width;
-        toplevel->geometry.height = height;
+            // set initial geometry
+            toplevel->geometry.x = x;
+            toplevel->geometry.y = y;
+            toplevel->geometry.width = width;
+            toplevel->geometry.height = height;
+        }
 
         // add the toplevel to the scene tree
         toplevel->scene_surface->buffer->node.data = toplevel;
@@ -663,8 +680,11 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 
     Cursor *cursor = server->cursor;
     cursor->cursor_mode = mode;
+    cursor->grab_source_workspace = server->get_workspace(this);
 
     if (mode == CURSORMODE_MOVE) {
+        wlr_scene_node_raise_to_top(&scene_tree->node);
+
         if (maximized()) {
             // unmaximize if maximized
             saved_geometry.y = cursor->cursor->y - 10; // TODO Magic number here
@@ -683,6 +703,8 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 
         // get toplevel geometry
         const wlr_box geo_box = get_geometry();
+
+        cursor->resize_original_geo = geometry;
 
         // calculate borders
         double border_x = (scene_tree->node.x + geo_box.x) +

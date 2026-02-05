@@ -64,6 +64,7 @@ decorations = true
 
 [tiling]
 method = "grid" # "none", "grid", "master", "dwindle"
+auto_tile = false # automatically tile windows when they are opened/closed
 
 [binds] # default binds which can be overwitten in your config
 exit = "Alt Escape"                      # exit the window manager
@@ -89,6 +90,7 @@ window.half.right = "Alt Right"          # take up the right half of the screen
 window.close = "Alt q"                   # close the active window
 workspace.tile = "Alt t"                 # tile the active workspace
 workspace.tile_sans = "Alt Shift T"      # tile the active workspace without the active window
+workspace.auto_tile = "Alt a"            # toggle automatic tiling for the active workspace
 workspace.open = "Alt Number"            # open workspace corresponding to the number pressed
 workspace.window_to = "Alt Shift Number" # move the active window to the workspace corresponding to the number pressed
 # modifiers: "Shift", "Caps", "Control", "Alt", "Mod2", "Mod3", "Logo", "Mod5",

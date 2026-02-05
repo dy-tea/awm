@@ -466,7 +466,8 @@ bool Config::load() {
                 &general.minimize_to_workspace, {(int64_t)0});
 
         // decorations
-        connect(general_table->getBool("decorations"), &general.decorations, {true});
+        connect(general_table->getBool("decorations"), &general.decorations,
+                {true});
     } else {
         general.focus_on_hover = false;
         general.fowa = FOWA_ACTIVE;
@@ -486,8 +487,13 @@ bool Config::load() {
                    {TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE},
                    tiling_table->getString("method"), &tiling.method,
                    {TILE_GRID});
-    } else
+
+        // auto_tile
+        connect(tiling_table->getBool("auto_tile"), &tiling.auto_tile, {false});
+    } else {
         tiling.method = TILE_GRID;
+        tiling.auto_tile = false;
+    }
 
     // get awm binds
     if (std::unique_ptr<toml::Table> binds_table =
@@ -583,6 +589,10 @@ bool Config::load() {
             // workspace_tile_sans bind
             set_bind("tile_sans", workspace_bind.get(),
                      BIND_WORKSPACE_TILE_SANS);
+
+            // workspace_auto_tile bind
+            set_bind("auto_tile", workspace_bind.get(),
+                     BIND_WORKSPACE_AUTO_TILE);
 
             // workspace_open bind
             set_bind("open", workspace_bind.get(), BIND_WORKSPACE_OPEN);

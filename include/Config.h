@@ -35,6 +35,7 @@ enum BindName {
     BIND_WINDOW_HALF_RIGHT,
     BIND_WORKSPACE_TILE,
     BIND_WORKSPACE_TILE_SANS,
+    BIND_WORKSPACE_AUTO_TILE,
     BIND_WORKSPACE_OPEN,
     BIND_WORKSPACE_WINDOW_TO, // change in IPC.cpp if extended
 };
@@ -44,8 +45,8 @@ const std::string BIND_NAMES[] = {
     "next",      "move",       "resize",     "pin",        "up",
     "down",      "left",       "right",      "close",      "swap_up",
     "swap_down", "swap_left",  "swap_right", "half_up",    "half_down",
-    "half_left", "half_right", "tile",       "tile_sans",  "open",
-    "window_to",
+    "half_left", "half_right", "tile",       "tile_sans",  "auto_tile",
+    "open",      "window_to",
 };
 
 const std::string MOUSE_BUTTONS[] = {
@@ -182,6 +183,7 @@ struct Config {
 
     struct {
         TileMethod method{TILE_GRID};
+        bool auto_tile{false};
     } tiling;
 
     // compostior binds

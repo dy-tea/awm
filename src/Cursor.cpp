@@ -150,7 +150,8 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
                 int visual_top = geo.y;
                 int visual_height = geo.height;
                 if (toplevel->decoration &&
-                    toplevel->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE &&
+                    toplevel->decoration_mode ==
+                        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE &&
                     toplevel->decoration->visible) {
                     visual_top -= TITLEBAR_HEIGHT;
                     visual_height += TITLEBAR_HEIGHT;
@@ -160,13 +161,16 @@ Cursor::Cursor(Seat *seat) : server(seat->server), seat(seat->wlr_seat) {
                 // left/right
                 if (x >= geo.x - RESIZE_BORDER && x <= geo.x + RESIZE_BORDER)
                     edges |= WLR_EDGE_LEFT;
-                else if (x >= geo.x + geo.width - RESIZE_BORDER && x <= geo.x + geo.width + RESIZE_BORDER)
+                else if (x >= geo.x + geo.width - RESIZE_BORDER &&
+                         x <= geo.x + geo.width + RESIZE_BORDER)
                     edges |= WLR_EDGE_RIGHT;
 
                 // top/bottom
-                if (y >= visual_top - RESIZE_BORDER && y <= visual_top + RESIZE_BORDER)
+                if (y >= visual_top - RESIZE_BORDER &&
+                    y <= visual_top + RESIZE_BORDER)
                     edges |= WLR_EDGE_TOP;
-                else if (y >= visual_top + visual_height - RESIZE_BORDER && y <= visual_top + visual_height + RESIZE_BORDER)
+                else if (y >= visual_top + visual_height - RESIZE_BORDER &&
+                         y <= visual_top + visual_height + RESIZE_BORDER)
                     edges |= WLR_EDGE_BOTTOM;
 
                 if (edges != 0) {
@@ -389,14 +393,134 @@ Cursor::~Cursor() {
     wl_list_remove(&hold_begin.link);
     wl_list_remove(&hold_end.link);
 
+    clear_swap_indicator();
     wlr_cursor_destroy(cursor);
     wlr_xcursor_manager_destroy(xcursor_manager);
 }
 
 // deactivate cursor
 void Cursor::reset_mode() {
+    // end move/resize for auto tile
+    if (server->seat->grabbed_toplevel) {
+        Toplevel *grabbed = server->seat->grabbed_toplevel;
+        Workspace *current_workspace = server->get_workspace(grabbed);
+        Workspace *source_workspace = grab_source_workspace;
+
+        if (cursor_mode == CURSORMODE_MOVE) {
+            if (current_workspace && current_workspace->auto_tile) {
+                if (swap_target && current_workspace->contains(swap_target) &&
+                    swap_target != grabbed) {
+                    current_workspace->swap(grabbed, swap_target);
+                } else if (!current_workspace->bsp_tree) {
+                    current_workspace->tile();
+                }
+            }
+
+            if (source_workspace && source_workspace != current_workspace &&
+                source_workspace->auto_tile && !source_workspace->bsp_tree) {
+                source_workspace->tile();
+            }
+        } else if (cursor_mode == CURSORMODE_RESIZE) {
+            if (current_workspace && current_workspace->auto_tile)
+                current_workspace->adjust_neighbors_on_resize(
+                    grabbed, resize_original_geo);
+        }
+    }
+
+    clear_swap_indicator();
     cursor_mode = CURSORMODE_PASSTHROUGH;
     server->seat->grabbed_toplevel = nullptr;
+    grab_source_workspace = nullptr;
+}
+
+void Cursor::update_swap_indicator() {
+    if (cursor_mode != CURSORMODE_MOVE || !server->seat->grabbed_toplevel)
+        return;
+
+    Toplevel *grabbed = server->seat->grabbed_toplevel;
+    Workspace *current_workspace = server->get_workspace(grabbed);
+
+    if (!current_workspace || !current_workspace->auto_tile) {
+        clear_swap_indicator();
+        return;
+    }
+
+    // find highest non-dragged toplevel
+    Toplevel *target = nullptr;
+    Toplevel *toplevel, *tmp;
+    wl_list_for_each_safe(toplevel, tmp, &current_workspace->toplevels, link) {
+        if (toplevel == grabbed)
+            continue;
+        if (toplevel->fullscreen())
+            continue;
+
+        wlr_box geo = toplevel->geometry;
+        if (cursor->x >= geo.x && cursor->x < geo.x + geo.width &&
+            cursor->y >= geo.y && cursor->y < geo.y + geo.height) {
+            target = toplevel;
+            break;
+        }
+    }
+
+    if (target != swap_target) {
+        swap_target = target;
+        if (swap_indicator_top) {
+            wlr_scene_node_destroy(&swap_indicator_top->node);
+            wlr_scene_node_destroy(&swap_indicator_bottom->node);
+            wlr_scene_node_destroy(&swap_indicator_left->node);
+            wlr_scene_node_destroy(&swap_indicator_right->node);
+            swap_indicator_top = nullptr;
+            swap_indicator_bottom = nullptr;
+            swap_indicator_left = nullptr;
+            swap_indicator_right = nullptr;
+        }
+
+        if (target) {
+            wlr_box geo = target->geometry;
+            const float border_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
+            const int border_width = 3;
+
+            // top
+            swap_indicator_top = wlr_scene_rect_create(
+                server->layers.overlay, geo.width, border_width, border_color);
+            wlr_scene_node_set_position(&swap_indicator_top->node, geo.x,
+                                        geo.y);
+
+            // bottom
+            swap_indicator_bottom = wlr_scene_rect_create(
+                server->layers.overlay, geo.width, border_width, border_color);
+            wlr_scene_node_set_position(&swap_indicator_bottom->node, geo.x,
+                                        geo.y + geo.height - border_width);
+
+            // left
+            swap_indicator_left = wlr_scene_rect_create(
+                server->layers.overlay, border_width, geo.height, border_color);
+            wlr_scene_node_set_position(&swap_indicator_left->node, geo.x,
+                                        geo.y);
+
+            // right
+            swap_indicator_right = wlr_scene_rect_create(
+                server->layers.overlay, border_width, geo.height, border_color);
+            wlr_scene_node_set_position(&swap_indicator_right->node,
+                                        geo.x + geo.width - border_width,
+                                        geo.y);
+        }
+    }
+}
+
+// Clear the swap indicator overlay
+void Cursor::clear_swap_indicator() {
+    if (swap_indicator_top) {
+        wlr_scene_node_destroy(&swap_indicator_top->node);
+        wlr_scene_node_destroy(&swap_indicator_bottom->node);
+        wlr_scene_node_destroy(&swap_indicator_left->node);
+        wlr_scene_node_destroy(&swap_indicator_right->node);
+        swap_indicator_top = nullptr;
+        swap_indicator_bottom = nullptr;
+        swap_indicator_left = nullptr;
+        swap_indicator_right = nullptr;
+    }
+    swap_target = nullptr;
 }
 
 // tell the idle manager of activity
@@ -457,6 +581,7 @@ void Cursor::process_motion(uint32_t time, wlr_input_device *device, double dx,
     // move or resize toplevel
     if (cursor_mode == CURSORMODE_MOVE) {
         process_move();
+        update_swap_indicator();
         return;
     } else if (cursor_mode == CURSORMODE_RESIZE) {
         process_resize();

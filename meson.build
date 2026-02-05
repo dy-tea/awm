@@ -112,6 +112,7 @@ executable(
     'src' / 'Popup.cpp',
     'src' / 'LayerSurface.cpp',
     'src' / 'Workspace.cpp',
+    'src' / 'BSPTree.cpp',
     'src' / 'Config.cpp',
     'src' / 'Cursor.cpp',
     'src' / 'OutputManager.cpp',

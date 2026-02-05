@@ -1,4 +1,5 @@
 #include "Workspace.h"
+#include "BSPTree.h"
 #include "Config.h"
 #include "IPC.h"
 #include "Output.h"
@@ -13,9 +14,20 @@
 Workspace::Workspace(Output *output, const uint32_t num)
     : num(num), output(output) {
     wl_list_init(&toplevels);
+
+    auto_tile = output->server->config->tiling.auto_tile;
+
+    if (auto_tile)
+        bsp_tree = std::make_unique<BSPTree>(this);
 }
 
 Workspace::~Workspace() {
+    if (pending_layout_idle && output && output->server &&
+        output->server->display) {
+        wl_event_source_remove(pending_layout_idle);
+        pending_layout_idle = nullptr;
+    }
+
     Toplevel *toplevel, *tmp;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) delete toplevel;
 
@@ -37,6 +49,34 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
     // focus
     if (focus)
         toplevel->focus();
+
+    // automatically tile if auto_tile is enabled
+    if (auto_tile) {
+        if (bsp_tree) {
+            bsp_tree->insert(toplevel);
+
+            wlr_box new_geometry;
+            if (bsp_tree->get_toplevel_geometry(toplevel, output->usable_area,
+                                                new_geometry))
+                toplevel->set_position_size(new_geometry);
+
+            if (pending_layout_idle) {
+                wl_event_source_remove(pending_layout_idle);
+            }
+            pending_layout_idle = wl_event_loop_add_idle(
+                wl_display_get_event_loop(output->server->display),
+                [](void *data) {
+                    Workspace *workspace = static_cast<Workspace *>(data);
+                    workspace->pending_layout_idle = nullptr;
+                    if (workspace->bsp_tree)
+                        workspace->bsp_tree->apply_layout(
+                            workspace->output->usable_area);
+                },
+                this);
+        } else {
+            tile();
+        }
+    }
 }
 
 Toplevel *Workspace::get_topmost_toplevel(Toplevel *sans) const {
@@ -80,6 +120,34 @@ void Workspace::close(Toplevel *toplevel) {
 
     // send close
     toplevel->close();
+
+    // remove from BSP tree if using it
+    if (auto_tile && bsp_tree) {
+        bsp_tree->remove(toplevel);
+        if (pending_layout_idle) {
+            wl_event_source_remove(pending_layout_idle);
+        }
+        pending_layout_idle = wl_event_loop_add_idle(
+            wl_display_get_event_loop(output->server->display),
+            [](void *data) {
+                Workspace *workspace = static_cast<Workspace *>(data);
+                workspace->pending_layout_idle = nullptr;
+                if (workspace->bsp_tree)
+                    workspace->bsp_tree->apply_layout(
+                        workspace->output->usable_area);
+                else
+                    workspace->tile();
+            },
+            this);
+    } else if (auto_tile) {
+        wl_event_loop_add_idle(
+            wl_display_get_event_loop(output->server->display),
+            [](void *data) {
+                Workspace *workspace = static_cast<Workspace *>(data);
+                workspace->tile();
+            },
+            this);
+    }
 }
 
 // close the active toplevel
@@ -121,6 +189,24 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
             active_toplevel = nullptr;
     }
 
+    // remove bsp tree
+    if (auto_tile && bsp_tree) {
+        bsp_tree->remove(toplevel);
+        if (pending_layout_idle) {
+            wl_event_source_remove(pending_layout_idle);
+        }
+        pending_layout_idle = wl_event_loop_add_idle(
+            wl_display_get_event_loop(output->server->display),
+            [](void *data) {
+                Workspace *workspace = static_cast<Workspace *>(data);
+                workspace->pending_layout_idle = nullptr;
+                if (workspace->bsp_tree)
+                    workspace->bsp_tree->apply_layout(
+                        workspace->output->usable_area);
+            },
+            this);
+    }
+
     // move to other workspace
     wl_list_remove(&toplevel->link);
     workspace->add_toplevel(toplevel, true);
@@ -145,7 +231,21 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
     if (!a || !b)
         return;
 
-    // get the geometry of both toplevels
+    if (auto_tile && bsp_tree) {
+        BSPNode *node_a = bsp_tree->find_node(a);
+        BSPNode *node_b = bsp_tree->find_node(b);
+
+        if (node_a && node_b && node_a->is_leaf() && node_b->is_leaf()) {
+            node_a->toplevel = b;
+            node_b->toplevel = a;
+
+            a->set_position_size(node_b->geometry);
+            b->set_position_size(node_a->geometry);
+            return;
+        }
+    }
+
+    // Fallback to geometry swap for non-BSP mode
     const wlr_box geo_a = a->geometry;
     const wlr_box geo_b = b->geometry;
 
@@ -541,6 +641,113 @@ void Workspace::tile() { tile({}); }
 void Workspace::tile_sans_active() {
     if (active_toplevel)
         tile({active_toplevel});
+}
+
+void Workspace::toggle_auto_tile() {
+    auto_tile = !auto_tile;
+
+    if (auto_tile) {
+        if (!bsp_tree)
+            bsp_tree = std::make_unique<BSPTree>(this);
+
+        std::vector<Toplevel *> tls;
+        Toplevel *toplevel, *tmp;
+        wl_list_for_each_safe(toplevel, tmp, &toplevels,
+                              link) if (!toplevel->fullscreen())
+            tls.push_back(toplevel);
+
+        bsp_tree->rebuild(tls);
+        if (pending_layout_idle) {
+            wl_event_source_remove(pending_layout_idle);
+        }
+        pending_layout_idle = wl_event_loop_add_idle(
+            wl_display_get_event_loop(output->server->display),
+            [](void *data) {
+                Workspace *workspace = static_cast<Workspace *>(data);
+                workspace->pending_layout_idle = nullptr;
+                if (workspace->bsp_tree)
+                    workspace->bsp_tree->apply_layout(
+                        workspace->output->usable_area);
+            },
+            this);
+    } else {
+        bsp_tree.reset();
+    }
+}
+
+// Adjust neighboring toplevels when one is resized in auto-tile mode
+void Workspace::adjust_neighbors_on_resize(Toplevel *resized,
+                                           const wlr_box &old_geo) {
+    if (!resized || wl_list_empty(&toplevels))
+        return;
+
+    if (bsp_tree) {
+        bsp_tree->handle_resize(resized, old_geo);
+        if (pending_layout_idle) {
+            wl_event_source_remove(pending_layout_idle);
+        }
+        pending_layout_idle = wl_event_loop_add_idle(
+            wl_display_get_event_loop(output->server->display),
+            [](void *data) {
+                Workspace *workspace = static_cast<Workspace *>(data);
+                workspace->pending_layout_idle = nullptr;
+                if (workspace->bsp_tree)
+                    workspace->bsp_tree->apply_layout(
+                        workspace->output->usable_area);
+            },
+            this);
+        return;
+    }
+
+    wlr_box new_geo = resized->geometry;
+
+    int left_delta = new_geo.x - old_geo.x;
+    int top_delta = new_geo.y - old_geo.y;
+    int right_delta = (new_geo.x + new_geo.width) - (old_geo.x + old_geo.width);
+    int bottom_delta =
+        (new_geo.y + new_geo.height) - (old_geo.y + old_geo.height);
+
+    Toplevel *toplevel, *tmp;
+    wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
+        if (toplevel == resized || toplevel->fullscreen())
+            continue;
+
+        wlr_box geo = toplevel->geometry;
+        bool modified = false;
+
+        const int ADJACENT_THRESHOLD = 5; // pixels
+
+        // right
+        if (right_delta != 0 && std::abs(geo.x - (old_geo.x + old_geo.width)) <
+                                    ADJACENT_THRESHOLD) {
+            geo.x += right_delta;
+            geo.width -= right_delta;
+            modified = true;
+        }
+        // left
+        if (left_delta != 0 &&
+            std::abs((geo.x + geo.width) - old_geo.x) < ADJACENT_THRESHOLD) {
+            geo.width += left_delta;
+            modified = true;
+        }
+        // bottom
+        if (bottom_delta != 0 &&
+            std::abs(geo.y - (old_geo.y + old_geo.height)) <
+                ADJACENT_THRESHOLD) {
+            geo.y += bottom_delta;
+            geo.height -= bottom_delta;
+            modified = true;
+        }
+        // top
+        if (top_delta != 0 &&
+            std::abs((geo.y + geo.height) - old_geo.y) < ADJACENT_THRESHOLD) {
+            geo.height += top_delta;
+            modified = true;
+        }
+        // apply size
+        if (modified && geo.width > 100 && geo.height > 100)
+            toplevel->set_position_size(geo);
+    }
 }
 
 std::vector<Toplevel *> Workspace::fullscreen_toplevels() {

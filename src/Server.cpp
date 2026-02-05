@@ -274,6 +274,10 @@ bool Server::handle_bind(Bind bind) {
         // tile all toplevels in workspace sans active
         output->get_active()->tile_sans_active();
         break;
+    case BIND_WORKSPACE_AUTO_TILE:
+        // toggle automatic tiling for the active workspace
+        output->get_active()->toggle_auto_tile();
+        break;
     case BIND_WORKSPACE_OPEN:
         // open workspace n
         return output->set_workspace(n);

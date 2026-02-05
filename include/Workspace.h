@@ -1,7 +1,10 @@
 #pragma once
 
 #include "wlr.h"
+#include <memory>
 #include <vector>
+
+struct BSPTree;
 
 struct Workspace {
     wl_list link;
@@ -9,6 +12,9 @@ struct Workspace {
     struct Output *output;
     wl_list toplevels;
     struct Toplevel *active_toplevel{nullptr};
+    bool auto_tile{false};
+    std::unique_ptr<BSPTree> bsp_tree{nullptr};
+    wl_event_source *pending_layout_idle{nullptr};
 
     Workspace(Output *output, uint32_t num);
     ~Workspace();
@@ -31,6 +37,8 @@ struct Workspace {
     void tile(std::vector<Toplevel *> sans_toplevels);
     void tile();
     void tile_sans_active();
+    void toggle_auto_tile();
+    void adjust_neighbors_on_resize(Toplevel *resized, const wlr_box &old_geo);
     std::vector<Toplevel *> fullscreen_toplevels();
     std::vector<Toplevel *> pinned();
 };

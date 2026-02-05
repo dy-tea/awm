@@ -20,6 +20,10 @@ void Decoration::create_nodes() {
         wlr_scene_rect_create(scene_tree, BTN_SIZE, BTN_SIZE, COL_CLOSE);
     btn_max = wlr_scene_rect_create(scene_tree, BTN_SIZE, BTN_SIZE, COL_MAX);
     btn_full = wlr_scene_rect_create(scene_tree, BTN_SIZE, BTN_SIZE, COL_FULL);
+
+    wlr_scene_node_set_enabled(&btn_close->node, false);
+    wlr_scene_node_set_enabled(&btn_max->node, false);
+    wlr_scene_node_set_enabled(&btn_full->node, false);
 }
 
 // resize the titlebar with a new width
@@ -33,6 +37,7 @@ void Decoration::update_titlebar(int width) {
     int y_pos = -TITLEBAR_HEIGHT + BTN_MARGIN;
 
     wlr_scene_node_set_position(&btn_close->node, std::max(x_pos, 0), y_pos);
+    wlr_scene_node_set_enabled(&btn_close->node, true);
 
     x_pos -= (BTN_SIZE + BTN_MARGIN);
     if (x_pos > 0) {

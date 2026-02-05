@@ -833,7 +833,8 @@ void IPC::stop() {
                 path.c_str());
 
     // remove from event loop
-    wl_event_source_remove(source);
+    if (source)
+        wl_event_source_remove(source);
 
     delete this;
 }

@@ -1,4 +1,4 @@
-# complgen aot --bash-script awmsg.bash --fish-script awmsg.fish --zsh-script awmsg.zsh ./awmsg.usage
+# complgen --bash awmsg.bash ./awmsg.usage && complgen --fish awmsg.fish ./awmsg.usage && complgen --zsh awmsg.zsh ./awmsg.usage
 
 awmsg ((-h | --help) "show help" | (-v | --version) "show version" | (exit) "exit awm" | (spawn <COMMAND>) "spawn a command");
 awmsg [<FLAGS>]... (output) <OUTPUT-OPTION>;
@@ -16,7 +16,7 @@ awmsg [<FLAGS>]... (rule) <RULE-OPTION>;
 <OUTPUT-OPTION> ::= (list) "list outputs"
                   | (toplevels) "list toplevels on outputs"
                   | (modes) "list output modes"
-                  | (create <WIDTH>x<HEIGHT>) "create an output with the given width and height"
+                  | (create <SIZE>) "create an output with WIDTHxHEIGHT"
                   | (destroy <NAME>) "destroy an output with the given name";
 
 <WORKSPACE-OPTION> ::= (list) "list workspaces"
@@ -52,6 +52,7 @@ awmsg [<FLAGS>]... (rule) <RULE-OPTION>;
                | (half_right) "half the active window in the right direction"
                | (tile) "tile all windows in the active workspace"
                | (tile_sans) "tile all windows in the active workspace excluding the active one"
+               | (auto_tile) "toggle automatic tiling for the active workspace"
                | (open <N>) "focus workspace N"
                | (window_to <N>) "move the active window to workspace N";
 

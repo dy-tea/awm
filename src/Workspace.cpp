@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
+#include <vector>
 
 Workspace::Workspace(Output *output, const uint32_t num)
     : num(num), output(output) {
@@ -103,8 +104,7 @@ bool Workspace::contains(const Toplevel *toplevel) const {
 // false on no movement or failure
 bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
     // no movement
-    if (workspace == this || workspace->fullscreen_toplevel ||
-        !contains(toplevel))
+    if (workspace == this || !contains(toplevel))
         return false;
 
     // only hide toplevel if moving to a workspace on the same output
@@ -124,12 +124,6 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
     // move to other workspace
     wl_list_remove(&toplevel->link);
     workspace->add_toplevel(toplevel, true);
-
-    // update fullscreen_toplevel if necessary
-    if (fullscreen_toplevel == toplevel) {
-        workspace->fullscreen_toplevel = toplevel;
-        fullscreen_toplevel = nullptr;
-    }
 
     // notify clients
     if (IPC *ipc = toplevel->server->ipc)
@@ -227,10 +221,11 @@ Toplevel *Workspace::in_direction(const wlr_direction direction) const {
 void Workspace::set_half_in_direction(Toplevel *toplevel,
                                       wlr_direction direction) {
     // ensure decorations are shown for server-side decorations
-    if (toplevel->decoration && 
-        toplevel->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+    if (toplevel->decoration &&
+        toplevel->decoration_mode ==
+            WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
         toplevel->decoration->set_visible(true);
-    
+
     int x = output->layout_geometry.x + output->usable_area.x;
     int y = output->layout_geometry.y + output->usable_area.y;
     int width = output->usable_area.width;
@@ -393,8 +388,9 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
             int y = output->layout_geometry.y + box.y + (row * height);
 
             // ensure decorations are shown for server-side decorations
-            if (tiled[i]->decoration && 
-                tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+            if (tiled[i]->decoration &&
+                tiled[i]->decoration_mode ==
+                    WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
                 tiled[i]->decoration->set_visible(true);
 
             // set toplevel geometry
@@ -413,8 +409,9 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
             width *= (1 + area - toplevel_count);
 
         // ensure decorations are shown for server-side decorations
-        if (tiled[i]->decoration && 
-            tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+        if (tiled[i]->decoration &&
+            tiled[i]->decoration_mode ==
+                WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
             tiled[i]->decoration->set_visible(true);
 
         // set last toplevel geometry
@@ -425,10 +422,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
     case TILE_MASTER:
         if (toplevel_count == 1) {
             // ensure decorations are shown for server-side decorations
-            if (tiled[0]->decoration && 
-                tiled[0]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+            if (tiled[0]->decoration &&
+                tiled[0]->decoration_mode ==
+                    WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
                 tiled[0]->decoration->set_visible(true);
-            
+
             // take up full screen
             tiled[0]->set_position_size(box.x, box.y, box.width, box.height);
         } else {
@@ -446,8 +444,9 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
                     it = i;
 
             // ensure decorations are shown for server-side decorations
-            if ((*it)->decoration && 
-                (*it)->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+            if ((*it)->decoration &&
+                (*it)->decoration_mode ==
+                    WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
                 (*it)->decoration->set_visible(true);
 
             // set master toplevel geometry
@@ -471,10 +470,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
             // set slave toplevel geometry
             for (int i = 0; i != count; ++i) {
                 // ensure decorations are shown for server-side decorations
-                if (tiled[i]->decoration && 
-                    tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+                if (tiled[i]->decoration &&
+                    tiled[i]->decoration_mode ==
+                        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
                     tiled[i]->decoration->set_visible(true);
-                
+
                 tiled[i]->set_position_size(x, y + i * height, width, height);
             }
         }
@@ -504,10 +504,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
 
         for (int i = 0; i != toplevel_count; ++i) {
             // ensure decorations are shown for server-side decorations
-            if (tiled[i]->decoration && 
-                tiled[i]->decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+            if (tiled[i]->decoration &&
+                tiled[i]->decoration_mode ==
+                    WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
                 tiled[i]->decoration->set_visible(true);
-            
+
             // set toplevel geometry
             tiled[i]->set_position_size(x, y, width, height);
 
@@ -540,6 +541,17 @@ void Workspace::tile() { tile({}); }
 void Workspace::tile_sans_active() {
     if (active_toplevel)
         tile({active_toplevel});
+}
+
+std::vector<Toplevel *> Workspace::fullscreen_toplevels() {
+    std::vector<Toplevel *> fullscreen;
+
+    Toplevel *toplevel, *tmp;
+    wl_list_for_each_safe(toplevel, tmp, &toplevels,
+                          link) if (toplevel->fullscreen())
+        fullscreen.push_back(toplevel);
+
+    return fullscreen;
 }
 
 // get pinned toplevels

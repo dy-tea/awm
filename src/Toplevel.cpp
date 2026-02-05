@@ -264,7 +264,8 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
             wlr_xdg_toplevel_set_wm_capabilities(
                 toplevel->xdg_toplevel,
                 WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
-                    WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE);
+                    WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE |
+                    WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE);
         }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
@@ -740,9 +741,6 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
     }
 
     if (fullscreen()) {
-        // get current workspace
-        Workspace *workspace = server->get_workspace(this);
-
         // set toplevel window mode to not fullscreen
         if (xdg_toplevel)
             wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, false);
@@ -752,22 +750,21 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
 #endif
 
         // show decoration
-        if (decoration && decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+        if (decoration &&
+            decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
             decoration->set_visible(true);
 
         // move scene tree node to toplevel tree
         wlr_scene_node_reparent(&scene_tree->node, server->layers.floating);
-
-        // clear fullscreen toplevel from workspace
-        if (workspace)
-            workspace->fullscreen_toplevel = nullptr;
     }
 
     // store the original geometry (without decoration offset) for later use
     geometry = wlr_box{static_cast<int>(x), static_cast<int>(y), width, height};
 
     // apply decoration offset if decoration is visible
-    if (decoration && decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE && decoration->visible) {
+    if (decoration &&
+        decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE &&
+        decoration->visible) {
         int deco_height = 30;
         y += deco_height;
         height -= deco_height;
@@ -892,11 +889,6 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
         workspace = server->workspace_manager->get_active_workspace(output);
     }
 
-    // only allow fullscreening one toplevel per workspace
-    if (workspace->fullscreen_toplevel &&
-        workspace->fullscreen_toplevel != this)
-        return;
-
     // get output geometry
     const wlr_box output_box = output->layout_geometry;
 
@@ -913,7 +905,8 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
         save_geometry();
 
         // hide decoration BEFORE calling set_position_size
-        if (decoration && decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+        if (decoration &&
+            decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
             decoration->set_visible(false);
 
         // move scene tree node to fullscreen tree
@@ -923,11 +916,10 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
         // set to top left of output, width and height the size of output
         set_position_size(output_box.x, output_box.y, output_box.width,
                           output_box.height);
-
-        workspace->fullscreen_toplevel = this;
     } else {
         // show decoration BEFORE calling set_position_size
-        if (decoration && decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+        if (decoration &&
+            decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
             decoration->set_visible(true);
 
         // move scene tree node to toplevel tree
@@ -942,8 +934,6 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
             // use half of output geometry
             set_position_size(output_box.x, output_box.y, output_box.width / 2,
                               output_box.height / 2);
-
-        workspace->fullscreen_toplevel = nullptr;
     }
 }
 
@@ -1100,7 +1090,8 @@ void Toplevel::toggle_fullscreen() { set_fullscreen(!fullscreen()); }
 
 // save the current geometry of the toplevel to saved_geometry
 void Toplevel::save_geometry() {
-    // save from geometry variable to get logical size (without decoration offset)
+    // save from geometry variable to get logical size (without decoration
+    // offset)
     saved_geometry.x = geometry.x;
     saved_geometry.y = geometry.y;
 
@@ -1153,11 +1144,6 @@ void Toplevel::update_app_id() {
 
 // tell the toplevel to close
 void Toplevel::close() {
-    // remove fullscreen toplevel
-    Workspace *workspace = server->get_workspace(this);
-    if (workspace && workspace->fullscreen_toplevel == this)
-        workspace->fullscreen_toplevel = nullptr;
-
 #ifdef XWAYLAND
     if (xdg_toplevel)
 #endif

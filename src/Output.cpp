@@ -3,6 +3,7 @@
 #include "LayerSurface.h"
 #include "OutputManager.h"
 #include "Server.h"
+#include "Toplevel.h"
 #include "WorkspaceManager.h"
 #include "wlr.h"
 #include <drm_fourcc.h>
@@ -47,14 +48,21 @@ static int output_repaint_timer(void *data) {
     //     return 0;
     // }
 
-    // enable tearing
+    // enable tearing for fullscreen toplevels with tearing hint
     Workspace *workspace = output->get_active();
-    if (workspace && output->allow_tearing && workspace->fullscreen_toplevel &&
-        workspace->fullscreen_toplevel->tearing_hint ==
-            WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC) {
-        pending.tearing_page_flip = true;
-        if (!wlr_output_test_state(output->wlr_output, &pending))
-            pending.tearing_page_flip = false;
+    if (workspace && output->allow_tearing) {
+        std::vector<Toplevel *> fullscreen_toplevels =
+            workspace->fullscreen_toplevels();
+        if (!fullscreen_toplevels.empty()) {
+            for (Toplevel *t : fullscreen_toplevels) {
+                if (t->tearing_hint ==
+                    WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC) {
+                    pending.tearing_page_flip = true;
+                    if (!wlr_output_test_state(output->wlr_output, &pending))
+                        pending.tearing_page_flip = false;
+                }
+            }
+        }
     }
 
     if (!wlr_output_commit_state(output->wlr_output, &pending))

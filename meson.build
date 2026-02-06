@@ -192,6 +192,7 @@ if get_option('tests')
     'maximize_waybar.cpp',
     'workspaces_10.cpp',
     'workspaces_misc.cpp',
+    'autotile_max_fullscreen.cpp',
   ]
 
   foreach t : tests

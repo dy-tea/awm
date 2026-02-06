@@ -15,6 +15,7 @@ enum Rules {
     RULES_OUTPUT,
     RULES_TOPLEVEL_STATE,
     RULES_TOPLEVEL_PIN,
+    RULES_FLOATING,
     RULES_TOPLEVEL_X,
     RULES_TOPLEVEL_Y,
     RULES_TOPLEVEL_W,
@@ -32,6 +33,7 @@ struct WindowRule {
     std::string output{};
     xdg_toplevel_state *toplevel_state{nullptr};
     bool pinned{false};
+    bool floating{false};
     wlr_box *geometry{nullptr};
 
     WindowRule(std::string title_match, std::string class_match,

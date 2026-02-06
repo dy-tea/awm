@@ -411,7 +411,9 @@ void Cursor::reset_mode() {
                 if (swap_target && current_workspace->contains(swap_target) &&
                     swap_target != grabbed) {
                     current_workspace->swap(grabbed, swap_target);
-                } else if (!current_workspace->bsp_tree) {
+                } else if (current_workspace->bsp_tree) {
+                    grabbed->set_position_size(move_original_geo);
+                } else {
                     current_workspace->tile();
                 }
             }

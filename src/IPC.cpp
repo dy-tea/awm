@@ -753,6 +753,9 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             if (rules[i]->pinned)
                 res["pinned"] = rules[i]->pinned;
 
+            if (rules[i]->floating)
+                res["floating"] = rules[i]->floating;
+
             if (rules[i]->geometry)
                 res["geometry"] = {{"x", rules[i]->geometry->x},
                                    {"y", rules[i]->geometry->y},

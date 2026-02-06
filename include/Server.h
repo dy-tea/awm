@@ -135,6 +135,8 @@ struct Server {
 
     IPC *ipc{nullptr};
 
+    bool shutting_down{false};
+
     Server(Config *config);
     ~Server();
 

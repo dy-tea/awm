@@ -49,7 +49,22 @@ void WindowRule::apply(Toplevel *toplevel) {
                                       : target_output->get_active();
 
     // set toplevel workspace
+    bool should_skip_auto_tile = floating;
+    if (toplevel_state)
+        should_skip_auto_tile =
+            should_skip_auto_tile ||
+            (*toplevel_state == XDG_TOPLEVEL_STATE_MAXIMIZED) ||
+            (*toplevel_state == XDG_TOPLEVEL_STATE_FULLSCREEN);
+
+    bool workspace_auto_tile = target_workspace->auto_tile;
+    if (should_skip_auto_tile && workspace_auto_tile)
+        target_workspace->auto_tile = false;
+
     target_workspace->add_toplevel(toplevel, false);
+
+    if (should_skip_auto_tile && workspace_auto_tile)
+        target_workspace->auto_tile = workspace_auto_tile;
+
     if (target_output->get_active() != target_workspace)
         toplevel->set_hidden(true);
 

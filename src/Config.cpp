@@ -756,6 +756,9 @@ bool Config::load() {
                 // toplevel pinned
                 connect(table.getBool("pinned"), &w->pinned);
 
+                // toplevel floating
+                connect(table.getBool("floating"), &w->floating);
+
                 // geometry
                 if (auto geometry_table = table.getTable("geometry")) {
                     // x

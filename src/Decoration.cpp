@@ -140,10 +140,12 @@ Decoration::~Decoration() {
     wl_list_remove(&destroy.link);
     wl_list_remove(&link);
 
-    wlr_scene_node_destroy(&btn_close->node);
-    wlr_scene_node_destroy(&btn_max->node);
-    wlr_scene_node_destroy(&btn_full->node);
-    wlr_scene_node_destroy(&scene_tree->node);
+    if (server && !server->shutting_down) {
+        wlr_scene_node_destroy(&btn_close->node);
+        wlr_scene_node_destroy(&btn_max->node);
+        wlr_scene_node_destroy(&btn_full->node);
+        wlr_scene_node_destroy(&scene_tree->node);
+    }
 
     if (commit.notify) {
         wl_list_remove(&commit.link);

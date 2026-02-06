@@ -92,7 +92,8 @@ SessionLock::~SessionLock() {
     wl_list_remove(&unlock.link);
     wl_list_remove(&destroy.link);
 
-    wlr_scene_node_destroy(&scene_tree->node);
+    if (server && !server->shutting_down)
+        wlr_scene_node_destroy(&scene_tree->node);
     server->current_session_lock = nullptr;
 }
 

@@ -30,7 +30,10 @@ InputMethodPopup::InputMethodPopup(InputRelay *relay,
 }
 
 InputMethodPopup::~InputMethodPopup() {
-    wlr_scene_node_destroy(&scene_tree->node);
+    if (relay && relay->seat && relay->seat->server &&
+        !relay->seat->server->shutting_down) {
+        wlr_scene_node_destroy(&scene_tree->node);
+    }
     wl_list_remove(&destroy.link);
     wl_list_remove(&commit.link);
     wl_list_remove(&link);

@@ -1234,6 +1234,8 @@ void Server::exit() {
 }
 
 Server::~Server() {
+    shutting_down = true;
+
     wl_list_remove(&renderer_lost.link);
 
     wl_list_remove(&new_xdg_toplevel.link);
@@ -1268,18 +1270,18 @@ Server::~Server() {
     wlr_xwayland_destroy(xwayland);
 #endif
 
+    Keyboard *kb, *kbt;
+    wl_list_for_each_safe(kb, kbt, &keyboards, link) delete kb;
+
+    LayerSurface *ls, *lst;
+    wl_list_for_each_safe(ls, lst, &layer_surfaces, link) delete ls;
+
     delete output_manager;
     delete workspace_manager;
     delete seat;
     delete cursor;
 
     wl_display_destroy_clients(display);
-
-    Keyboard *kb, *kbt;
-    wl_list_for_each_safe(kb, kbt, &keyboards, link) delete kb;
-
-    LayerSurface *ls, *lst;
-    wl_list_for_each_safe(ls, lst, &layer_surfaces, link) delete ls;
 
     wl_event_source_remove(signal_handler);
     wl_event_source_remove(config_update_timer);

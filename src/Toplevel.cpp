@@ -1,4 +1,5 @@
 #include "Toplevel.h"
+#include "BSPTree.h"
 #include "Config.h"
 #include "IPC.h"
 #include "Output.h"
@@ -431,6 +432,20 @@ Toplevel::~Toplevel() {
         delete activation_token;
     }
 
+    if (!server->shutting_down) {
+#ifdef XWAYLAND
+        if (xwayland_surface && scene_tree) {
+            wlr_scene_node_destroy(&scene_tree->node);
+            scene_tree = nullptr;
+        }
+#endif
+
+        if (image_capture) {
+            wlr_scene_node_destroy(&image_capture->tree.node);
+            image_capture = nullptr;
+        }
+    }
+
     wl_list_remove(&destroy.link);
 }
 
@@ -445,7 +460,7 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
 
     // create capture
     image_capture = wlr_scene_create();
-    image_capture_tree = wlr_scene_tree_create(server->layers.floating);
+    image_capture_tree = wlr_scene_tree_create(&image_capture->tree);
 
     xwayland_surface->data = this;
 
@@ -685,6 +700,8 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
     if (mode == CURSORMODE_MOVE) {
         wlr_scene_node_raise_to_top(&scene_tree->node);
 
+        cursor->move_original_geo = geometry;
+
         if (maximized()) {
             // unmaximize if maximized
             saved_geometry.y = cursor->cursor->y - 10; // TODO Magic number here
@@ -923,10 +940,8 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
 #endif
 
     if (fullscreen) {
-        // save current geometry BEFORE hiding decoration
         save_geometry();
 
-        // hide decoration BEFORE calling set_position_size
         if (decoration &&
             decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
             decoration->set_visible(false);
@@ -947,15 +962,62 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
         // move scene tree node to toplevel tree
         wlr_scene_node_reparent(&scene_tree->node, server->layers.floating);
 
-        // handles edge case where toplevel starts fullscreened
-        if (saved_geometry.width && saved_geometry.height)
-            // set back to saved geometry
-            set_position_size(saved_geometry.x, saved_geometry.y,
-                              saved_geometry.width, saved_geometry.height);
-        else
-            // use half of output geometry
-            set_position_size(output_box.x, output_box.y, output_box.width / 2,
-                              output_box.height / 2);
+        // raise to top to maintain focus order when transitioning from
+        // fullscreen
+        wlr_scene_node_raise_to_top(&scene_tree->node);
+
+        // check if we need to handle auto-tiling
+        // Always return to auto-tile when unfullscreening, even if maximized
+        bool should_auto_tile = workspace && workspace->auto_tile;
+
+        if (should_auto_tile && workspace->bsp_tree) {
+            // Un-maximize if currently maximized
+            if (maximized()) {
+#ifdef XWAYLAND
+                if (xdg_toplevel)
+#endif
+                    wlr_xdg_toplevel_set_maximized(xdg_toplevel, false);
+#ifdef XWAYLAND
+                else if (xwayland_surface) {
+                    wlr_xwayland_surface_set_maximized(xwayland_surface, false,
+                                                       false);
+                    xwayland_maximized = false;
+                }
+#endif
+            }
+
+            // re-insert into BSP tree if it's not already there
+            if (!workspace->bsp_tree->find_node(this)) {
+                workspace->bsp_tree->insert(this);
+            }
+
+            // apply BSP tree layout
+            wlr_box new_geometry;
+            if (workspace->bsp_tree->get_toplevel_geometry(
+                    this, output->usable_area, new_geometry)) {
+                set_position_size(new_geometry);
+            } else {
+                // fallback to saved geometry if BSP tree fails
+                if (saved_geometry.width && saved_geometry.height)
+                    set_position_size(saved_geometry.x, saved_geometry.y,
+                                      saved_geometry.width,
+                                      saved_geometry.height);
+                else
+                    set_position_size(output_box.x, output_box.y,
+                                      output_box.width / 2,
+                                      output_box.height / 2);
+            }
+        } else {
+            // handles edge case where toplevel starts fullscreened
+            if (saved_geometry.width && saved_geometry.height)
+                // set back to saved geometry
+                set_position_size(saved_geometry.x, saved_geometry.y,
+                                  saved_geometry.width, saved_geometry.height);
+            else
+                // use half of output geometry
+                set_position_size(output_box.x, output_box.y,
+                                  output_box.width / 2, output_box.height / 2);
+        }
     }
 }
 
@@ -969,7 +1031,8 @@ void Toplevel::set_maximized(const bool maximized) {
     if (fullscreen())
         set_fullscreen(false);
 
-    // get output from toplevel's current workspace, fallback to focused output
+    // get output from toplevel's current workspace, fallback to
+    // focused output
     const Output *output = nullptr;
     if (Workspace *workspace = server->get_workspace(this))
         output = workspace->output;
@@ -997,7 +1060,11 @@ void Toplevel::set_maximized(const bool maximized) {
         // save current geometry
         save_geometry();
 
-        // set to top left of output, width and height the size of output
+        // raise toplevel to top of scene tree
+        wlr_scene_node_raise_to_top(&scene_tree->node);
+
+        // set to top left of output, width and height the size of
+        // output
         set_position_size(usable_area.x + output_box.x,
                           usable_area.y + output_box.y, usable_area.width,
                           usable_area.height);
@@ -1112,8 +1179,8 @@ void Toplevel::toggle_fullscreen() { set_fullscreen(!fullscreen()); }
 
 // save the current geometry of the toplevel to saved_geometry
 void Toplevel::save_geometry() {
-    // save from geometry variable to get logical size (without decoration
-    // offset)
+    // save from geometry variable to get logical size (without
+    // decoration offset)
     saved_geometry.x = geometry.x;
     saved_geometry.y = geometry.y;
 

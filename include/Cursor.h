@@ -29,6 +29,7 @@ struct Cursor {
     double grab_x, grab_y;
     wlr_box grab_geobox;
     wlr_box resize_original_geo;
+    wlr_box move_original_geo;
     uint32_t resize_edges;
     uint32_t pressed_buttons{0}; // CursorButton
     struct Workspace *grab_source_workspace{nullptr};

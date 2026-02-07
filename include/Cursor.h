@@ -1,6 +1,7 @@
 #pragma once
 
 #include "wlr.h"
+#include <map>
 #include <vector>
 
 enum CursorMode {
@@ -15,6 +16,15 @@ enum CursorButton {
     CURSOR_BUTTON_MIDDLE = 1 << 2,
     CURSOR_BUTTON_BACK = 1 << 3,
     CURSOR_BUTTON_FORWARD = 1 << 4,
+};
+
+struct ResizeNeighbor {
+    struct Toplevel *toplevel;
+    wlr_box original_geo;
+    bool adjacent_right{false};
+    bool adjacent_left{false};
+    bool adjacent_bottom{false};
+    bool adjacent_top{false};
 };
 
 struct Cursor {
@@ -33,6 +43,9 @@ struct Cursor {
     uint32_t resize_edges;
     uint32_t pressed_buttons{0}; // CursorButton
     struct Workspace *grab_source_workspace{nullptr};
+    std::vector<ResizeNeighbor> resize_neighbors;
+    std::map<struct Toplevel *, wlr_box> resize_all_original_geometries;
+    bool resize_originals_corrected{false};
 
     wlr_scene_rect *swap_indicator_top{nullptr};
     wlr_scene_rect *swap_indicator_bottom{nullptr};

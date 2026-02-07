@@ -2,6 +2,7 @@
 #include "Toplevel.h"
 #include "Workspace.h"
 #include <algorithm>
+#include <functional>
 
 BSPNode *BSPNode::find_toplevel(Toplevel *tl) {
     if (is_leaf())
@@ -103,6 +104,35 @@ void BSPTree::insert(Toplevel *toplevel) {
 
     insertion_point->second_child = std::make_unique<BSPNode>(toplevel);
     insertion_point->second_child->parent = insertion_point;
+}
+
+void BSPTree::insert_at(Toplevel *toplevel, Toplevel *target) {
+    if (!toplevel)
+        return;
+
+    if (!root) {
+        root = std::make_unique<BSPNode>(toplevel);
+        return;
+    }
+
+    BSPNode *target_node = target ? find_node(target) : nullptr;
+
+    if (!target_node || !target_node->is_leaf()) {
+        insert(toplevel);
+        return;
+    }
+
+    Toplevel *existing = target_node->toplevel;
+    target_node->toplevel = nullptr;
+
+    target_node->split = determine_split_type(target_node);
+    target_node->ratio = 0.5f;
+
+    target_node->first_child = std::make_unique<BSPNode>(existing);
+    target_node->first_child->parent = target_node;
+
+    target_node->second_child = std::make_unique<BSPNode>(toplevel);
+    target_node->second_child->parent = target_node;
 }
 
 void BSPTree::remove(Toplevel *toplevel) {
@@ -224,6 +254,202 @@ void BSPTree::rebuild(std::vector<Toplevel *> toplevels) {
             insert(tl);
 }
 
+void BSPTree::rebuild_grid(std::vector<Toplevel *> toplevels) {
+    clear();
+
+    if (toplevels.empty())
+        return;
+
+    // filter out fullscreen toplevels
+    std::vector<Toplevel *> tiled;
+    for (Toplevel *tl : toplevels)
+        if (tl && !tl->fullscreen())
+            tiled.push_back(tl);
+
+    if (tiled.empty())
+        return;
+
+    int count = tiled.size();
+
+    // calculate grid dimensions
+    int rows = std::round(std::sqrt(count));
+    int cols = (count + rows - 1) / rows;
+
+    // bsp tree for grid
+    root = std::make_unique<BSPNode>();
+
+    if (count == 1) {
+        root->toplevel = tiled[0];
+        return;
+    }
+
+    // recursive helper to build grid tree
+    std::function<void(BSPNode *, int, int, int, int, int)> build_grid_node;
+    build_grid_node = [&](BSPNode *node, int start_idx, int end_idx,
+                          int start_row, int end_row, int depth) {
+        int num_windows = end_idx - start_idx;
+        int num_rows = end_row - start_row;
+
+        if (num_windows == 0)
+            return;
+
+        if (num_windows == 1) {
+            // leaf node
+            node->toplevel = tiled[start_idx];
+            node->split = SplitType::NONE;
+            return;
+        }
+
+        // split horizontally into rows
+        if (num_rows > 1) {
+            int mid_row = start_row + num_rows / 2;
+            int windows_in_first = mid_row * cols - start_row * cols;
+
+            // clamp to window count
+            if (start_idx + windows_in_first > end_idx)
+                windows_in_first = (end_idx - start_idx + 1) / 2;
+
+            int mid_idx = start_idx + windows_in_first;
+
+            node->split = SplitType::HORIZONTAL;
+            node->ratio = static_cast<float>(windows_in_first) / num_windows;
+
+            node->first_child = std::make_unique<BSPNode>();
+            node->first_child->parent = node;
+            build_grid_node(node->first_child.get(), start_idx, mid_idx,
+                            start_row, mid_row, depth + 1);
+
+            node->second_child = std::make_unique<BSPNode>();
+            node->second_child->parent = node;
+            build_grid_node(node->second_child.get(), mid_idx, end_idx, mid_row,
+                            end_row, depth + 1);
+        } else {
+            // single row
+            int mid_idx = start_idx + num_windows / 2;
+
+            node->split = SplitType::VERTICAL;
+            node->ratio = 0.5f;
+
+            node->first_child = std::make_unique<BSPNode>();
+            node->first_child->parent = node;
+            build_grid_node(node->first_child.get(), start_idx, mid_idx,
+                            start_row, end_row, depth + 1);
+
+            node->second_child = std::make_unique<BSPNode>();
+            node->second_child->parent = node;
+            build_grid_node(node->second_child.get(), mid_idx, end_idx,
+                            start_row, end_row, depth + 1);
+        }
+    };
+
+    build_grid_node(root.get(), 0, count, 0, rows, 0);
+}
+
+void BSPTree::rebuild_dwindle(std::vector<Toplevel *> toplevels) {
+    clear();
+
+    if (toplevels.empty())
+        return;
+
+    // filter out fullscreen toplevels
+    std::vector<Toplevel *> tiled;
+    for (Toplevel *tl : toplevels)
+        if (tl && !tl->fullscreen())
+            tiled.push_back(tl);
+
+    if (tiled.empty())
+        return;
+
+    int count = tiled.size();
+
+    // build dwindle tree
+    root = std::make_unique<BSPNode>();
+
+    if (count == 1) {
+        root->toplevel = tiled[0];
+        return;
+    }
+
+    // recursive helper to build dwindle tree
+    std::function<void(BSPNode *, int, int, bool)> build_dwindle_node;
+    build_dwindle_node = [&](BSPNode *node, int start_idx, int end_idx,
+                             bool is_horizontal) {
+        int num_windows = end_idx - start_idx;
+
+        if (num_windows == 0)
+            return;
+
+        if (num_windows == 1) {
+            // leaf node
+            node->toplevel = tiled[start_idx];
+            node->split = SplitType::NONE;
+            return;
+        }
+
+        // alternate split direction
+        node->split =
+            is_horizontal ? SplitType::HORIZONTAL : SplitType::VERTICAL;
+        node->ratio = 0.5f;
+
+        // 1st child
+        node->first_child = std::make_unique<BSPNode>();
+        node->first_child->parent = node;
+        node->first_child->toplevel = tiled[start_idx];
+        node->first_child->split = SplitType::NONE;
+
+        // 2nd child
+        node->second_child = std::make_unique<BSPNode>();
+        node->second_child->parent = node;
+
+        if (num_windows == 2) {
+            node->second_child->toplevel = tiled[start_idx + 1];
+            node->second_child->split = SplitType::NONE;
+        } else {
+            // recursively split the rest with alternating direction
+            build_dwindle_node(node->second_child.get(), start_idx + 1, end_idx,
+                               !is_horizontal);
+        }
+    };
+
+    build_dwindle_node(root.get(), 0, count, true);
+}
+
+void BSPTree::insert_at_dwindle(Toplevel *toplevel, Toplevel *target) {
+    if (!toplevel)
+        return;
+
+    if (!root) {
+        root = std::make_unique<BSPNode>(toplevel);
+        return;
+    }
+
+    BSPNode *target_node = target ? find_node(target) : nullptr;
+
+    if (!target_node || !target_node->is_leaf()) {
+        // No valid target, add to tree using standard dwindle rebuild
+        std::vector<Toplevel *> tls;
+        root->get_toplevels(tls);
+        tls.push_back(toplevel);
+        rebuild_dwindle(tls);
+        return;
+    }
+
+    // Split the target node horizontally (active on left, new on right)
+    Toplevel *existing = target_node->toplevel;
+    target_node->toplevel = nullptr;
+
+    target_node->split = SplitType::HORIZONTAL;
+    target_node->ratio = 0.5f;
+
+    // Active window goes on the left (first child)
+    target_node->first_child = std::make_unique<BSPNode>(existing);
+    target_node->first_child->parent = target_node;
+
+    // New window goes on the right (second child)
+    target_node->second_child = std::make_unique<BSPNode>(toplevel);
+    target_node->second_child->parent = target_node;
+}
+
 void BSPTree::clear() { root.reset(); }
 
 void BSPTree::calculate_layout(BSPNode *node, const wlr_box &bounds) {
@@ -274,6 +500,20 @@ void BSPTree::apply_geometries(BSPNode *node) {
         apply_geometries(node->second_child.get());
 }
 
+void BSPTree::dump_tree(BSPNode *node, int depth) {
+    if (!node)
+        return;
+
+    std::string indent(depth * 2, ' ');
+
+    if (!node->is_leaf()) {
+        if (node->first_child)
+            dump_tree(node->first_child.get(), depth + 1);
+        if (node->second_child)
+            dump_tree(node->second_child.get(), depth + 1);
+    }
+}
+
 SplitType BSPTree::determine_split_type(BSPNode *node) {
     int actual_depth = 0;
     BSPNode *current = node;
@@ -322,6 +562,158 @@ float BSPTree::calculate_ratio_from_resize(BSPNode *parent, BSPNode *child,
         return is_first ? static_cast<float>(new_height) / total_height
                         : static_cast<float>(total_height - new_height) /
                               total_height;
+    }
+
+    return -1.0f;
+}
+
+BSPNode *BSPTree::find_resize_parent(Toplevel *toplevel, uint32_t edges) {
+    BSPNode *node = find_node(toplevel);
+    if (!node || !node->parent)
+        return nullptr;
+
+    BSPNode *parent = node->parent;
+    bool is_first = parent->first_child.get() == node;
+
+    if (parent->split == SplitType::HORIZONTAL) {
+        if (is_first && (edges & WLR_EDGE_RIGHT))
+            return parent;
+        if (!is_first && (edges & WLR_EDGE_LEFT))
+            return parent;
+    } else if (parent->split == SplitType::VERTICAL) {
+        if (is_first && (edges & WLR_EDGE_BOTTOM))
+            return parent;
+        if (!is_first && (edges & WLR_EDGE_TOP))
+            return parent;
+    }
+
+    if (parent->parent)
+        return find_resize_parent_recursive(parent, edges);
+
+    return nullptr;
+}
+
+BSPNode *BSPTree::find_resize_parent_recursive(BSPNode *node, uint32_t edges) {
+    if (!node || !node->parent)
+        return nullptr;
+
+    BSPNode *parent = node->parent;
+    bool is_first = parent->first_child.get() == node;
+
+    if (parent->split == SplitType::HORIZONTAL) {
+        if (is_first && (edges & WLR_EDGE_RIGHT))
+            return parent;
+        if (!is_first && (edges & WLR_EDGE_LEFT))
+            return parent;
+    } else if (parent->split == SplitType::VERTICAL) {
+        if (is_first && (edges & WLR_EDGE_BOTTOM))
+            return parent;
+        if (!is_first && (edges & WLR_EDGE_TOP))
+            return parent;
+    }
+
+    return find_resize_parent_recursive(parent, edges);
+}
+
+void BSPTree::handle_interactive_resize(Toplevel *toplevel, uint32_t edges,
+                                        int cursor_x, int cursor_y,
+                                        const wlr_box &bounds) {
+    BSPNode *node = find_node(toplevel);
+    if (!node)
+        return;
+
+    calculate_layout(root.get(), bounds);
+
+    std::vector<std::pair<BSPNode *, BSPNode *>> parents_to_adjust;
+
+    uint32_t current_edges = edges;
+    BSPNode *current = node;
+    while (current && current->parent) {
+        BSPNode *parent = current->parent;
+        bool is_first = parent->first_child.get() == current;
+
+        bool should_adjust = false;
+        uint32_t next_edges = 0;
+
+        if (parent->split == SplitType::HORIZONTAL) {
+            if (is_first && (current_edges & WLR_EDGE_RIGHT)) {
+                should_adjust = true;
+                next_edges |= WLR_EDGE_RIGHT;
+            }
+            if (!is_first && (current_edges & WLR_EDGE_LEFT)) {
+                should_adjust = true;
+                next_edges |= WLR_EDGE_LEFT;
+            }
+            if (current_edges & WLR_EDGE_TOP)
+                next_edges |= WLR_EDGE_TOP;
+            if (current_edges & WLR_EDGE_BOTTOM)
+                next_edges |= WLR_EDGE_BOTTOM;
+        } else if (parent->split == SplitType::VERTICAL) {
+            if (is_first && (current_edges & WLR_EDGE_BOTTOM)) {
+                should_adjust = true;
+                next_edges |= WLR_EDGE_BOTTOM;
+            }
+            if (!is_first && (current_edges & WLR_EDGE_TOP)) {
+                should_adjust = true;
+                next_edges |= WLR_EDGE_TOP;
+            }
+            if (current_edges & WLR_EDGE_LEFT)
+                next_edges |= WLR_EDGE_LEFT;
+            if (current_edges & WLR_EDGE_RIGHT)
+                next_edges |= WLR_EDGE_RIGHT;
+        }
+
+        if (should_adjust)
+            parents_to_adjust.push_back({parent, current});
+
+        current = parent;
+        current_edges = next_edges;
+    }
+
+    for (auto [parent, child] : parents_to_adjust) {
+        float new_ratio = calculate_ratio_from_cursor(parent, child, edges,
+                                                      cursor_x, cursor_y);
+        if (new_ratio >= 0.0f)
+            adjust_ratio(parent, new_ratio);
+    }
+
+    dump_tree(root.get(), 0);
+}
+
+float BSPTree::calculate_ratio_from_cursor(BSPNode *parent, BSPNode *child,
+                                           uint32_t edges, int cursor_x,
+                                           int cursor_y) {
+    if (!parent || parent->is_leaf())
+        return -1.0f;
+
+    bool is_first = parent->first_child.get() == child;
+
+    if (parent->split == SplitType::HORIZONTAL) {
+        int relative_x = cursor_x - parent->geometry.x;
+        int total_width = parent->geometry.width;
+
+        if (total_width <= 0)
+            return -1.0f;
+
+        float new_ratio = static_cast<float>(relative_x) / total_width;
+
+        if (!is_first && (edges & WLR_EDGE_LEFT))
+            return new_ratio;
+        if (is_first && (edges & WLR_EDGE_RIGHT))
+            return new_ratio;
+    } else if (parent->split == SplitType::VERTICAL) {
+        int relative_y = cursor_y - parent->geometry.y;
+        int total_height = parent->geometry.height;
+
+        if (total_height <= 0)
+            return -1.0f;
+
+        float new_ratio = static_cast<float>(relative_y) / total_height;
+
+        if (!is_first && (edges & WLR_EDGE_TOP))
+            return new_ratio;
+        if (is_first && (edges & WLR_EDGE_BOTTOM))
+            return new_ratio;
     }
 
     return -1.0f;

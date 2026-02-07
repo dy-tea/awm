@@ -583,8 +583,47 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         j["focused_output"] = focused->wlr_output->name;
         if (!focused)
             break;
-        workspace = manager->get_active_workspace(server->focused_output());
-        j["active_workspace"] = workspace->num;
+        Workspace *active_workspace =
+            manager->get_active_workspace(server->focused_output());
+        j["active_workspace"] = active_workspace->num;
+
+        // add detailed workspace information
+        j["workspaces"] = json::array();
+        wl_list_for_each_safe(workspace, tmp, &manager->workspaces, link) {
+            // Convert TileMethod enum to string
+            std::string tiling_method;
+            switch (server->config->tiling.method) {
+            case TILE_NONE:
+                tiling_method = "none";
+                break;
+            case TILE_GRID:
+                tiling_method = "grid";
+                break;
+            case TILE_MASTER:
+                tiling_method = "master";
+                break;
+            case TILE_DWINDLE:
+                tiling_method = "dwindle";
+                break;
+            case TILE_BSP:
+                tiling_method = "bsp";
+                break;
+            default:
+                tiling_method = "unknown";
+                break;
+            }
+
+            json workspace_info = {
+                {"num", workspace->num},
+                {"output",
+                 sanitize_for_json(workspace->output->wlr_output->name)},
+                {"auto_tile", workspace->auto_tile},
+                {"tiling_method", tiling_method},
+                {"using_bsp_tree", workspace->bsp_tree != nullptr},
+                {"toplevel_count", wl_list_length(&workspace->toplevels)},
+                {"active", workspace == active_workspace}};
+            j["workspaces"].push_back(workspace_info);
+        }
 
         break;
     }

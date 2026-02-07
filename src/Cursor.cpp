@@ -1,4 +1,5 @@
 #include "Cursor.h"
+#include "BSPTree.h"
 #include "Config.h"
 #include "Decoration.h"
 #include "IPC.h"
@@ -409,21 +410,20 @@ void Cursor::reset_mode() {
         if (cursor_mode == CURSORMODE_MOVE) {
             if (current_workspace && current_workspace->auto_tile) {
                 if (swap_target && current_workspace->contains(swap_target) &&
-                    swap_target != grabbed) {
+                    swap_target != grabbed)
                     current_workspace->swap(grabbed, swap_target);
-                } else if (current_workspace->bsp_tree) {
+                else if (current_workspace->bsp_tree)
                     grabbed->set_position_size(move_original_geo);
-                } else {
+                else
                     current_workspace->tile();
-                }
             }
 
             if (source_workspace && source_workspace != current_workspace &&
-                source_workspace->auto_tile && !source_workspace->bsp_tree) {
+                source_workspace->auto_tile && !source_workspace->bsp_tree)
                 source_workspace->tile();
-            }
         } else if (cursor_mode == CURSORMODE_RESIZE) {
-            if (current_workspace && current_workspace->auto_tile)
+            if (current_workspace && current_workspace->auto_tile &&
+                !current_workspace->bsp_tree)
                 current_workspace->adjust_neighbors_on_resize(
                     grabbed, resize_original_geo);
         }
@@ -684,6 +684,23 @@ void Cursor::process_resize() {
     if (toplevel->fullscreen())
         return;
 
+    // Check if we should use BSP-based resize
+    Workspace *workspace = server->get_workspace(toplevel);
+    if (workspace && workspace->auto_tile && workspace->bsp_tree) {
+        workspace->bsp_tree->handle_interactive_resize(
+            toplevel, resize_edges, static_cast<int>(cursor->x),
+            static_cast<int>(cursor->y), workspace->output->usable_area);
+
+        workspace->bsp_tree->apply_layout(workspace->output->usable_area);
+
+        // notify clients
+        if (IPC *ipc = server->ipc)
+            ipc->notify_clients(IPC_TOPLEVEL_LIST);
+
+        return;
+    }
+
+    // Non-BSP mode - use traditional resize
     // amalgamation of tinywl and dwl code
     double border_x = cursor->x - grab_x;
     double border_y = cursor->y - grab_y;

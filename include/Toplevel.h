@@ -58,6 +58,7 @@ struct Toplevel {
 
     bool hidden{false};
     bool pinned{false};
+    bool scene_hidden_for_autotile{false};
 
     Decoration *decoration{nullptr};
     wlr_xdg_toplevel_decoration_v1_mode decoration_mode{

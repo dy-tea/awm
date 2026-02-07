@@ -483,10 +483,10 @@ bool Config::load() {
     if (std::unique_ptr<toml::Table> tiling_table =
             config_file.table->getTable("tiling")) {
         // method
-        set_option("tiling.method", {"none", "grid", "master", "dwindle"},
-                   {TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE},
-                   tiling_table->getString("method"), &tiling.method,
-                   {TILE_GRID});
+        set_option(
+            "tiling.method", {"none", "grid", "master", "dwindle", "bsp"},
+            {TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE, TILE_BSP},
+            tiling_table->getString("method"), &tiling.method, {TILE_GRID});
 
         // auto_tile
         connect(tiling_table->getBool("auto_tile"), &tiling.auto_tile, {false});

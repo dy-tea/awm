@@ -40,6 +40,7 @@ struct BSPTree {
     explicit BSPTree(Workspace *ws) : workspace(ws) {}
 
     void insert(Toplevel *toplevel);
+    void insert_at(Toplevel *toplevel, Toplevel *target);
     void remove(Toplevel *toplevel);
     void apply_layout(const wlr_box &bounds);
     BSPNode *find_node(Toplevel *toplevel);
@@ -48,13 +49,26 @@ struct BSPTree {
     void adjust_ratio(BSPNode *node, float new_ratio);
     void handle_resize(Toplevel *toplevel, const wlr_box &new_geo);
     void rebuild(std::vector<Toplevel *> toplevels);
+    void rebuild_grid(std::vector<Toplevel *> toplevels);
+    void rebuild_dwindle(std::vector<Toplevel *> toplevels);
+    void insert_at_dwindle(Toplevel *toplevel, Toplevel *target);
     void clear();
+
+    void handle_interactive_resize(Toplevel *toplevel, uint32_t edges,
+                                   int cursor_x, int cursor_y,
+                                   const wlr_box &bounds);
 
   private:
     void calculate_layout(BSPNode *node, const wlr_box &bounds);
     void apply_geometries(BSPNode *node);
+    void dump_tree(BSPNode *node, int depth);
     SplitType determine_split_type(BSPNode *node);
     BSPNode *find_resize_sibling(BSPNode *node);
     float calculate_ratio_from_resize(BSPNode *parent, BSPNode *child,
                                       const wlr_box &new_geo);
+    BSPNode *find_resize_parent(Toplevel *toplevel, uint32_t edges);
+    BSPNode *find_resize_parent_recursive(BSPNode *node, uint32_t edges);
+    float calculate_ratio_from_cursor(BSPNode *parent, BSPNode *child,
+                                      uint32_t edges, int cursor_x,
+                                      int cursor_y);
 };

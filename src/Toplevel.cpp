@@ -72,10 +72,13 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         height = std::min(height, static_cast<uint32_t>(usable_area.height));
 
         Workspace *workspace = output->get_active();
-        if (!matching_rule && workspace && workspace->auto_tile &&
-            workspace->bsp_tree) {
+        if (!matching_rule && workspace && workspace->auto_tile) {
             toplevel->geometry.width = width;
             toplevel->geometry.height = height;
+
+            // hide the scene node until tile() positions it
+            wlr_scene_node_set_enabled(&toplevel->scene_tree->node, false);
+            toplevel->scene_hidden_for_autotile = true;
         } else {
             wlr_box output_box = output->layout_geometry;
 
@@ -140,12 +143,15 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         int height = std::min((int)xwayland_surface->height, area.height);
 
         Workspace *workspace = output->get_active();
-        if (!matching_rule && workspace && workspace->auto_tile &&
-            workspace->bsp_tree) {
+        if (!matching_rule && workspace && workspace->auto_tile) {
             toplevel->geometry.x = 0;
             toplevel->geometry.y = 0;
             toplevel->geometry.width = width;
             toplevel->geometry.height = height;
+
+            // hide the scene node until tile() positions it
+            wlr_scene_node_set_enabled(&toplevel->scene_tree->node, false);
+            toplevel->scene_hidden_for_autotile = true;
         } else {
             // get surface position
             int x = xwayland_surface->x;
@@ -726,6 +732,57 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 
         cursor->resize_original_geo = geometry;
 
+        // Find and store adjacent neighbors for live resize updates
+        cursor->resize_neighbors.clear();
+        cursor->resize_all_original_geometries.clear();
+        if (Workspace *workspace = server->get_workspace(this)) {
+            if (workspace->auto_tile && !workspace->bsp_tree) {
+                const int ADJACENT_THRESHOLD = 10;
+
+                // store original geometries for cascading
+                Toplevel *tl, *tmp_tl;
+                wl_list_for_each_safe(tl, tmp_tl, &workspace->toplevels, link)
+                    cursor->resize_all_original_geometries[tl] = tl->geometry;
+
+                // find direct neighbors
+                Toplevel *neighbor, *tmp;
+                wl_list_for_each_safe(neighbor, tmp, &workspace->toplevels,
+                                      link) {
+                    if (neighbor == this || neighbor->fullscreen())
+                        continue;
+
+                    ResizeNeighbor rn;
+                    rn.toplevel = neighbor;
+                    rn.original_geo = neighbor->geometry;
+
+                    // check adjacency to all four edges
+                    if (std::abs(rn.original_geo.x -
+                                 (geometry.x + geometry.width)) <
+                        ADJACENT_THRESHOLD)
+                        rn.adjacent_right = true;
+
+                    if (std::abs((rn.original_geo.x + rn.original_geo.width) -
+                                 geometry.x) < ADJACENT_THRESHOLD)
+                        rn.adjacent_left = true;
+
+                    if (std::abs(rn.original_geo.y -
+                                 (geometry.y + geometry.height)) <
+                        ADJACENT_THRESHOLD)
+                        rn.adjacent_bottom = true;
+
+                    if (std::abs((rn.original_geo.y + rn.original_geo.height) -
+                                 geometry.y) < ADJACENT_THRESHOLD)
+                        rn.adjacent_top = true;
+
+                    // only store if adjacent to at least one edge
+                    if (rn.adjacent_right || rn.adjacent_left ||
+                        rn.adjacent_bottom || rn.adjacent_top) {
+                        cursor->resize_neighbors.push_back(rn);
+                    }
+                }
+            }
+        }
+
         // calculate borders
         double border_x = (scene_tree->node.x + geo_box.x) +
                           ((edges & WLR_EDGE_RIGHT) ? geo_box.width : 0);
@@ -802,6 +859,12 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
 
     // store the original geometry (without decoration offset) for later use
     geometry = wlr_box{static_cast<int>(x), static_cast<int>(y), width, height};
+
+    // re-enable scene node if it was disabled for auto-tile positioning
+    if (scene_hidden_for_autotile) {
+        wlr_scene_node_set_enabled(&scene_tree->node, true);
+        scene_hidden_for_autotile = false;
+    }
 
     // apply decoration offset if decoration is visible
     if (decoration &&

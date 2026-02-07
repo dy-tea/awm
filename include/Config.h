@@ -107,7 +107,7 @@ struct OutputConfig {
     }
 };
 
-enum TileMethod { TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE };
+enum TileMethod { TILE_NONE, TILE_GRID, TILE_MASTER, TILE_DWINDLE, TILE_BSP };
 enum FocusOnWindowActivation { FOWA_NONE, FOWA_ACTIVE, FOWA_ANY };
 
 struct Config {

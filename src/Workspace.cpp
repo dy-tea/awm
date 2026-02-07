@@ -17,8 +17,12 @@ Workspace::Workspace(Output *output, const uint32_t num)
 
     auto_tile = output->server->config->tiling.auto_tile;
 
-    if (auto_tile)
-        bsp_tree = std::make_unique<BSPTree>(this);
+    // create BSP tree for BSP, grid, and dwindle tiling methods
+    if (auto_tile) {
+        TileMethod method = output->server->config->tiling.method;
+        if (method == TILE_BSP || method == TILE_GRID || method == TILE_DWINDLE)
+            bsp_tree = std::make_unique<BSPTree>(this);
+    }
 }
 
 Workspace::~Workspace() {
@@ -54,7 +58,25 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
     if (auto_tile &&
         !(toplevel->geometry.width <= 1 && toplevel->geometry.height <= 1)) {
         if (bsp_tree) {
-            bsp_tree->insert(toplevel);
+            TileMethod method = output->server->config->tiling.method;
+
+            if (method == TILE_GRID) {
+                // Rebuild entire tree with new toplevel
+                std::vector<Toplevel *> tls;
+                Toplevel *tl, *tmp;
+                wl_list_for_each_safe(tl, tmp, &toplevels,
+                                      link) if (!tl->fullscreen())
+                    tls.push_back(tl);
+
+                bsp_tree->rebuild_grid(tls);
+            } else if (method == TILE_DWINDLE) {
+                // Dwindle mode - insert at active position with horizontal
+                // split
+                bsp_tree->insert_at_dwindle(toplevel, active_toplevel);
+            } else {
+                // BSP mode - insert at active position
+                bsp_tree->insert_at(toplevel, active_toplevel);
+            }
 
             wlr_box new_geometry;
             if (bsp_tree->get_toplevel_geometry(toplevel, output->usable_area,
@@ -64,6 +86,7 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
             if (pending_layout_idle) {
                 wl_event_source_remove(pending_layout_idle);
             }
+
             pending_layout_idle = wl_event_loop_add_idle(
                 wl_display_get_event_loop(output->server->display),
                 [](void *data) {
@@ -74,9 +97,8 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
                             workspace->output->usable_area);
                 },
                 this);
-        } else {
+        } else
             tile();
-        }
     }
 }
 
@@ -124,7 +146,22 @@ void Workspace::close(Toplevel *toplevel) {
 
     // remove from BSP tree if using it
     if (auto_tile && bsp_tree) {
-        bsp_tree->remove(toplevel);
+        TileMethod method = output->server->config->tiling.method;
+
+        if (method == TILE_GRID) {
+            // Rebuild entire tree without this toplevel
+            std::vector<Toplevel *> tls;
+            Toplevel *tl, *tmp;
+            wl_list_for_each_safe(tl, tmp, &toplevels,
+                                  link) if (tl != toplevel && !tl->fullscreen())
+                tls.push_back(tl);
+
+            bsp_tree->rebuild_grid(tls);
+        } else {
+            // BSP and Dwindle modes - just remove the node
+            bsp_tree->remove(toplevel);
+        }
+
         if (pending_layout_idle) {
             wl_event_source_remove(pending_layout_idle);
         }
@@ -193,9 +230,24 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
             active_toplevel = nullptr;
     }
 
-    // remove bsp tree
+    // remove from bsp tree if using it
     if (auto_tile && bsp_tree) {
-        bsp_tree->remove(toplevel);
+        TileMethod method = output->server->config->tiling.method;
+
+        if (method == TILE_GRID) {
+            // Rebuild entire tree without this toplevel
+            std::vector<Toplevel *> tls;
+            Toplevel *tl, *tmp;
+            wl_list_for_each_safe(tl, tmp, &toplevels,
+                                  link) if (tl != toplevel && !tl->fullscreen())
+                tls.push_back(tl);
+
+            bsp_tree->rebuild_grid(tls);
+        } else {
+            // BSP and Dwindle modes - just remove the node
+            bsp_tree->remove(toplevel);
+        }
+
         if (pending_layout_idle) {
             wl_event_source_remove(pending_layout_idle);
         }
@@ -650,30 +702,45 @@ void Workspace::tile_sans_active() {
 void Workspace::toggle_auto_tile() {
     auto_tile = !auto_tile;
 
+    // set auto tile for all workspaces when toggling
     if (auto_tile) {
-        if (!bsp_tree)
-            bsp_tree = std::make_unique<BSPTree>(this);
+        TileMethod method = output->server->config->tiling.method;
 
-        std::vector<Toplevel *> tls;
-        Toplevel *toplevel, *tmp;
-        wl_list_for_each_safe(toplevel, tmp, &toplevels,
-                              link) if (!toplevel->fullscreen())
-            tls.push_back(toplevel);
+        if (method == TILE_BSP || method == TILE_GRID ||
+            method == TILE_DWINDLE) {
+            if (!bsp_tree)
+                bsp_tree = std::make_unique<BSPTree>(this);
 
-        bsp_tree->rebuild(tls);
-        if (pending_layout_idle) {
-            wl_event_source_remove(pending_layout_idle);
+            std::vector<Toplevel *> tls;
+            Toplevel *toplevel, *tmp;
+            wl_list_for_each_safe(toplevel, tmp, &toplevels,
+                                  link) if (!toplevel->fullscreen())
+                tls.push_back(toplevel);
+
+            if (method == TILE_GRID)
+                bsp_tree->rebuild_grid(tls);
+            else if (method == TILE_DWINDLE)
+                bsp_tree->rebuild_dwindle(tls);
+            else
+                bsp_tree->rebuild(tls);
+
+            if (pending_layout_idle)
+                wl_event_source_remove(pending_layout_idle);
+
+            pending_layout_idle = wl_event_loop_add_idle(
+                wl_display_get_event_loop(output->server->display),
+                [](void *data) {
+                    Workspace *workspace = static_cast<Workspace *>(data);
+                    workspace->pending_layout_idle = nullptr;
+                    if (workspace->bsp_tree)
+                        workspace->bsp_tree->apply_layout(
+                            workspace->output->usable_area);
+                },
+                this);
+        } else {
+            bsp_tree.reset();
+            tile();
         }
-        pending_layout_idle = wl_event_loop_add_idle(
-            wl_display_get_event_loop(output->server->display),
-            [](void *data) {
-                Workspace *workspace = static_cast<Workspace *>(data);
-                workspace->pending_layout_idle = nullptr;
-                if (workspace->bsp_tree)
-                    workspace->bsp_tree->apply_layout(
-                        workspace->output->usable_area);
-            },
-            this);
     } else {
         bsp_tree.reset();
     }
@@ -719,7 +786,7 @@ void Workspace::adjust_neighbors_on_resize(Toplevel *resized,
         wlr_box geo = toplevel->geometry;
         bool modified = false;
 
-        const int ADJACENT_THRESHOLD = 5; // pixels
+        const int ADJACENT_THRESHOLD = 35;
 
         // right
         if (right_delta != 0 && std::abs(geo.x - (old_geo.x + old_geo.width)) <

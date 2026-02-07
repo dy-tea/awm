@@ -63,7 +63,13 @@ minimize_to_workspace = 0                                                       
 decorations = true
 
 [tiling]
-method = "grid" # "none", "grid", "master", "dwindle"
+# Tiling layout methods:
+#   "none"    - no automatic tiling
+#   "grid"    - arrange windows in a balanced grid
+#   "master"  - one master window on left, others stacked on right
+#   "dwindle" - fibonacci-like spiral layout (recommended for auto-tiling)
+#   "bsp"     - dynamic binary space partitioning (manual splits)
+method = "dwindle"
 auto_tile = false # automatically tile windows when they are opened/closed
 
 [binds] # default binds which can be overwitten in your config

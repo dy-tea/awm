@@ -10,6 +10,130 @@
 #include <sys/socket.h>
 using json = nlohmann::ordered_json;
 
+// brain damage (this may not be needed but whatever)
+static std::string sanitize_for_json(std::string_view input) {
+    std::string result;
+    result.reserve(input.size());
+
+    for (size_t i = 0; i < input.size();) {
+        unsigned char c = input[i];
+
+        // ASCII (0x00-0x7F)
+        if (c <= 0x7F) {
+            result += c;
+            i++;
+        }
+        // 2-byte UTF-8 (0xC0-0xDF)
+        else if ((c & 0xE0) == 0xC0 && i + 1 < input.size()) {
+            unsigned char c2 = input[i + 1];
+            if ((c2 & 0xC0) == 0x80) {
+                result += c;
+                result += c2;
+                i += 2;
+            } else {
+                i++;
+            }
+        }
+        // 3-byte UTF-8 (0xE0-0xEF)
+        else if ((c & 0xF0) == 0xE0 && i + 2 < input.size()) {
+            unsigned char c2 = input[i + 1];
+            unsigned char c3 = input[i + 2];
+            if ((c2 & 0xC0) == 0x80 && (c3 & 0xC0) == 0x80) {
+                result += c;
+                result += c2;
+                result += c3;
+                i += 3;
+            } else {
+                i++;
+            }
+        }
+        // 4-byte UTF-8 (0xF0-0xF7)
+        else if ((c & 0xF8) == 0xF0 && i + 3 < input.size()) {
+            unsigned char c2 = input[i + 1];
+            unsigned char c3 = input[i + 2];
+            unsigned char c4 = input[i + 3];
+            if ((c2 & 0xC0) == 0x80 && (c3 & 0xC0) == 0x80 &&
+                (c4 & 0xC0) == 0x80) {
+                result += c;
+                result += c2;
+                result += c3;
+                result += c4;
+                i += 4;
+            } else {
+                i++;
+            }
+        } else {
+            i++;
+        }
+    }
+
+    return result;
+}
+
+// brain damage
+static std::string sanitize_for_json(const char *str) {
+    if (!str)
+        return "";
+
+    std::string result;
+    size_t i = 0;
+
+    while (str[i] != '\0') {
+        unsigned char c = str[i];
+        // ASCII (0x00-0x7F)
+        if (c <= 0x7F) {
+            result += c;
+            i++;
+        }
+        // 2-byte UTF-8 (0xC0-0xDF)
+        else if ((c & 0xE0) == 0xC0 && str[i + 1] != '\0') {
+            unsigned char c2 = str[i + 1];
+            if ((c2 & 0xC0) == 0x80) {
+                result += c;
+                result += c2;
+                i += 2;
+            } else {
+                i++;
+            }
+        }
+        // 3-byte UTF-8 (0xE0-0xEF)
+        else if ((c & 0xF0) == 0xE0 && str[i + 1] != '\0' &&
+                 str[i + 2] != '\0') {
+            unsigned char c2 = str[i + 1];
+            unsigned char c3 = str[i + 2];
+            if ((c2 & 0xC0) == 0x80 && (c3 & 0xC0) == 0x80) {
+                result += c;
+                result += c2;
+                result += c3;
+                i += 3;
+            } else {
+                i++;
+            }
+        }
+        // 4-byte UTF-8 (0xF0-0xF7)
+        else if ((c & 0xF8) == 0xF0 && str[i + 1] != '\0' &&
+                 str[i + 2] != '\0' && str[i + 3] != '\0') {
+            unsigned char c2 = str[i + 1];
+            unsigned char c3 = str[i + 2];
+            unsigned char c4 = str[i + 3];
+            if ((c2 & 0xC0) == 0x80 && (c3 & 0xC0) == 0x80 &&
+                (c4 & 0xC0) == 0x80) {
+                result += c;
+                result += c2;
+                result += c3;
+                result += c4;
+                i += 4;
+            } else {
+                i++;
+            }
+        } else {
+            i++;
+        }
+    }
+
+    return result;
+}
+
 IPC::IPC(Server *server, std::string sock_path)
     : server(server), path(sock_path) {
     // create file descriptor
@@ -309,7 +433,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             };
 
             // outputs are distinguished by name
-            j[o->name] = {
+            j[sanitize_for_json(o->name)] = {
                 {"enabled", o->enabled},
                 {"focused", output == server->focused_output()},
                 {"workspace", output->get_active()->num},
@@ -342,16 +466,20 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             // below values may be null (e.g. virtual outputs)
             // they are generally set on physical displays though
             if (o->description)
-                j[o->name]["description"] = o->description;
+                j[sanitize_for_json(o->name)]["description"] =
+                    sanitize_for_json(o->description);
 
             if (o->make)
-                j[o->name]["make"] = o->make;
+                j[sanitize_for_json(o->name)]["make"] =
+                    sanitize_for_json(o->make);
 
             if (o->model)
-                j[o->name]["model"] = o->model;
+                j[sanitize_for_json(o->name)]["model"] =
+                    sanitize_for_json(o->model);
 
             if (o->serial)
-                j[o->name]["serial"] = o->serial;
+                j[sanitize_for_json(o->name)]["serial"] =
+                    sanitize_for_json(o->serial);
         }
         break;
     }
@@ -361,11 +489,11 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
         wl_list_for_each_safe(workspace, tmp1,
                               &server->workspace_manager->workspaces, link) {
             int i = 0;
-            j[workspace->output->wlr_output->name][workspace->num] =
-                json::array();
+            j[sanitize_for_json(workspace->output->wlr_output->name)]
+             [workspace->num] = json::array();
             wl_list_for_each_safe(toplevel, tmp2, &workspace->toplevels, link)
-                j[workspace->output->wlr_output->name][workspace->num - 1]
-                 [i++] = string_format("%p", toplevel);
+                j[sanitize_for_json(workspace->output->wlr_output->name)]
+                 [workspace->num - 1][i++] = string_format("%p", toplevel);
         }
         break;
     }
@@ -379,7 +507,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                                   link) {
                 // output modes are defined as a size, refresh rate and
                 // preferred status - the selected mode is the current mode
-                j[output->wlr_output->name][i++] = {
+                j[sanitize_for_json(output->wlr_output->name)][i++] = {
                     {"refresh", mode->refresh / 1000.0},
                     {"width", mode->width},
                     {"height", mode->height},
@@ -496,12 +624,13 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             // toplevels are indexed by their pointer as title is
             // non-unique
             j[string_format("%p", t)] = {
-                {"title", t->get_title()},
-                {"class", t->get_app_id()},
-                {"tag", t->tag},
-                {"foreign", t->ext_foreign_handle
-                                ? t->ext_foreign_handle->identifier
-                                : "None"},
+                {"title", sanitize_for_json(t->get_title())},
+                {"class", sanitize_for_json(t->get_app_id())},
+                {"tag", sanitize_for_json(t->tag)},
+                {"foreign",
+                 t->ext_foreign_handle && t->ext_foreign_handle->identifier
+                     ? sanitize_for_json(t->ext_foreign_handle->identifier)
+                     : "None"},
                 {"x", t->geometry.x},
                 {"y", t->geometry.y},
                 {"width", t->geometry.width},
@@ -525,12 +654,13 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
 
         if (const Toplevel *t = w->active_toplevel) {
             j = {
-                {"title", t->get_title()},
-                {"class", t->get_app_id()},
-                {"tag", t->tag},
-                {"foreign", t->ext_foreign_handle
-                                ? t->ext_foreign_handle->identifier
-                                : "None"},
+                {"title", sanitize_for_json(t->get_title())},
+                {"class", sanitize_for_json(t->get_app_id())},
+                {"tag", sanitize_for_json(t->tag)},
+                {"foreign",
+                 t->ext_foreign_handle && t->ext_foreign_handle->identifier
+                     ? sanitize_for_json(t->ext_foreign_handle->identifier)
+                     : "None"},
                 {"x", t->geometry.x},
                 {"y", t->geometry.y},
                 {"width", t->geometry.width},
@@ -547,10 +677,10 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     }
     case IPC_KEYBOARD_LIST: {
         // just return the keyboard config
-        j = {{"layout", server->config->keyboard_layout},
-             {"model", server->config->keyboard_model},
-             {"variant", server->config->keyboard_variant},
-             {"options", server->config->keyboard_options},
+        j = {{"layout", sanitize_for_json(server->config->keyboard_layout)},
+             {"model", sanitize_for_json(server->config->keyboard_model)},
+             {"variant", sanitize_for_json(server->config->keyboard_variant)},
+             {"options", sanitize_for_json(server->config->keyboard_options)},
              {"repeat_rate", server->config->repeat_rate},
              {"repeat_delay", server->config->repeat_delay}};
         break;
@@ -586,7 +716,10 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
 
             // add to list of devices
             j[i++] = {
-                {"name", keyboard->wlr_keyboard->base.name},
+                {"name",
+                 keyboard->wlr_keyboard->base.name
+                     ? sanitize_for_json(keyboard->wlr_keyboard->base.name)
+                     : "Unknown"},
                 {"type", type},
             };
         }
@@ -607,15 +740,15 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                  layout_idx++) {
 
                 // this long name is nicer for clients
-                std::string layout_name =
-                    xkb_keymap_layout_get_name(keymap, layout_idx);
+                std::string layout_name = sanitize_for_json(
+                    xkb_keymap_layout_get_name(keymap, layout_idx));
 
                 // can be -1 if invalid
                 int layout_enabled = xkb_state_layout_index_is_active(
                     state, layout_idx, XKB_STATE_LAYOUT_EFFECTIVE);
 
                 j[keyboard->wlr_keyboard->base.name
-                      ? keyboard->wlr_keyboard->base.name
+                      ? sanitize_for_json(keyboard->wlr_keyboard->base.name)
                       : "default"][layout_idx] = {
                     {"enabled", layout_enabled},
                     {"layout", layout_name},
@@ -637,7 +770,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
             // get the name of the keysym
             char buffer[255];
             xkb_keysym_get_name(bind.sym, buffer, 255);
-            std::string name(buffer);
+            std::string name = sanitize_for_json(buffer);
 
             // handle mouse binds
             if (bind.sym >= 0x20000000 + 272 && bind.sym <= 0x20000000 + 276)
@@ -708,8 +841,9 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                         modifiers += MODIFIERS[j] + " ";
 
                 // get the name of the keysym
-                std::string name;
-                xkb_keysym_get_name(bind.sym, name.data(), sizeof(name));
+                char buffer[255];
+                xkb_keysym_get_name(bind.sym, buffer, 255);
+                std::string name = sanitize_for_json(buffer);
 
                 // display
                 j = {
@@ -728,15 +862,15 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
     case IPC_RULE_LIST: {
         std::vector<WindowRule *> rules = server->config->window_rules;
         for (unsigned long i = 0; i != rules.size(); ++i) {
-            json res = {{"title", rules[i]->title},
-                        {"class", rules[i]->class_},
-                        {"tag", rules[i]->tag}};
+            json res = {{"title", sanitize_for_json(rules[i]->title)},
+                        {"class", sanitize_for_json(rules[i]->class_)},
+                        {"tag", sanitize_for_json(rules[i]->tag)}};
 
             if (rules[i]->workspace)
                 res["workspace"] = rules[i]->workspace;
 
             if (!rules[i]->output.empty())
-                res["output"] = rules[i]->output;
+                res["output"] = sanitize_for_json(rules[i]->output);
 
             if (rules[i]->toplevel_state)
                 switch (*rules[i]->toplevel_state) {

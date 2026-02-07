@@ -89,6 +89,10 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             // set position and size
             toplevel->set_position_size(x, y, width, height);
         }
+
+        // create image capture scene surface
+        toplevel->image_capture_surface =
+            wlr_scene_surface_create(&toplevel->image_capture->tree, base);
     }
 #ifdef XWAYLAND
     // xwayland surface
@@ -179,16 +183,16 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     }
 #endif
 
+    // foreign toplevel
+    toplevel->create_foreign();
+    toplevel->create_ext_foreign();
+
     if (matching_rule)
         // apply window rule
         matching_rule->apply(toplevel);
     else
         // add toplevel to active workspace and focus it
         output->get_active()->add_toplevel(toplevel, true);
-
-    // foreign toplevel
-    toplevel->create_foreign();
-    toplevel->create_ext_foreign();
 
     // set app id for foreign toplevel
     if (std::string app_id = std::string(toplevel->get_app_id());
@@ -256,8 +260,7 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     scene_tree = wlr_scene_xdg_surface_create(server->layers.floating,
                                               xdg_toplevel->base);
     image_capture = wlr_scene_create();
-    image_capture_tree =
-        wlr_scene_xdg_surface_create(&image_capture->tree, xdg_toplevel->base);
+    image_capture_tree = wlr_scene_tree_create(&image_capture->tree);
     scene_tree->node.data = this;
     xdg_toplevel->base->data = this;
 
@@ -1197,7 +1200,9 @@ std::string_view Toplevel::get_title() const {
     if (xwayland_surface)
         return xwayland_surface->title ? xwayland_surface->title : "";
 #endif
-    return xdg_toplevel->title ? xdg_toplevel->title : "";
+    if (xdg_toplevel && xdg_toplevel->title)
+        return xdg_toplevel->title;
+    return "";
 }
 
 // get the app id of the toplevel
@@ -1206,7 +1211,9 @@ std::string_view Toplevel::get_app_id() const {
     if (xwayland_surface)
         return xwayland_surface->class_ ? xwayland_surface->class_ : "";
 #endif
-    return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
+    if (xdg_toplevel && xdg_toplevel->app_id)
+        return xdg_toplevel->app_id;
+    return "";
 }
 
 // update the title of the toplevel

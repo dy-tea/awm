@@ -9,9 +9,12 @@ Popup::Popup(wlr_xdg_popup *xdg_popup, wlr_scene_tree *parent_tree,
     xdg_popup->base->data = parent_tree;
 
     // set capture parent if provided
-    if (image_capture_parent)
-        image_capture_tree =
-            wlr_scene_xdg_surface_create(image_capture_parent, xdg_popup->base);
+    if (image_capture_parent) {
+        image_capture_tree = wlr_scene_tree_create(image_capture_parent);
+
+        // manually create surface for image capture
+        wlr_scene_surface_create(image_capture_tree, xdg_popup->base->surface);
+    }
 
     // xdg_popup_commit
     commit.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {

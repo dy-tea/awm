@@ -51,7 +51,8 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
         toplevel->focus();
 
     // automatically tile if auto_tile is enabled
-    if (auto_tile) {
+    if (auto_tile &&
+        !(toplevel->geometry.width <= 1 && toplevel->geometry.height <= 1)) {
         if (bsp_tree) {
             bsp_tree->insert(toplevel);
 
@@ -140,10 +141,13 @@ void Workspace::close(Toplevel *toplevel) {
             },
             this);
     } else if (auto_tile) {
-        wl_event_loop_add_idle(
+        if (pending_layout_idle)
+            wl_event_source_remove(pending_layout_idle);
+        pending_layout_idle = wl_event_loop_add_idle(
             wl_display_get_event_loop(output->server->display),
             [](void *data) {
                 Workspace *workspace = static_cast<Workspace *>(data);
+                workspace->pending_layout_idle = nullptr;
                 workspace->tile();
             },
             this);

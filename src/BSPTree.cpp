@@ -263,7 +263,8 @@ void BSPTree::apply_geometries(BSPNode *node) {
         return;
 
     if (node->is_leaf() && node->toplevel) {
-        node->toplevel->set_position_size(node->geometry);
+        if (!node->toplevel->maximized() && !node->toplevel->fullscreen())
+            node->toplevel->set_position_size(node->geometry);
         return;
     }
 

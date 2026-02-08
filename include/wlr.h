@@ -13,14 +13,17 @@
 #include <wayland-server-protocol.h>
 #include <wayland-server.h>
 #include <wayland-util.h>
-#include <xcb/xcb.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
+#ifdef XWAYLAND
+#include <xcb/xcb.h>
 // Rename fields which use reserved names
 #define class class_
 #define namespace namespace_
 #define delete delete_
+#endif
+
 #define static
 // wlroots does not do this itself
 extern "C" {

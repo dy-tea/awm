@@ -50,23 +50,12 @@ foreach protocol : protocols
 endforeach
 
 # dependencies
-tomlcpp_proj = subproject('tomlcpp')
-tomlcpp_dep = tomlcpp_proj.get_variable('tomlcpp_dep')
+tomlcpp_dep = dependency('tomlcpp', fallback: ['tomlcpp', 'tomlcpp_dep'])
 json = dependency('nlohmann_json')
 
 # wlroots
 wlroots_version = ['>=0.20.0', '<0.21.0']
-if false
-  # this looks weird but it will use the wlroots in the subprojects directory
-  # if system wlroots is not found
-  subproject(
-    'wlroots',
-    default_options: ['examples=false'],
-    required: false,
-    version: wlroots_version,
-  )
-endif
-wlroots = dependency('wlroots-0.20', version: wlroots_version, fallback: 'wlroots')
+wlroots = dependency('wlroots-0.20', version: wlroots_version)
 
 # includes
 include = include_directories(
@@ -93,11 +82,14 @@ endif
 # backward-cpp
 backward_option = get_option('backward')
 if backward_option
-  backward_proj = subproject('backward-cpp', default_options: {'tests': false})
-  backward = backward_proj.get_variable('backward_dep')
-  backward_interface = backward_proj.get_variable('backward_interface_dep')
+  backward = dependency('backward-cpp', fallback: ['backward-cpp', 'backward_dep'])
+  backward_interface = dependency('', fallback: ['backward-cpp', 'backward_interface_dep'], required: false)
   add_project_arguments('-DBACKWARD', language: 'cpp')
-  libs += [backward, backward_interface]
+  if backward_interface.found()
+    libs += [backward, backward_interface]
+  else
+    libs += [backward]
+  endif
 endif
 
 # main executable

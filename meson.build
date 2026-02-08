@@ -68,7 +68,6 @@ libs = [
   dependency('pixman-1'),
   dependency('xkbcommon'),
   dependency('libinput'),
-  dependency('xcb'),
   tomlcpp_dep,
   wlroots,
   json,
@@ -76,7 +75,7 @@ libs = [
 
 # xwayland
 if xwayland_option
-  libs += [xwayland]
+  libs += [xwayland, dependency('xcb')]
 endif
 
 # backward-cpp

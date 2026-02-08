@@ -23,10 +23,16 @@ jobs:
             /bin/sh -c "                                                              \
             pacman -Sy --noconfirm git gcc cmake meson wayland wayland-protocols      \
             pkgconf pixman libinput libdisplay-info libxkbcommon nlohmann-json libdrm \
-            seatd libxcb xorg xorg-xwayland sudo                                   && \
+            seatd libxcb xorg xorg-xwayland sudo hwdata                            && \
+                                                                                      \
+            # Build and install wlroots from git                                      \
+            git clone --depth 1 https://gitlab.freedesktop.org/wlroots/wlroots.git && \
+            cd wlroots                                                             && \
+            meson setup build/ --prefix=/usr                                       && \
+            ninja -C build/                                                        && \
+            ninja -C build/ install                                                && \
+            cd ..                                                                  && \
                                                                                       \
             # Build awm                                                               \
-            git clone --depth 1 https://gitlab.freedesktop.org/wlroots/wlroots.git    \
-            subprojects/wlroots                                                    && \
             meson setup build/                                                     && \
             ninja -C build/                                                           "

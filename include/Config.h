@@ -20,6 +20,7 @@ enum BindName {
     BIND_WINDOW_MOVE,
     BIND_WINDOW_RESIZE,
     BIND_WINDOW_PIN,
+    BIND_WINDOW_TOGGLE_FLOATING,
     BIND_WINDOW_UP,
     BIND_WINDOW_DOWN,
     BIND_WINDOW_LEFT,
@@ -41,12 +42,12 @@ enum BindName {
 };
 
 const std::string BIND_NAMES[] = {
-    "none",      "exit",       "maximize",   "fullscreen", "previous",
-    "next",      "move",       "resize",     "pin",        "up",
-    "down",      "left",       "right",      "close",      "swap_up",
-    "swap_down", "swap_left",  "swap_right", "half_up",    "half_down",
-    "half_left", "half_right", "tile",       "tile_sans",  "auto_tile",
-    "open",      "window_to",
+    "none",      "exit",      "maximize",   "fullscreen", "previous",
+    "next",      "move",      "resize",     "pin",        "toggle_floating",
+    "up",        "down",      "left",       "right",      "close",
+    "swap_up",   "swap_down", "swap_left",  "swap_right", "half_up",
+    "half_down", "half_left", "half_right", "tile",       "tile_sans",
+    "auto_tile", "open",      "window_to",
 };
 
 const std::string MOUSE_BUTTONS[] = {
@@ -184,6 +185,9 @@ struct Config {
     struct {
         TileMethod method{TILE_GRID};
         bool auto_tile{false};
+        bool float_on_min_size{false};
+        bool float_on_max_size{false};
+        bool float_on_both{false};
     } tiling;
 
     // compostior binds

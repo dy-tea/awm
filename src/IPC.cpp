@@ -678,6 +678,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"hidden", t->hidden},
                 {"maximized", t->maximized()},
                 {"fullscreen", t->fullscreen()},
+                {"is_floating", t->is_floating},
 #ifdef XWAYLAND
                 {"xwayland", !t->xdg_toplevel},
 #endif
@@ -707,6 +708,7 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
                 {"hidden", t->hidden},
                 {"maximized", t->maximized()},
                 {"fullscreen", t->fullscreen()},
+                {"is_floating", t->is_floating},
 #ifdef XWAYLAND
                 {"xwayland", !t->xdg_toplevel},
 #endif
@@ -928,6 +930,20 @@ json IPC::handle_command(const IPCMessage message, const std::string &data) {
 
             if (rules[i]->floating)
                 res["floating"] = rules[i]->floating;
+
+            if (rules[i]->tiling_mode != TILING_MODE_AUTO) {
+                switch (rules[i]->tiling_mode) {
+                case TILING_MODE_FLOATING:
+                    res["tiling_mode"] = "floating";
+                    break;
+                case TILING_MODE_TILING:
+                    res["tiling_mode"] = "tiling";
+                    break;
+                default:
+                    res["tiling_mode"] = "auto";
+                    break;
+                }
+            }
 
             if (rules[i]->geometry)
                 res["geometry"] = {{"x", rules[i]->geometry->x},

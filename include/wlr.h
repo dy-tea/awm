@@ -18,11 +18,12 @@
 
 #ifdef XWAYLAND
 #include <xcb/xcb.h>
+#endif
+
 // Rename fields which use reserved names
 #define class class_
 #define namespace namespace_
 #define delete delete_
-#endif
 
 #define static
 // wlroots does not do this itself

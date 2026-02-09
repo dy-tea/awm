@@ -59,6 +59,7 @@ struct Toplevel {
     bool hidden{false};
     bool pinned{false};
     bool scene_hidden_for_autotile{false};
+    bool is_floating{false};
 
     Decoration *decoration{nullptr};
     wlr_xdg_toplevel_decoration_v1_mode decoration_mode{
@@ -119,4 +120,6 @@ struct Toplevel {
     void toggle_maximized();
     void save_geometry();
     void close();
+    bool has_size_constraints() const;
+    bool should_be_floating() const;
 };

@@ -22,6 +22,12 @@ enum Rules {
     RULES_TOPLEVEL_H,
 };
 
+enum TilingMode {
+    TILING_MODE_AUTO,
+    TILING_MODE_FLOATING,
+    TILING_MODE_TILING,
+};
+
 struct Toplevel;
 
 struct WindowRule {
@@ -34,6 +40,7 @@ struct WindowRule {
     xdg_toplevel_state *toplevel_state{nullptr};
     bool pinned{false};
     bool floating{false};
+    TilingMode tiling_mode{TILING_MODE_AUTO};
     wlr_box *geometry{nullptr};
 
     WindowRule(std::string title_match, std::string class_match,

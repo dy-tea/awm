@@ -1,4 +1,5 @@
 #include "Output.h"
+#include "BSPTree.h"
 #include "Config.h"
 #include "LayerSurface.h"
 #include "OutputManager.h"
@@ -299,8 +300,21 @@ void Output::arrange_layers() {
     arrange_layer_surface(&full_area, &usable, layers.background, false);
 
     // check if usable area changed
-    if (memcmp(&usable, &usable_area, sizeof(wlr_box)) != 0)
+    if (memcmp(&usable, &usable_area, sizeof(wlr_box)) != 0) {
         usable_area = usable;
+        
+        // retile all workspaces that have auto_tile enabled
+        Workspace *workspace;
+        wl_list_for_each(workspace, &server->workspace_manager->workspaces, link) {
+            if (workspace->output == this && workspace->auto_tile) {
+                if (workspace->bsp_tree) {
+                    workspace->bsp_tree->apply_layout(usable_area);
+                } else {
+                    workspace->tile();
+                }
+            }
+        }
+    }
 
     // handle keyboard interactive layers
     LayerSurface *topmost = nullptr;

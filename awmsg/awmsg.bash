@@ -35,18 +35,18 @@ _awmsg () {
     local words cword
     _get_comp_words_by_ref -n "$COMP_WORDBREAKS" words cword
 
-    local -a literals=(-h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list focused keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans auto_tile open window_to display rule list)
+    local -a literals=(-h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list focused keyboard list device list current bind list run none maximize fullscreen previous next move resize pin toggle_floating up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans auto_tile open window_to display rule list)
     local -A literal_transitions=()
-    literal_transitions[0]="([0]=1 [1]=1 [2]=1 [3]=1 [4]=1 [5]=2 [6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [24]=8 [26]=9 [29]=10 [57]=11)"
-    literal_transitions[3]="([6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [24]=8 [26]=9 [29]=10 [57]=11)"
+    literal_transitions[0]="([0]=1 [1]=1 [2]=1 [3]=1 [4]=1 [5]=2 [6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [24]=8 [26]=9 [29]=10 [60]=11)"
+    literal_transitions[3]="([6]=3 [7]=3 [8]=3 [9]=3 [10]=4 [11]=4 [12]=5 [18]=6 [21]=7 [24]=8 [26]=9 [29]=10 [60]=11)"
     literal_transitions[5]="([13]=1 [14]=1 [15]=1 [16]=2 [17]=2)"
     literal_transitions[6]="([19]=1 [20]=2)"
     literal_transitions[7]="([22]=1 [23]=1)"
     literal_transitions[8]="([25]=1)"
     literal_transitions[9]="([27]=1 [28]=1)"
-    literal_transitions[10]="([30]=1 [31]=12 [56]=12)"
-    literal_transitions[11]="([58]=1)"
-    literal_transitions[12]="([4]=1 [32]=1 [33]=1 [34]=1 [35]=1 [36]=1 [37]=1 [38]=1 [39]=1 [40]=1 [41]=1 [42]=1 [43]=1 [44]=1 [45]=1 [46]=1 [47]=1 [48]=1 [49]=1 [50]=1 [51]=1 [52]=1 [53]=1 [54]=2 [55]=2)"
+    literal_transitions[10]="([30]=1 [31]=12 [59]=12)"
+    literal_transitions[11]="([61]=1)"
+    literal_transitions[12]="([4]=1 [32]=1 [33]=1 [34]=1 [35]=1 [36]=1 [37]=1 [38]=1 [39]=1 [40]=1 [41]=1 [42]=1 [43]=1 [44]=1 [45]=1 [46]=1 [47]=1 [48]=1 [49]=1 [50]=1 [51]=1 [52]=1 [53]=1 [54]=1 [55]=1 [56]=1 [57]=2 [58]=2)"
     local -A star_transitions=([2]=1)
 
     local state=0
@@ -83,7 +83,7 @@ _awmsg () {
         return 1
     done
 
-    local -A literal_transitions_level_0=([9]="27 28" [0]="0 1 2 3 4 5 6 7 8 9 10 11 12 18 21 24 26 29 57" [3]="6 7 8 9 10 11 12 18 21 24 26 29 57" [8]="25" [10]="30 31 56" [11]="58" [5]="13 14 15 16 17" [12]="4 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55" [7]="22 23" [6]="19 20")
+    local -A literal_transitions_level_0=([9]="27 28" [0]="0 1 2 3 4 5 6 7 8 9 10 11 12 18 21 24 26 29 60" [3]="6 7 8 9 10 11 12 18 21 24 26 29 60" [8]="25" [10]="30 31 59" [11]="61" [5]="13 14 15 16 17" [12]="4 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58" [7]="22 23" [6]="19 20")
     local -A commands_level_0=([4]="0")
 
     local -a candidates=()

@@ -436,9 +436,15 @@ bool Config::load() {
                             .value_or(TILE_GRID);
 
         tiling.auto_tile = tiling_table->get<bool>("auto_tile", false);
+        tiling.float_on_min_size = tiling_table->get<bool>("float_on_min_size", false);
+        tiling.float_on_max_size = tiling_table->get<bool>("float_on_max_size", false);
+        tiling.float_on_both = tiling_table->get<bool>("float_on_both", false);
     } else {
         tiling.method = TILE_GRID;
         tiling.auto_tile = false;
+        tiling.float_on_min_size = false;
+        tiling.float_on_max_size = false;
+        tiling.float_on_both = false;
     }
 
     // get awm binds
@@ -465,6 +471,7 @@ bool Config::load() {
             set_bind("move", window_bind, BIND_WINDOW_MOVE);
             set_bind("resize", window_bind, BIND_WINDOW_RESIZE);
             set_bind("pin", window_bind, BIND_WINDOW_PIN);
+            set_bind("toggle_floating", window_bind, BIND_WINDOW_TOGGLE_FLOATING);
             set_bind("up", window_bind, BIND_WINDOW_UP);
             set_bind("down", window_bind, BIND_WINDOW_DOWN);
             set_bind("left", window_bind, BIND_WINDOW_LEFT);
@@ -532,9 +539,23 @@ bool Config::load() {
             oc->enabled = table->get<bool>("enabled", true);
             oc->width = static_cast<int32_t>(table->get<int64_t>("width", 0));
             oc->height = static_cast<int32_t>(table->get<int64_t>("height", 0));
-            oc->x = table->get<double>("x", 0.0);
-            oc->y = table->get<double>("y", 0.0);
-            oc->refresh = table->get<double>("refresh", 0.0);
+
+            // x and y can be int or double
+            if (auto x_int = table->getInt("x"))
+                oc->x = static_cast<double>(*x_int);
+            else
+                oc->x = table->get<double>("x", 0.0);
+
+            if (auto y_int = table->getInt("y"))
+                oc->y = static_cast<double>(*y_int);
+            else
+                oc->y = table->get<double>("y", 0.0);
+
+            // refresh can be int or double
+            if (auto refresh_int = table->getInt("refresh"))
+                oc->refresh = static_cast<double>(*refresh_int);
+            else
+                oc->refresh = table->get<double>("refresh", 0.0);
 
             // transform
             static const std::unordered_map<std::string, wl_output_transform>
@@ -552,11 +573,14 @@ bool Config::load() {
                                        table->getString("transform"))
                                 .value_or(WL_OUTPUT_TRANSFORM_NORMAL);
 
-            oc->scale = static_cast<float>(table->get<double>("scale", 1.0));
+            // scale can be int or double
+            if (auto scale_int = table->getInt("scale"))
+                oc->scale = static_cast<float>(*scale_int);
+            else
+                oc->scale = static_cast<float>(table->get<double>("scale", 1.0));
 
-            if (auto adaptive = table->getBool("adaptive")) {
+            if (auto adaptive = table->getBool("adaptive"))
                 oc->adaptive_sync = *adaptive;
-            }
 
             oc->allow_tearing = table->get<bool>("tearing", false);
 
@@ -648,6 +672,17 @@ bool Config::load() {
             // toplevel floating
             if (auto floating = table->getBool("floating")) {
                 w->floating = *floating;
+            }
+
+            // tiling mode
+            if (auto tiling_mode = table->getString("tiling_mode")) {
+                static const std::unordered_map<std::string, TilingMode> tiling_mode_map = {
+                    {"auto", TILING_MODE_AUTO},
+                    {"floating", TILING_MODE_FLOATING},
+                    {"tiling", TILING_MODE_TILING},
+                };
+                if (auto mode = map_option("windowrules.tiling_mode", tiling_mode_map, tiling_mode))
+                    w->tiling_mode = *mode;
             }
 
             // geometry

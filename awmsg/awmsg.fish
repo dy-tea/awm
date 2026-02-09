@@ -72,7 +72,7 @@ function _awmsg
         set COMP_CWORD (count $COMP_WORDS)
     end
 
-    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list focused keyboard list device list current bind list run none maximize fullscreen previous next move up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans auto_tile open window_to display rule list
+    set literals -h --help -v --version exit spawn -c --continuous -1 --1-line -s --socket output list toplevels modes create destroy workspace list set toplevel list focused keyboard list device list current bind list run none maximize fullscreen previous next move resize pin toggle_floating up down left right close swap_up swap_down swap_left swap_right half_up half_down half_left half_right tile tile_sans auto_tile open window_to display rule list
 
     set descrs
     set descrs[1] "show help"
@@ -102,33 +102,36 @@ function _awmsg
     set descrs[25] "focus the previous window"
     set descrs[26] "focus the next window"
     set descrs[27] "start an interactive move with the active window"
-    set descrs[28] "focus the window in the up direction"
-    set descrs[29] "focus the window in the down direction"
-    set descrs[30] "focus the window in the left direction"
-    set descrs[31] "focus the window in the right direction"
-    set descrs[32] "close the active window"
-    set descrs[33] "swap the active window with the window in the up direction"
-    set descrs[34] "swap the active window with the window in the down direction"
-    set descrs[35] "swap the active window with the window in the left direction"
-    set descrs[36] "swap the active window with the window in the right direction"
-    set descrs[37] "half the active window in the up direction"
-    set descrs[38] "half the active window in the down direction"
-    set descrs[39] "half the active window in the left direction"
-    set descrs[40] "half the active window in the right direction"
-    set descrs[41] "tile all windows in the active workspace"
-    set descrs[42] "tile all windows in the active workspace excluding the active one"
-    set descrs[43] "toggle automatic tiling for the active workspace"
-    set descrs[44] "focus workspace N"
-    set descrs[45] "move the active window to workspace N"
-    set descrs[46] "display key binding for name"
-    set descrs[47] "list windowrules"
-    set descr_literal_ids 1 2 3 4 5 6 7 8 9 10 11 12 14 15 16 17 18 20 21 23 24 26 28 29 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 59
-    set descr_ids 1 1 2 2 3 4 5 5 6 6 7 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
-    set regexes
+    set descrs[28] "start an interactive resize with the active window"
+    set descrs[29] "pin/unpin the active window"
+    set descrs[30] "toggle floating/tiling state for the active window"
+    set descrs[31] "focus the window in the up direction"
+    set descrs[32] "focus the window in the down direction"
+    set descrs[33] "focus the window in the left direction"
+    set descrs[34] "focus the window in the right direction"
+    set descrs[35] "close the active window"
+    set descrs[36] "swap the active window with the window in the up direction"
+    set descrs[37] "swap the active window with the window in the down direction"
+    set descrs[38] "swap the active window with the window in the left direction"
+    set descrs[39] "swap the active window with the window in the right direction"
+    set descrs[40] "half the active window in the up direction"
+    set descrs[41] "half the active window in the down direction"
+    set descrs[42] "half the active window in the left direction"
+    set descrs[43] "half the active window in the right direction"
+    set descrs[44] "tile all windows in the active workspace"
+    set descrs[45] "tile all windows in the active workspace excluding the active one"
+    set descrs[46] "toggle automatic tiling for the active workspace"
+    set descrs[47] "focus workspace N"
+    set descrs[48] "move the active window to workspace N"
+    set descrs[49] "display key binding for name"
+    set descrs[50] "list windowrules"
+    set descr_literal_ids 1 2 3 4 5 6 7 8 9 10 11 12 14 15 16 17 18 20 21 23 24 26 28 29 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 62
+    set descr_ids 1 1 2 2 3 4 5 5 6 6 7 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50
+    set regexes 
     set literal_transitions_inputs
-    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 25 27 30 58"
+    set literal_transitions_inputs[1] "1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 25 27 30 61"
     set literal_transitions_tos[1] "2 2 2 2 2 3 4 4 4 4 5 5 6 7 8 9 10 11 12"
-    set literal_transitions_inputs[4] "7 8 9 10 11 12 13 19 22 25 27 30 58"
+    set literal_transitions_inputs[4] "7 8 9 10 11 12 13 19 22 25 27 30 61"
     set literal_transitions_tos[4] "4 4 4 4 5 5 6 7 8 9 10 11 12"
     set literal_transitions_inputs[6] "14 15 16 17 18"
     set literal_transitions_tos[6] "2 2 2 3 3"
@@ -140,12 +143,12 @@ function _awmsg
     set literal_transitions_tos[9] 2
     set literal_transitions_inputs[10] "28 29"
     set literal_transitions_tos[10] "2 2"
-    set literal_transitions_inputs[11] "31 32 57"
+    set literal_transitions_inputs[11] "31 32 60"
     set literal_transitions_tos[11] "2 13 13"
-    set literal_transitions_inputs[12] 59
+    set literal_transitions_inputs[12] 62
     set literal_transitions_tos[12] 2
-    set literal_transitions_inputs[13] "5 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56"
-    set literal_transitions_tos[13] "2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3"
+    set literal_transitions_inputs[13] "5 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59"
+    set literal_transitions_tos[13] "2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3"
 
     set star_transitions_from 3
     set star_transitions_to 2
@@ -179,7 +182,7 @@ function _awmsg
     end
 
     set literal_froms_level_0 10 1 4 9 11 12 6 13 8 7
-    set literal_inputs_level_0 "28 29|1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 25 27 30 58|7 8 9 10 11 12 13 19 22 25 27 30 58|26|31 32 57|59|14 15 16 17 18|5 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56|23 24|20 21"
+    set literal_inputs_level_0 "28 29|1 2 3 4 5 6 7 8 9 10 11 12 13 19 22 25 27 30 61|7 8 9 10 11 12 13 19 22 25 27 30 61|26|31 32 60|62|14 15 16 17 18|5 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59|23 24|20 21"
     set command_froms_level_0 5
     set commands_level_0 "0"
 

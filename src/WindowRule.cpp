@@ -48,8 +48,26 @@ void WindowRule::apply(Toplevel *toplevel) {
                                       ? target_output->get_workspace(workspace)
                                       : target_output->get_active();
 
+    // determine if toplevel should be floating
+    bool should_be_floating = false;
+    switch (tiling_mode) {
+    case TILING_MODE_FLOATING:
+    case TILING_MODE_TILING:
+        should_be_floating = true;
+        break;
+    case TILING_MODE_AUTO:
+        should_be_floating = floating;
+        if (!should_be_floating)
+            should_be_floating = toplevel->should_be_floating();
+    default:
+        break;
+    }
+
+    // set toplevel floating state
+    toplevel->is_floating = should_be_floating;
+
     // set toplevel workspace
-    bool should_skip_auto_tile = floating;
+    bool should_skip_auto_tile = should_be_floating;
     if (toplevel_state)
         should_skip_auto_tile =
             should_skip_auto_tile ||

@@ -54,8 +54,33 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
     if (focus)
         toplevel->focus();
 
-    // automatically tile if auto_tile is enabled
-    if (auto_tile &&
+    // handle floating windows in auto-tile workspace
+    if (auto_tile && toplevel->is_floating) {
+        // if the window was hidden for auto-tile, show and position it
+        if (toplevel->scene_hidden_for_autotile) {
+            wlr_box usable_area = output->usable_area;
+            wlr_box output_box = output->layout_geometry;
+
+            int width = toplevel->geometry.width;
+            int height = toplevel->geometry.height;
+
+            // center within usable area
+            int32_t x =
+                output_box.x + usable_area.x + (usable_area.width - width) / 2;
+            int32_t y = output_box.y + usable_area.y +
+                        (usable_area.height - height) / 2;
+
+            // ensure position falls in bounds
+            x = std::max(x, output_box.x + usable_area.x);
+            y = std::max(y, output_box.y + usable_area.y);
+
+            toplevel->set_position_size(x, y, width, height);
+        }
+        return;
+    }
+
+    // automatically tile if auto_tile is enabled and toplevel is not floating
+    if (auto_tile && !toplevel->is_floating &&
         !(toplevel->geometry.width <= 1 && toplevel->geometry.height <= 1)) {
         if (bsp_tree) {
             TileMethod method = output->server->config->tiling.method;
@@ -65,7 +90,8 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
                 std::vector<Toplevel *> tls;
                 Toplevel *tl, *tmp;
                 wl_list_for_each_safe(tl, tmp, &toplevels,
-                                      link) if (!tl->fullscreen())
+                                      link) if (!tl->fullscreen() &&
+                                                !tl->is_floating)
                     tls.push_back(tl);
 
                 bsp_tree->rebuild_grid(tls);
@@ -153,8 +179,9 @@ void Workspace::close(Toplevel *toplevel) {
             std::vector<Toplevel *> tls;
             Toplevel *tl, *tmp;
             wl_list_for_each_safe(tl, tmp, &toplevels,
-                                  link) if (tl != toplevel && !tl->fullscreen())
-                tls.push_back(tl);
+                                  link) if (tl != toplevel &&
+                                            !tl->fullscreen() &&
+                                            !tl->is_floating) tls.push_back(tl);
 
             bsp_tree->rebuild_grid(tls);
         } else {
@@ -239,8 +266,9 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
             std::vector<Toplevel *> tls;
             Toplevel *tl, *tmp;
             wl_list_for_each_safe(tl, tmp, &toplevels,
-                                  link) if (tl != toplevel && !tl->fullscreen())
-                tls.push_back(tl);
+                                  link) if (tl != toplevel &&
+                                            !tl->fullscreen() &&
+                                            !tl->is_floating) tls.push_back(tl);
 
             bsp_tree->rebuild_grid(tls);
         } else {
@@ -285,6 +313,10 @@ void Workspace::set_hidden(const bool hidden) const {
 // swap the geometry of toplevel a and b
 void Workspace::swap(Toplevel *a, Toplevel *b) const {
     if (!a || !b)
+        return;
+
+    // prevent swapping between floating and tiled toplevels
+    if (a->is_floating != b->is_floating)
         return;
 
     if (auto_tile && bsp_tree) {
@@ -485,11 +517,11 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
 
     int toplevel_count = wl_list_length(&toplevels);
 
-    // do not tile fullscreen toplevels
+    // do not tile fullscreen or floating toplevels
     Toplevel *toplevel, *tmp;
     std::vector<Toplevel *> tiled;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
-        if (toplevel->fullscreen())
+        if (toplevel->fullscreen() || toplevel->is_floating)
             --toplevel_count;
         else
             tiled.push_back(toplevel);
@@ -714,7 +746,8 @@ void Workspace::toggle_auto_tile() {
             std::vector<Toplevel *> tls;
             Toplevel *toplevel, *tmp;
             wl_list_for_each_safe(toplevel, tmp, &toplevels,
-                                  link) if (!toplevel->fullscreen())
+                                  link) if (!toplevel->fullscreen() &&
+                                            !toplevel->is_floating)
                 tls.push_back(toplevel);
 
             if (method == TILE_GRID)

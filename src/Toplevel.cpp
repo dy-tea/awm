@@ -82,12 +82,12 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         } else {
             wlr_box output_box = output->layout_geometry;
 
-            int32_t x = output_box.x + (usable_area.width - width) / 2;
-            int32_t y = output_box.y + (usable_area.height - height) / 2;
+            int32_t x = output_box.x + usable_area.x + (usable_area.width - width) / 2;
+            int32_t y = output_box.y + usable_area.y + (usable_area.height - height) / 2;
 
             // ensure position falls in bounds
-            x = std::max(x, usable_area.x);
-            y = std::max(y, usable_area.y);
+            x = std::max(x, output_box.x + usable_area.x);
+            y = std::max(y, output_box.y + usable_area.y);
 
             // set position and size
             toplevel->set_position_size(x, y, width, height);
@@ -159,9 +159,9 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
             // center the surface to the focused output if zero
             if (!x)
-                x += area.x + (output->layout_geometry.width - width) / 2;
+                x = output->layout_geometry.x + area.x + (area.width - width) / 2;
             if (!y)
-                y += area.y + (output->layout_geometry.height - height) / 2;
+                y = output->layout_geometry.y + area.y + (area.height - height) / 2;
 
             // send a configure event
             wlr_xwayland_surface_configure(xwayland_surface, x, y, width,
@@ -193,12 +193,15 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     toplevel->create_foreign();
     toplevel->create_ext_foreign();
 
-    if (matching_rule)
+    if (matching_rule) {
         // apply window rule
         matching_rule->apply(toplevel);
-    else
+    } else {
+        // set floating state based on size constraints if no rule matches
+        toplevel->is_floating = toplevel->should_be_floating();
         // add toplevel to active workspace and focus it
         output->get_active()->add_toplevel(toplevel, true);
+    }
 
     // set app id for foreign toplevel
     if (std::string app_id = std::string(toplevel->get_app_id());
@@ -1311,4 +1314,38 @@ void Toplevel::close() {
     else if (xwayland_surface)
         wlr_xwayland_surface_close(xwayland_surface);
 #endif
+}
+
+// check if toplevel has size constraints (min or max size set)
+bool Toplevel::has_size_constraints() const {
+    if (xdg_toplevel) {
+        bool has_min = xdg_toplevel->current.min_width > 0 ||
+                       xdg_toplevel->current.min_height > 0;
+        bool has_max = xdg_toplevel->current.max_width > 0 ||
+                       xdg_toplevel->current.max_height > 0;
+        return has_min || has_max;
+    }
+    return false;
+}
+
+// determine if this toplevel should be floating based on config and constraints
+bool Toplevel::should_be_floating() const {
+    if (!xdg_toplevel)
+        return false;
+
+    const auto &tiling_config = server->config->tiling;
+
+    bool has_min = xdg_toplevel->current.min_width > 0 ||
+                   xdg_toplevel->current.min_height > 0;
+    bool has_max = xdg_toplevel->current.max_width > 0 ||
+                   xdg_toplevel->current.max_height > 0;
+
+    if (tiling_config.float_on_both && has_min && has_max)
+        return true;
+    if (tiling_config.float_on_min_size && has_min)
+        return true;
+    if (tiling_config.float_on_max_size && has_max)
+        return true;
+
+    return false;
 }

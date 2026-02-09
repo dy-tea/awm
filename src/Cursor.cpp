@@ -456,6 +456,10 @@ void Cursor::update_swap_indicator() {
         if (toplevel->fullscreen())
             continue;
 
+        // prevent swapping between floating and tiled toplevels
+        if (toplevel->is_floating != grabbed->is_floating)
+            continue;
+
         wlr_box geo = toplevel->geometry;
         if (cursor->x >= geo.x && cursor->x < geo.x + geo.width &&
             cursor->y >= geo.y && cursor->y < geo.y + geo.height) {

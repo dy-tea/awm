@@ -71,6 +71,9 @@ decorations = true
 #   "bsp"     - dynamic binary space partitioning (manual splits)
 method = "dwindle"
 auto_tile = false # automatically tile windows when they are opened/closed
+float_on_min_size = false # float windows with minimum size constraints
+float_on_max_size = false # float windows with maximum size constraints
+float_on_both = false     # float windows with both min and max size constraints
 
 [binds] # default binds which can be overwitten in your config
 exit = "Alt Escape"                      # exit the window manager
@@ -94,6 +97,7 @@ window.half.down = "Alt Down"            # take up the lower half of the screen
 window.half.left = "Alt Left"            # take up the left half of the screen
 window.half.right = "Alt Right"          # take up the right half of the screen
 window.close = "Alt q"                   # close the active window
+window.toggle_floating = "Alt Shift F"   # toggle floating/tiling for the active window
 workspace.tile = "Alt t"                 # tile the active workspace
 workspace.tile_sans = "Alt Shift T"      # tile the active workspace without the active window
 workspace.auto_tile = "Alt a"            # toggle automatic tiling for the active workspace
@@ -157,3 +161,13 @@ state = "maximized" # maximized, fullscreen
 [[windowrules]]
 class = "org.gnome.gedit"
 pinned = true
+
+# Example: force a window to always be floating regardless of size constraints
+# [[windowrules]]
+# class = "mpv"
+# tiling_mode = "floating"  # "auto", "floating", or "tiling"
+
+# Example: force a window to always be tiling even with size constraints
+# [[windowrules]]
+# class = "Alacritty"
+# tiling_mode = "tiling"

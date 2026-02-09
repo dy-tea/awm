@@ -14,6 +14,7 @@
 #include "PointerConstraint.h"
 #include "Seat.h"
 #include "Toplevel.h"
+#include "Transaction.h"
 #include "Workspace.h"
 #include "WorkspaceManager.h"
 #include "wlr.h"
@@ -52,6 +53,7 @@ struct Server {
 
     OutputManager *output_manager;
     WorkspaceManager *workspace_manager;
+    TransactionManager *transaction_manager;
 
     struct {
         wlr_scene_tree *background;

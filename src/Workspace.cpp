@@ -3,10 +3,11 @@
 #include "Config.h"
 #include "IPC.h"
 #include "Output.h"
-#include "Seat.h"
 #include "Server.h"
 #include "Toplevel.h"
+#include "Transaction.h"
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -319,6 +320,9 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
     if (a->is_floating != b->is_floating)
         return;
 
+    // Use transaction for atomic swap
+    [[maybe_unused]] Transaction *txn = output->server->transaction_manager->begin();
+
     if (auto_tile && bsp_tree) {
         BSPNode *node_a = bsp_tree->find_node(a);
         BSPNode *node_b = bsp_tree->find_node(b);
@@ -329,6 +333,8 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
 
             a->set_position_size(node_b->geometry);
             b->set_position_size(node_a->geometry);
+
+            output->server->transaction_manager->commit();
             return;
         }
     }
@@ -340,6 +346,8 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
     // swap the geometry
     a->set_position_size(geo_b);
     b->set_position_size(geo_a);
+
+    output->server->transaction_manager->commit();
 }
 
 // swap the active toplevel geometry with other toplevel geometry
@@ -541,6 +549,9 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
     if (!toplevel_count)
         return;
 
+    // start transaction for atomic tile updates
+    output->server->transaction_manager->begin();
+
     // tile according to tiling method
     switch (output->server->config->tiling.method) {
     case TILE_GRID: {
@@ -720,6 +731,9 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
     default:
         break;
     }
+
+    // commit transaction
+    output->server->transaction_manager->commit();
 }
 
 // no argument tile means tile all toplevels

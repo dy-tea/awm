@@ -592,6 +592,9 @@ Server::Server(Config *config) : config(config) {
     // workspace manager
     workspace_manager = new WorkspaceManager(this);
 
+    // transaction manager
+    transaction_manager = new TransactionManager(this);
+
     // scene
     scene = wlr_scene_create();
     scene_layout =
@@ -1389,6 +1392,7 @@ Server::~Server() {
 
     delete output_manager;
     delete workspace_manager;
+    delete transaction_manager;
     delete seat;
     delete cursor;
 

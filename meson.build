@@ -136,6 +136,7 @@ executable(
     'src' / 'InputMethodPopup.cpp',
     'src' / 'TearingController.cpp',
     'src' / 'ActivationToken.cpp',
+    'src' / 'Transaction.cpp',
     protocol_sources,
   ],
   include_directories: include,

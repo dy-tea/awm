@@ -1,5 +1,7 @@
 #include "BSPTree.h"
+#include "Server.h"
 #include "Toplevel.h"
+#include "Transaction.h"
 #include "Workspace.h"
 #include <algorithm>
 #include <functional>
@@ -202,8 +204,14 @@ void BSPTree::apply_layout(const wlr_box &bounds) {
     if (!root)
         return;
 
+    // start transaction for atomic updates
+    workspace->output->server->transaction_manager->begin();
+
     calculate_layout(root.get(), bounds);
     apply_geometries(root.get());
+
+    // Commit the transaction to apply all changes atomically
+    workspace->output->server->transaction_manager->commit();
 }
 
 BSPNode *BSPTree::find_node(Toplevel *toplevel) {

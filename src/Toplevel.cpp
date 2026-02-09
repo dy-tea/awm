@@ -82,8 +82,10 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
         } else {
             wlr_box output_box = output->layout_geometry;
 
-            int32_t x = output_box.x + usable_area.x + (usable_area.width - width) / 2;
-            int32_t y = output_box.y + usable_area.y + (usable_area.height - height) / 2;
+            int32_t x =
+                output_box.x + usable_area.x + (usable_area.width - width) / 2;
+            int32_t y = output_box.y + usable_area.y +
+                        (usable_area.height - height) / 2;
 
             // ensure position falls in bounds
             x = std::max(x, output_box.x + usable_area.x);
@@ -114,12 +116,21 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
             if (!xwayland_surface->surface)
                 return;
 
+            // commit if part of transaction
+            if (toplevel->in_transaction) {
+                Transaction *txn =
+                    toplevel->server->transaction_manager->current();
+                if (txn && txn->contains(toplevel))
+                    txn->handle_commit(toplevel);
+            }
+
             wlr_surface_state *state = &xwayland_surface->surface->current;
             wlr_box *current = &toplevel->geometry;
 
             // update size if state differs
-            if (current->width != state->width ||
-                current->height != state->height) {
+            if (!toplevel->in_transaction &&
+                (current->width != state->width ||
+                 current->height != state->height)) {
                 current->width = state->width;
                 current->height = state->height;
                 toplevel->set_position_size(*current);
@@ -159,9 +170,11 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
             // center the surface to the focused output if zero
             if (!x)
-                x = output->layout_geometry.x + area.x + (area.width - width) / 2;
+                x = output->layout_geometry.x + area.x +
+                    (area.width - width) / 2;
             if (!y)
-                y = output->layout_geometry.y + area.y + (area.height - height) / 2;
+                y = output->layout_geometry.y + area.y +
+                    (area.height - height) / 2;
 
             // send a configure event
             wlr_xwayland_surface_configure(xwayland_surface, x, y, width,
@@ -222,6 +235,12 @@ void Toplevel::unmap_notify(wl_listener *listener,
                             [[maybe_unused]] void *data) {
     Toplevel *toplevel = wl_container_of(listener, toplevel, unmap);
     Server *server = toplevel->server;
+
+    // remove from any active transaction
+    if (toplevel->in_transaction && server->transaction_manager) {
+        server->transaction_manager->remove_toplevel(toplevel);
+        toplevel->in_transaction = false;
+    }
 
     // deactivate
     if (toplevel == server->seat->grabbed_toplevel)
@@ -297,6 +316,13 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
                     WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE |
                     WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE);
         }
+
+        // handle commit if part of transaction
+        if (toplevel->in_transaction) {
+            Transaction *txn = toplevel->server->transaction_manager->current();
+            if (txn && txn->contains(toplevel))
+                txn->handle_commit(toplevel);
+        }
     };
     wl_signal_add(&xdg_toplevel->base->surface->events.commit, &commit);
 
@@ -313,6 +339,10 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
     // xdg_toplevel_destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
+        if (toplevel->in_transaction && toplevel->server->transaction_manager) {
+            toplevel->server->transaction_manager->remove_toplevel(toplevel);
+            toplevel->in_transaction = false;
+        }
         delete toplevel;
     };
     wl_signal_add(&xdg_toplevel->events.destroy, &destroy);
@@ -479,6 +509,10 @@ Toplevel::Toplevel(Server *server, wlr_xwayland_surface *xwayland_surface)
     // destroy
     destroy.notify = [](wl_listener *listener, [[maybe_unused]] void *data) {
         Toplevel *toplevel = wl_container_of(listener, toplevel, destroy);
+        if (toplevel->in_transaction && toplevel->server->transaction_manager) {
+            toplevel->server->transaction_manager->remove_toplevel(toplevel);
+            toplevel->in_transaction = false;
+        }
         delete toplevel;
     };
     wl_signal_add(&xwayland_surface->events.destroy, &destroy);
@@ -812,6 +846,12 @@ void Toplevel::begin_interactive(const CursorMode mode, const uint32_t edges) {
 
 // set the position and size of a toplevel, send a configure
 void Toplevel::set_position_size(double x, double y, int width, int height) {
+    if (Transaction *txn = server->transaction_manager->current()) {
+        txn->add_change(this, static_cast<int>(x), static_cast<int>(y), width,
+                        height);
+        return;
+    }
+
     // xwayland surfaces can call fullscreen and maximize when unmapped so this
     // check is necessary
 #ifdef XWAYLAND

@@ -80,6 +80,9 @@ struct Toplevel {
     wlr_box geometry{};
     wlr_box saved_geometry{};
 
+    bool in_transaction{false};
+    wlr_box pending_transaction_geometry{};
+
     std::string tag{};
 
     Toplevel(Server *server, wlr_xdg_toplevel *wlr_xdg_toplevel);

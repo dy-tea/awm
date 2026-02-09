@@ -25,8 +25,8 @@ struct Workspace {
     void close_active();
     bool contains(const Toplevel *toplevel) const;
     bool move_to(Toplevel *toplevel, Workspace *workspace);
-    void swap(Toplevel *a, Toplevel *b) const;
-    void swap(Toplevel *other) const;
+    void swap(Toplevel *a, Toplevel *b);
+    void swap(Toplevel *other);
     Toplevel *in_direction(wlr_direction direction) const;
     void set_hidden(bool hidden) const;
     void set_half_in_direction(Toplevel *toplevel, wlr_direction direction);

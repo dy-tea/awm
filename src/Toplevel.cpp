@@ -1180,48 +1180,35 @@ void Toplevel::set_maximized(const bool maximized) {
 
         // re-tile remaining windows if in auto-tile workspace
         if (workspace && workspace->auto_tile && workspace->bsp_tree) {
+            // cancel any pending layout operations
+            if (workspace->pending_layout_idle) {
+                wl_event_source_remove(workspace->pending_layout_idle);
+                workspace->pending_layout_idle = nullptr;
+            }
+
             // remove this toplevel from BSP tree
             workspace->bsp_tree->remove(this);
 
-            // apply layout to remaining toplevels
-            if (workspace->pending_layout_idle)
-                wl_event_source_remove(workspace->pending_layout_idle);
-
-            workspace->pending_layout_idle = wl_event_loop_add_idle(
-                wl_display_get_event_loop(server->display),
-                [](void *data) {
-                    Workspace *ws = static_cast<Workspace *>(data);
-                    ws->pending_layout_idle = nullptr;
-                    if (ws->bsp_tree)
-                        ws->bsp_tree->apply_layout(ws->output->usable_area);
-                },
-                workspace);
+            // immediately apply layout synchronously instead of using idle callback
+            workspace->bsp_tree->apply_layout(workspace->output->usable_area);
         }
     } else {
         // check if we need to handle auto-tiling
         bool should_auto_tile = workspace && workspace->auto_tile;
 
         if (should_auto_tile && workspace->bsp_tree) {
+            // cancel any pending layout operations
+            if (workspace->pending_layout_idle) {
+                wl_event_source_remove(workspace->pending_layout_idle);
+                workspace->pending_layout_idle = nullptr;
+            }
+
             // re-insert into BSP tree if it's not already there
             if (!workspace->bsp_tree->find_node(this))
                 workspace->bsp_tree->insert(this);
 
-            // apply BSP tree layout
-            wlr_box new_geometry;
-            if (workspace->bsp_tree->get_toplevel_geometry(
-                    this, output->usable_area, new_geometry)) {
-                set_position_size(new_geometry);
-            } else {
-                // fallback to saved geometry if BSP tree fails
-                if (saved_geometry.width && saved_geometry.height)
-                    set_position_size(saved_geometry.x, saved_geometry.y,
-                                      saved_geometry.width,
-                                      saved_geometry.height);
-                else
-                    set_position_size(output_box.x, output_box.y,
-                                      output_box.width / 2,
-                                      output_box.height / 2);
-            }
+            // immediately apply layout synchronously
+            workspace->bsp_tree->apply_layout(workspace->output->usable_area);
         } else {
             // handles edge case where toplevel starts maximized
             if (saved_geometry.width && saved_geometry.height)

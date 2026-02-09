@@ -81,14 +81,33 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
     }
 
     // automatically tile if auto_tile is enabled and toplevel is not floating
-    if (auto_tile && !toplevel->is_floating && !toplevel->fullscreen() &&
-        !toplevel->maximized() &&
+    if (auto_tile && !toplevel->is_floating &&
+        !toplevel->fullscreen() && !toplevel->maximized() &&
         !(toplevel->geometry.width <= 1 && toplevel->geometry.height <= 1)) {
-        // unmaximize any maximized toplevels when adding a new one
-        Toplevel *tl, *tmp;
-        wl_list_for_each_safe(tl, tmp, &toplevels,
-                              link) if (tl != toplevel && tl->maximized())
-            tl->set_maximized(false);
+        // cancel any pending layout operations before modifying tree
+        if (pending_layout_idle) {
+            wl_event_source_remove(pending_layout_idle);
+            pending_layout_idle = nullptr;
+        }
+
+        // manually unmaximize any maximized toplevels before tree operations
+        // to avoid them trying to insert themselves into the tree
+        Toplevel *existing_tl, *existing_tmp;
+        wl_list_for_each_safe(existing_tl, existing_tmp, &toplevels, link) {
+            if (existing_tl != toplevel && existing_tl->maximized()) {
+                // directly set maximized state without triggering BSP insertion
+#ifdef XWAYLAND
+                if (existing_tl->xdg_toplevel)
+#endif
+                    wlr_xdg_toplevel_set_maximized(existing_tl->xdg_toplevel, false);
+#ifdef XWAYLAND
+                else {
+                    wlr_xwayland_surface_set_maximized(existing_tl->xwayland_surface, false, false);
+                    existing_tl->xwayland_maximized = false;
+                }
+#endif
+            }
+        }
 
         if (bsp_tree) {
             TileMethod method = output->server->config->tiling.method;
@@ -117,20 +136,8 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
                                                 new_geometry))
                 toplevel->set_position_size(new_geometry);
 
-            if (pending_layout_idle) {
-                wl_event_source_remove(pending_layout_idle);
-            }
-
-            pending_layout_idle = wl_event_loop_add_idle(
-                wl_display_get_event_loop(output->server->display),
-                [](void *data) {
-                    Workspace *workspace = static_cast<Workspace *>(data);
-                    workspace->pending_layout_idle = nullptr;
-                    if (workspace->bsp_tree)
-                        workspace->bsp_tree->apply_layout(
-                            workspace->output->usable_area);
-                },
-                this);
+            // apply layout synchronously to avoid race conditions
+            bsp_tree->apply_layout(output->usable_area);
         } else
             tile();
     }
@@ -321,7 +328,7 @@ void Workspace::set_hidden(const bool hidden) const {
 }
 
 // swap the geometry of toplevel a and b
-void Workspace::swap(Toplevel *a, Toplevel *b) const {
+void Workspace::swap(Toplevel *a, Toplevel *b) {
     if (!a || !b)
         return;
 
@@ -329,10 +336,49 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
     if (a->is_floating != b->is_floating)
         return;
 
+    // manually unmaximize any maximized toplevels before swapping
+    // to avoid them trying to reposition themselves before the swap completes
+    if (a->maximized()) {
+#ifdef XWAYLAND
+        if (a->xdg_toplevel)
+#endif
+            wlr_xdg_toplevel_set_maximized(a->xdg_toplevel, false);
+#ifdef XWAYLAND
+        else {
+            wlr_xwayland_surface_set_maximized(a->xwayland_surface, false, false);
+            a->xwayland_maximized = false;
+        }
+#endif
+    }
+    if (b->maximized()) {
+#ifdef XWAYLAND
+        if (b->xdg_toplevel)
+#endif
+            wlr_xdg_toplevel_set_maximized(b->xdg_toplevel, false);
+#ifdef XWAYLAND
+        else {
+            wlr_xwayland_surface_set_maximized(b->xwayland_surface, false, false);
+            b->xwayland_maximized = false;
+        }
+#endif
+    }
+
+    // cancel any pending layout operations to avoid conflicts
+    if (pending_layout_idle) {
+        wl_event_source_remove(pending_layout_idle);
+        pending_layout_idle = nullptr;
+    }
+
     // Use transaction for atomic swap
     output->server->transaction_manager->begin();
 
     if (auto_tile && bsp_tree) {
+        // ensure both toplevels are in the BSP tree before swapping
+        if (!bsp_tree->find_node(a))
+            bsp_tree->insert(a);
+        if (!bsp_tree->find_node(b))
+            bsp_tree->insert(b);
+
         BSPNode *node_a = bsp_tree->find_node(a);
         BSPNode *node_b = bsp_tree->find_node(b);
 
@@ -360,7 +406,7 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
 }
 
 // swap the active toplevel geometry with other toplevel geometry
-void Workspace::swap(Toplevel *other) const { swap(active_toplevel, other); }
+void Workspace::swap(Toplevel *other) { swap(active_toplevel, other); }
 
 // get the toplevel relative to the active one in the specified direction
 // returns nullptr if no toplevel matches query

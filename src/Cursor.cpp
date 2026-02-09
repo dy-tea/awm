@@ -422,10 +422,9 @@ void Cursor::reset_mode() {
                 source_workspace->auto_tile && !source_workspace->bsp_tree)
                 source_workspace->tile();
         } else if (cursor_mode == CURSORMODE_RESIZE) {
-            if (current_workspace && current_workspace->auto_tile &&
-                !current_workspace->bsp_tree)
-                current_workspace->adjust_neighbors_on_resize(
-                    grabbed, resize_original_geo);
+            // BSP mode: ratios were already adjusted during interactive resize
+            // Non-BSP mode: configure events were already sent during interactive resize
+            // Nothing to do here for either mode
         }
     }
 
@@ -695,7 +694,7 @@ void Cursor::process_resize() {
             toplevel, resize_edges, static_cast<int>(cursor->x),
             static_cast<int>(cursor->y), workspace->output->usable_area);
 
-        workspace->bsp_tree->apply_layout(workspace->output->usable_area);
+        workspace->bsp_tree->apply_layout(workspace->output->usable_area, false);
 
         // notify clients
         if (IPC *ipc = server->ipc)

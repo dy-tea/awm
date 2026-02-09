@@ -895,7 +895,6 @@ void Workspace::adjust_neighbors_on_resize(Toplevel *resized,
         if (right_delta != 0 && std::abs(geo.x - (old_geo.x + old_geo.width)) <
                                     ADJACENT_THRESHOLD) {
             geo.x += right_delta;
-            geo.width -= right_delta;
             modified = true;
         }
         // left
@@ -909,7 +908,6 @@ void Workspace::adjust_neighbors_on_resize(Toplevel *resized,
             std::abs(geo.y - (old_geo.y + old_geo.height)) <
                 ADJACENT_THRESHOLD) {
             geo.y += bottom_delta;
-            geo.height -= bottom_delta;
             modified = true;
         }
         // top

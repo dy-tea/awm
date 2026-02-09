@@ -42,7 +42,7 @@ struct BSPTree {
     void insert(Toplevel *toplevel);
     void insert_at(Toplevel *toplevel, Toplevel *target);
     void remove(Toplevel *toplevel);
-    void apply_layout(const wlr_box &bounds);
+    void apply_layout(const wlr_box &bounds, bool use_transaction = true);
     BSPNode *find_node(Toplevel *toplevel);
     bool get_toplevel_geometry(Toplevel *toplevel, const wlr_box &bounds,
                                wlr_box &out_geometry);
@@ -60,7 +60,7 @@ struct BSPTree {
 
   private:
     void calculate_layout(BSPNode *node, const wlr_box &bounds);
-    void apply_geometries(BSPNode *node);
+    void apply_geometries(BSPNode *node, bool immediate = false);
     void dump_tree(BSPNode *node, int depth);
     SplitType determine_split_type(BSPNode *node);
     BSPNode *find_resize_sibling(BSPNode *node);

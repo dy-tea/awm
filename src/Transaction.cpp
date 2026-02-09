@@ -71,6 +71,11 @@ void Transaction::commit() {
             height -= deco_height;
         }
 
+        if (width <= 0 || height <= 0) {
+            waiting_for_commit.erase(toplevel);
+            continue;
+        }
+
 #ifdef XWAYLAND
         if (toplevel->xdg_toplevel) {
 #endif

@@ -200,18 +200,18 @@ void BSPTree::remove(Toplevel *toplevel) {
     }
 }
 
-void BSPTree::apply_layout(const wlr_box &bounds) {
+void BSPTree::apply_layout(const wlr_box &bounds, bool use_transaction) {
     if (!root)
         return;
 
-    // start transaction for atomic updates
-    workspace->output->server->transaction_manager->begin();
+    if (use_transaction)
+        workspace->output->server->transaction_manager->begin();
 
     calculate_layout(root.get(), bounds);
-    apply_geometries(root.get());
+    apply_geometries(root.get(), !use_transaction);
 
-    // Commit the transaction to apply all changes atomically
-    workspace->output->server->transaction_manager->commit();
+    if (use_transaction)
+        workspace->output->server->transaction_manager->commit();
 }
 
 BSPNode *BSPTree::find_node(Toplevel *toplevel) {
@@ -492,20 +492,62 @@ void BSPTree::calculate_layout(BSPNode *node, const wlr_box &bounds) {
         calculate_layout(node->second_child.get(), second_bounds);
 }
 
-void BSPTree::apply_geometries(BSPNode *node) {
+void BSPTree::apply_geometries(BSPNode *node, bool immediate) {
     if (!node)
         return;
 
     if (node->is_leaf() && node->toplevel) {
-        if (!node->toplevel->maximized() && !node->toplevel->fullscreen())
-            node->toplevel->set_position_size(node->geometry);
+        if (!node->toplevel->maximized() && !node->toplevel->fullscreen()) {
+            if (immediate) {
+                Toplevel *tl = node->toplevel;
+                wlr_box &geo = node->geometry;
+
+                tl->geometry = geo;
+
+                int x = geo.x;
+                int y = geo.y;
+
+                // remove decoration height from window height
+                int width = geo.width;
+                int height = geo.height;
+
+                // apply decoration offset if decoration is visible
+                if (tl->decoration &&
+                    tl->decoration_mode ==
+                        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE &&
+                    tl->decoration->visible) {
+                    int deco_height = 30;
+                    y += deco_height;
+                    height -= deco_height;
+                }
+
+                wlr_scene_node_set_position(&tl->scene_tree->node, x, y);
+
+#ifdef XWAYLAND
+                if (tl->xdg_toplevel) {
+#endif
+                    wlr_xdg_toplevel_set_size(tl->xdg_toplevel, width, height);
+                    wlr_xdg_surface_schedule_configure(tl->xdg_toplevel->base);
+#ifdef XWAYLAND
+                } else if (tl->xwayland_surface) {
+                    wlr_xwayland_surface_configure(tl->xwayland_surface, geo.x,
+                                                   geo.y, width, height);
+                }
+#endif
+
+                if (tl->decoration)
+                    tl->decoration->update_titlebar(geo.width);
+            } else {
+                node->toplevel->set_position_size(node->geometry);
+            }
+        }
         return;
     }
 
     if (node->first_child)
-        apply_geometries(node->first_child.get());
+        apply_geometries(node->first_child.get(), immediate);
     if (node->second_child)
-        apply_geometries(node->second_child.get());
+        apply_geometries(node->second_child.get(), immediate);
 }
 
 void BSPTree::dump_tree(BSPNode *node, int depth) {

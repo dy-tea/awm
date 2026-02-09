@@ -9,7 +9,6 @@
 #include "Server.h"
 #include "WindowRule.h"
 #include "Workspace.h"
-#include "wlr/types/wlr_xdg_decoration_v1.h"
 
 void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
     // on map or display
@@ -1143,7 +1142,8 @@ void Toplevel::set_maximized(const bool maximized) {
     // get output from toplevel's current workspace, fallback to
     // focused output
     const Output *output = nullptr;
-    if (Workspace *workspace = server->get_workspace(this))
+    Workspace *workspace = server->get_workspace(this);
+    if (workspace)
         output = workspace->output;
     else
         output = server->focused_output();
@@ -1177,16 +1177,62 @@ void Toplevel::set_maximized(const bool maximized) {
         set_position_size(usable_area.x + output_box.x,
                           usable_area.y + output_box.y, usable_area.width,
                           usable_area.height);
+
+        // re-tile remaining windows if in auto-tile workspace
+        if (workspace && workspace->auto_tile && workspace->bsp_tree) {
+            // remove this toplevel from BSP tree
+            workspace->bsp_tree->remove(this);
+
+            // apply layout to remaining toplevels
+            if (workspace->pending_layout_idle)
+                wl_event_source_remove(workspace->pending_layout_idle);
+
+            workspace->pending_layout_idle = wl_event_loop_add_idle(
+                wl_display_get_event_loop(server->display),
+                [](void *data) {
+                    Workspace *ws = static_cast<Workspace *>(data);
+                    ws->pending_layout_idle = nullptr;
+                    if (ws->bsp_tree)
+                        ws->bsp_tree->apply_layout(ws->output->usable_area);
+                },
+                workspace);
+        }
     } else {
-        // handles edge case where toplevel starts maximized
-        if (saved_geometry.width && saved_geometry.height)
-            // set back to saved geometry
-            set_position_size(saved_geometry.x, saved_geometry.y,
-                              saved_geometry.width, saved_geometry.height);
-        else
-            // use half of output geometry
-            set_position_size(output_box.x, output_box.y, output_box.width / 2,
-                              output_box.height / 2);
+        // check if we need to handle auto-tiling
+        bool should_auto_tile = workspace && workspace->auto_tile;
+
+        if (should_auto_tile && workspace->bsp_tree) {
+            // re-insert into BSP tree if it's not already there
+            if (!workspace->bsp_tree->find_node(this))
+                workspace->bsp_tree->insert(this);
+
+            // apply BSP tree layout
+            wlr_box new_geometry;
+            if (workspace->bsp_tree->get_toplevel_geometry(
+                    this, output->usable_area, new_geometry)) {
+                set_position_size(new_geometry);
+            } else {
+                // fallback to saved geometry if BSP tree fails
+                if (saved_geometry.width && saved_geometry.height)
+                    set_position_size(saved_geometry.x, saved_geometry.y,
+                                      saved_geometry.width,
+                                      saved_geometry.height);
+                else
+                    set_position_size(output_box.x, output_box.y,
+                                      output_box.width / 2,
+                                      output_box.height / 2);
+            }
+        } else {
+            // handles edge case where toplevel starts maximized
+            if (saved_geometry.width && saved_geometry.height)
+                // set back to saved geometry
+                set_position_size(saved_geometry.x, saved_geometry.y,
+                                  saved_geometry.width, saved_geometry.height);
+            else
+                // use half of output geometry
+                set_position_size(output_box.x, output_box.y,
+                                  output_box.width / 2, output_box.height / 2);
+        }
     }
 }
 

@@ -81,8 +81,15 @@ void Workspace::add_toplevel(Toplevel *toplevel, const bool focus) {
     }
 
     // automatically tile if auto_tile is enabled and toplevel is not floating
-    if (auto_tile && !toplevel->is_floating &&
+    if (auto_tile && !toplevel->is_floating && !toplevel->fullscreen() &&
+        !toplevel->maximized() &&
         !(toplevel->geometry.width <= 1 && toplevel->geometry.height <= 1)) {
+        // unmaximize any maximized toplevels when adding a new one
+        Toplevel *tl, *tmp;
+        wl_list_for_each_safe(tl, tmp, &toplevels,
+                              link) if (tl != toplevel && tl->maximized())
+            tl->set_maximized(false);
+
         if (bsp_tree) {
             TileMethod method = output->server->config->tiling.method;
 
@@ -182,6 +189,7 @@ void Workspace::close(Toplevel *toplevel) {
             wl_list_for_each_safe(tl, tmp, &toplevels,
                                   link) if (tl != toplevel &&
                                             !tl->fullscreen() &&
+                                            !tl->maximized() &&
                                             !tl->is_floating) tls.push_back(tl);
 
             bsp_tree->rebuild_grid(tls);
@@ -269,6 +277,7 @@ bool Workspace::move_to(Toplevel *toplevel, Workspace *workspace) {
             wl_list_for_each_safe(tl, tmp, &toplevels,
                                   link) if (tl != toplevel &&
                                             !tl->fullscreen() &&
+                                            !tl->maximized() &&
                                             !tl->is_floating) tls.push_back(tl);
 
             bsp_tree->rebuild_grid(tls);
@@ -321,7 +330,7 @@ void Workspace::swap(Toplevel *a, Toplevel *b) const {
         return;
 
     // Use transaction for atomic swap
-    [[maybe_unused]] Transaction *txn = output->server->transaction_manager->begin();
+    output->server->transaction_manager->begin();
 
     if (auto_tile && bsp_tree) {
         BSPNode *node_a = bsp_tree->find_node(a);
@@ -525,11 +534,12 @@ void Workspace::tile(std::vector<Toplevel *> sans_toplevels) {
 
     int toplevel_count = wl_list_length(&toplevels);
 
-    // do not tile fullscreen or floating toplevels
+    // do not tile fullscreen, maximized, or floating toplevels
     Toplevel *toplevel, *tmp;
     std::vector<Toplevel *> tiled;
     wl_list_for_each_safe(toplevel, tmp, &toplevels, link) {
-        if (toplevel->fullscreen() || toplevel->is_floating)
+        if (toplevel->fullscreen() || toplevel->maximized() ||
+            toplevel->is_floating)
             --toplevel_count;
         else
             tiled.push_back(toplevel);
@@ -759,10 +769,10 @@ void Workspace::toggle_auto_tile() {
 
             std::vector<Toplevel *> tls;
             Toplevel *toplevel, *tmp;
-            wl_list_for_each_safe(toplevel, tmp, &toplevels,
-                                  link) if (!toplevel->fullscreen() &&
-                                            !toplevel->is_floating)
-                tls.push_back(toplevel);
+            wl_list_for_each_safe(
+                toplevel, tmp, &toplevels,
+                link) if (!toplevel->fullscreen() && !toplevel->maximized() &&
+                          !toplevel->is_floating) tls.push_back(toplevel);
 
             if (method == TILE_GRID)
                 bsp_tree->rebuild_grid(tls);

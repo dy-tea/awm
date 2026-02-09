@@ -258,7 +258,7 @@ void BSPTree::rebuild(std::vector<Toplevel *> toplevels) {
     clear();
 
     for (Toplevel *tl : toplevels)
-        if (tl && !tl->fullscreen())
+        if (tl && !tl->fullscreen() && !tl->maximized())
             insert(tl);
 }
 
@@ -268,10 +268,10 @@ void BSPTree::rebuild_grid(std::vector<Toplevel *> toplevels) {
     if (toplevels.empty())
         return;
 
-    // filter out fullscreen toplevels
+    // filter out fullscreen and maximized toplevels
     std::vector<Toplevel *> tiled;
     for (Toplevel *tl : toplevels)
-        if (tl && !tl->fullscreen())
+        if (tl && !tl->fullscreen() && !tl->maximized())
             tiled.push_back(tl);
 
     if (tiled.empty())
@@ -359,10 +359,10 @@ void BSPTree::rebuild_dwindle(std::vector<Toplevel *> toplevels) {
     if (toplevels.empty())
         return;
 
-    // filter out fullscreen toplevels
+    // filter out fullscreen and maximized toplevels
     std::vector<Toplevel *> tiled;
     for (Toplevel *tl : toplevels)
-        if (tl && !tl->fullscreen())
+        if (tl && !tl->fullscreen() && !tl->maximized())
             tiled.push_back(tl);
 
     if (tiled.empty())

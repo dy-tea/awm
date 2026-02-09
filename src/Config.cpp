@@ -112,6 +112,7 @@ std::optional<T> map_option(const std::string &name,
 
 Config::Config()
     : path(""), last_write_time(std::filesystem::file_time_type::min()) {
+    binds = {Bind{BIND_EXIT, WLR_MODIFIER_ALT, XKB_KEY_Escape}};
     notify_send("Config", "%s",
                 "no config loaded, press Alt+Escape to exit awm");
 }

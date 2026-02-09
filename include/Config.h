@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Toml.h"
 #include "WindowRule.h"
-#include "tomlcpp.hpp"
 #include "wlr.h"
 #include <filesystem>
 #include <vector>
@@ -199,7 +199,7 @@ struct Config {
     explicit Config(const std::string &path);
     ~Config();
 
-    void set_bind(const std::string &name, toml::Table *source,
+    void set_bind(const std::string &name, const toml::Table *source,
                   const BindName target);
     bool load();
     void update(const struct Server *server);

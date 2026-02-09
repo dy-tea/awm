@@ -50,7 +50,6 @@ foreach protocol : protocols
 endforeach
 
 # dependencies
-tomlcpp_dep = dependency('tomlcpp', fallback: ['tomlcpp', 'tomlcpp_dep'])
 json = dependency('nlohmann_json')
 
 # wlroots
@@ -62,13 +61,32 @@ include = include_directories(
   'include',
 )
 
+# backward-cpp
+backward_option = get_option('backward')
+if backward_option
+  backward = dependency('backward-cpp', fallback: ['backward-cpp', 'backward_dep'])
+  backward_interface = dependency('', fallback: ['backward-cpp', 'backward_interface_dep'], required: false)
+  add_project_arguments('-DBACKWARD', language: 'cpp')
+endif
+
+toml_c_lib = static_library(
+  'toml',
+  'src' / 'toml.c',
+  c_args: ['-w'],
+  include_directories: include,
+)
+toml_dep = declare_dependency(
+  link_with: toml_c_lib,
+  include_directories: include,
+)
+
 # libs
 libs = [
   dependency('wayland-server'),
   dependency('pixman-1'),
   dependency('xkbcommon'),
   dependency('libinput'),
-  tomlcpp_dep,
+  toml_dep,
   wlroots,
   json,
 ]
@@ -78,12 +96,8 @@ if xwayland_option
   libs += [xwayland, dependency('xcb')]
 endif
 
-# backward-cpp
-backward_option = get_option('backward')
+# add backward libs if enabled
 if backward_option
-  backward = dependency('backward-cpp', fallback: ['backward-cpp', 'backward_dep'])
-  backward_interface = dependency('', fallback: ['backward-cpp', 'backward_interface_dep'], required: false)
-  add_project_arguments('-DBACKWARD', language: 'cpp')
   if backward_interface.found()
     libs += [backward, backward_interface]
   else
@@ -104,6 +118,7 @@ executable(
     'src' / 'LayerSurface.cpp',
     'src' / 'Workspace.cpp',
     'src' / 'BSPTree.cpp',
+    'src' / 'Toml.cpp',
     'src' / 'Config.cpp',
     'src' / 'Cursor.cpp',
     'src' / 'OutputManager.cpp',

@@ -60,6 +60,7 @@ struct Toplevel {
     bool pinned{false};
     bool scene_hidden_for_autotile{false};
     bool is_floating{false};
+    bool actual_fullscreen{false};
 
     Decoration *decoration{nullptr};
     wlr_xdg_toplevel_decoration_v1_mode decoration_mode{
@@ -116,6 +117,7 @@ struct Toplevel {
     wlr_box get_geometry();
     void set_hidden(bool hidden);
     bool fullscreen() const;
+    bool surface_fullscreen() const;
     bool maximized() const;
     void set_fullscreen(bool fullscreen);
     void set_maximized(bool maximized);

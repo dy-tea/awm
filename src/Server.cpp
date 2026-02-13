@@ -236,98 +236,107 @@ bool Server::handle_bind(Bind bind) {
         // toggle floating state for the active toplevel
         Workspace *workspace = output->get_active();
         Toplevel *active = workspace->active_toplevel;
-        
+
         if (!active)
             break;
-        
+
         // toggle the floating state
         active->is_floating = !active->is_floating;
-        
+
         // handle auto-tile workspace
         if (workspace->auto_tile) {
             if (active->is_floating) {
                 // became floating - remove from tiling layout
                 if (workspace->bsp_tree) {
                     TileMethod method = config->tiling.method;
-                    
+
                     if (method == TILE_GRID) {
                         // rebuild tree without this toplevel
                         std::vector<Toplevel *> tls;
                         Toplevel *tl, *tmp;
-                        wl_list_for_each_safe(tl, tmp, &workspace->toplevels,
-                                              link) if (tl != active && !tl->fullscreen() && !tl->is_floating)
-                            tls.push_back(tl);
-                        
+                        wl_list_for_each_safe(
+                            tl, tmp, &workspace->toplevels,
+                            link) if (tl != active && !tl->fullscreen() &&
+                                      !tl->is_floating) tls.push_back(tl);
+
                         workspace->bsp_tree->rebuild_grid(tls);
                     } else {
                         // BSP and Dwindle modes
                         workspace->bsp_tree->remove(active);
                     }
-                    
+
                     if (workspace->pending_layout_idle)
                         wl_event_source_remove(workspace->pending_layout_idle);
-                    
+
                     workspace->pending_layout_idle = wl_event_loop_add_idle(
                         wl_display_get_event_loop(display),
                         [](void *data) {
                             Workspace *ws = static_cast<Workspace *>(data);
                             ws->pending_layout_idle = nullptr;
                             if (ws->bsp_tree)
-                                ws->bsp_tree->apply_layout(ws->output->usable_area);
+                                ws->bsp_tree->apply_layout(
+                                    ws->output->usable_area);
                         },
                         workspace);
                 } else {
                     workspace->tile();
                 }
-                
+
                 // center the now-floating window
                 wlr_box usable_area = output->usable_area;
                 wlr_box output_box = output->layout_geometry;
-                
+
                 int width = active->geometry.width;
                 int height = active->geometry.height;
-                
-                int32_t x = output_box.x + usable_area.x + (usable_area.width - width) / 2;
-                int32_t y = output_box.y + usable_area.y + (usable_area.height - height) / 2;
-                
+
+                int32_t x = output_box.x + usable_area.x +
+                            (usable_area.width - width) / 2;
+                int32_t y = output_box.y + usable_area.y +
+                            (usable_area.height - height) / 2;
+
                 x = std::max(x, output_box.x + usable_area.x);
                 y = std::max(y, output_box.y + usable_area.y);
-                
+
                 active->set_position_size(x, y, width, height);
             } else {
                 // became tiling - add to tiling layout
                 if (workspace->bsp_tree) {
                     TileMethod method = config->tiling.method;
-                    
+
                     if (method == TILE_GRID) {
                         // rebuild tree with this toplevel
                         std::vector<Toplevel *> tls;
                         Toplevel *tl, *tmp;
                         wl_list_for_each_safe(tl, tmp, &workspace->toplevels,
-                                              link) if (!tl->fullscreen() && !tl->is_floating)
+                                              link) if (!tl->fullscreen() &&
+                                                        !tl->is_floating)
                             tls.push_back(tl);
-                        
+
                         workspace->bsp_tree->rebuild_grid(tls);
                     } else if (method == TILE_DWINDLE) {
-                        workspace->bsp_tree->insert_at_dwindle(active, workspace->active_toplevel);
+                        workspace->bsp_tree->insert_at_dwindle(
+                            active, workspace->active_toplevel);
                     } else {
-                        workspace->bsp_tree->insert_at(active, workspace->active_toplevel);
+                        workspace->bsp_tree->insert_at(
+                            active, workspace->active_toplevel);
                     }
-                    
+
                     wlr_box new_geometry;
-                    if (workspace->bsp_tree->get_toplevel_geometry(active, output->usable_area, new_geometry))
+                    if (workspace->bsp_tree->get_toplevel_geometry(
+                            active, output->usable_area, new_geometry))
                         active->set_position_size(new_geometry);
-                    
+
                     if (workspace->pending_layout_idle)
                         wl_event_source_remove(workspace->pending_layout_idle);
-                    
+
                     workspace->pending_layout_idle = wl_event_loop_add_idle(
                         wl_display_get_event_loop(display),
                         [](void *data) {
                             Workspace *ws = static_cast<Workspace *>(data);
                             ws->pending_layout_idle = nullptr;
                             if (ws->bsp_tree)
-                                ws->bsp_tree->apply_layout(ws->output->usable_area);
+                                ws->bsp_tree->apply_layout(
+                                    ws->output->usable_area);
                         },
                         workspace);
                 } else {
@@ -335,11 +344,11 @@ bool Server::handle_bind(Bind bind) {
                 }
             }
         }
-        
+
         // notify IPC clients
         if (ipc)
             ipc->notify_clients(IPC_TOPLEVEL_LIST);
-        
+
         break;
     }
     case BIND_WINDOW_UP:
@@ -957,7 +966,8 @@ Server::Server(Config *config) : config(config) {
 
     new_xdg_decoration.notify = [](wl_listener *listener, void *data) {
         Server *server = wl_container_of(listener, server, new_xdg_decoration);
-        if (!server->config->general.decorations)
+        if (!server->config->general.decorations ||
+            server->config->general.disable_decorations)
             return;
         wlr_xdg_toplevel_decoration_v1 *decoration =
             static_cast<wlr_xdg_toplevel_decoration_v1 *>(data);

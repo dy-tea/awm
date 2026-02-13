@@ -224,6 +224,18 @@ void Toplevel::map_notify(wl_listener *listener, [[maybe_unused]] void *data) {
 
     toplevel->update_ext_foreign();
 
+    // set surface to fullscreen state if disable_decorations is enabled
+    // this disables client-side decorations without actually fullscreening
+    if (server->config->general.disable_decorations) {
+        if (toplevel->xdg_toplevel)
+            wlr_xdg_toplevel_set_fullscreen(toplevel->xdg_toplevel, true);
+#ifdef XWAYLAND
+        else if (toplevel->xwayland_surface)
+            wlr_xwayland_surface_set_fullscreen(toplevel->xwayland_surface,
+                                                true);
+#endif
+    }
+
     // notify clients
     if (toplevel->server->ipc)
         toplevel->server->ipc->notify_clients(
@@ -387,10 +399,16 @@ Toplevel::Toplevel(Server *server, wlr_xdg_toplevel *xdg_toplevel)
         if (!toplevel->xdg_toplevel->base->initialized)
             return;
 
-        bool fullscreen = toplevel->xdg_toplevel->requested.fullscreen;
+        bool requested_fullscreen =
+            toplevel->xdg_toplevel->requested.fullscreen;
 
-        if (toplevel->fullscreen() != fullscreen)
-            toplevel->set_fullscreen(fullscreen);
+        if (toplevel->server->config->general.disable_decorations) {
+            if (toplevel->actual_fullscreen != requested_fullscreen)
+                toplevel->set_fullscreen(requested_fullscreen);
+        } else {
+            if (toplevel->fullscreen() != requested_fullscreen)
+                toplevel->set_fullscreen(requested_fullscreen);
+        }
     };
     wl_signal_add(&xdg_toplevel->events.request_fullscreen,
                   &request_fullscreen);
@@ -884,6 +902,9 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
             wlr_xwayland_surface_set_fullscreen(xwayland_surface, false);
 #endif
 
+        // update actual fullscreen state
+        actual_fullscreen = false;
+
         // show decoration
         if (decoration &&
             decoration_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
@@ -891,6 +912,16 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
 
         // move scene tree node to toplevel tree
         wlr_scene_node_reparent(&scene_tree->node, server->layers.floating);
+
+        // restore surface fullscreen state if disable_decorations is enabled
+        if (server->config->general.disable_decorations) {
+            if (xdg_toplevel)
+                wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, true);
+#ifdef XWAYLAND
+            else if (xwayland_surface)
+                wlr_xwayland_surface_set_fullscreen(xwayland_surface, true);
+#endif
+        }
     }
 
     // store the original geometry (without decoration offset) for later use
@@ -946,7 +977,7 @@ void Toplevel::set_position_size(const wlr_box &geometry) {
 }
 
 void Toplevel::set_decoration_mode(wlr_xdg_toplevel_decoration_v1_mode mode) {
-    if (fullscreen()) {
+    if (actual_fullscreen) {
         decoration_mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE;
         return;
     }
@@ -1007,7 +1038,10 @@ bool Toplevel::maximized() const {
 }
 
 // returns true if the toplevel is fullscreen
-bool Toplevel::fullscreen() const {
+bool Toplevel::fullscreen() const { return actual_fullscreen; };
+
+// returns true if the surface is in fullscreen state
+bool Toplevel::surface_fullscreen() const {
 #ifdef XWAYLAND
     if (xdg_toplevel)
 #endif
@@ -1020,6 +1054,9 @@ bool Toplevel::fullscreen() const {
 
 // set the toplevel to be fullscreened
 void Toplevel::set_fullscreen(const bool fullscreen) {
+    // update actual fullscreen state
+    actual_fullscreen = fullscreen;
+
     // get output from toplevel's current workspace, fallback to focused output
     Output *output = nullptr;
     Workspace *workspace = server->get_workspace(this);
@@ -1119,6 +1156,15 @@ void Toplevel::set_fullscreen(const bool fullscreen) {
                 // use half of output geometry
                 set_position_size(output_box.x, output_box.y,
                                   output_box.width / 2, output_box.height / 2);
+        }
+
+        if (server->config->general.disable_decorations) {
+            if (xdg_toplevel)
+                wlr_xdg_toplevel_set_fullscreen(xdg_toplevel, true);
+#ifdef XWAYLAND
+            else if (xwayland_surface)
+                wlr_xwayland_surface_set_fullscreen(xwayland_surface, true);
+#endif
         }
     }
 }

@@ -413,12 +413,15 @@ bool Config::load() {
         general.minimize_to_workspace =
             general_table->get<int64_t>("minimize_to_workspace", 0);
         general.decorations = general_table->get<bool>("decorations", true);
+        general.disable_decorations =
+            general_table->get<bool>("disable_decorations", false);
     } else {
         general.focus_on_hover = false;
         general.fowa = FOWA_ACTIVE;
         general.system_bell = "";
         general.minimize_to_workspace = 0;
         general.decorations = true;
+        general.disable_decorations = false;
 
         wlr_log(WLR_INFO, "%s",
                 "no general configuration found, using defaults");
@@ -437,8 +440,10 @@ bool Config::load() {
                             .value_or(TILE_GRID);
 
         tiling.auto_tile = tiling_table->get<bool>("auto_tile", false);
-        tiling.float_on_min_size = tiling_table->get<bool>("float_on_min_size", false);
-        tiling.float_on_max_size = tiling_table->get<bool>("float_on_max_size", false);
+        tiling.float_on_min_size =
+            tiling_table->get<bool>("float_on_min_size", false);
+        tiling.float_on_max_size =
+            tiling_table->get<bool>("float_on_max_size", false);
         tiling.float_on_both = tiling_table->get<bool>("float_on_both", false);
     } else {
         tiling.method = TILE_GRID;
@@ -472,7 +477,8 @@ bool Config::load() {
             set_bind("move", window_bind, BIND_WINDOW_MOVE);
             set_bind("resize", window_bind, BIND_WINDOW_RESIZE);
             set_bind("pin", window_bind, BIND_WINDOW_PIN);
-            set_bind("toggle_floating", window_bind, BIND_WINDOW_TOGGLE_FLOATING);
+            set_bind("toggle_floating", window_bind,
+                     BIND_WINDOW_TOGGLE_FLOATING);
             set_bind("up", window_bind, BIND_WINDOW_UP);
             set_bind("down", window_bind, BIND_WINDOW_DOWN);
             set_bind("left", window_bind, BIND_WINDOW_LEFT);
@@ -578,7 +584,8 @@ bool Config::load() {
             if (auto scale_int = table->getInt("scale"))
                 oc->scale = static_cast<float>(*scale_int);
             else
-                oc->scale = static_cast<float>(table->get<double>("scale", 1.0));
+                oc->scale =
+                    static_cast<float>(table->get<double>("scale", 1.0));
 
             if (auto adaptive = table->getBool("adaptive"))
                 oc->adaptive_sync = *adaptive;
@@ -677,12 +684,14 @@ bool Config::load() {
 
             // tiling mode
             if (auto tiling_mode = table->getString("tiling_mode")) {
-                static const std::unordered_map<std::string, TilingMode> tiling_mode_map = {
-                    {"auto", TILING_MODE_AUTO},
-                    {"floating", TILING_MODE_FLOATING},
-                    {"tiling", TILING_MODE_TILING},
-                };
-                if (auto mode = map_option("windowrules.tiling_mode", tiling_mode_map, tiling_mode))
+                static const std::unordered_map<std::string, TilingMode>
+                    tiling_mode_map = {
+                        {"auto", TILING_MODE_AUTO},
+                        {"floating", TILING_MODE_FLOATING},
+                        {"tiling", TILING_MODE_TILING},
+                    };
+                if (auto mode = map_option("windowrules.tiling_mode",
+                                           tiling_mode_map, tiling_mode))
                     w->tiling_mode = *mode;
             }
 

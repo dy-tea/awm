@@ -180,6 +180,7 @@ struct Config {
         std::string system_bell{""};
         int64_t minimize_to_workspace{0};
         bool decorations{true};
+        bool disable_decorations{false};
     } general;
 
     struct {

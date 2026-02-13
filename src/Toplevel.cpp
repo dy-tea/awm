@@ -858,17 +858,6 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
         return;
 #endif
 
-    // enforce minimum size
-    // if width and height are 0, it is likely a virtual output
-    if (width && height
-#ifdef XWAYLAND
-        && xdg_toplevel
-#endif
-    ) {
-        width = std::max(width, xdg_toplevel->current.min_width);
-        height = std::max(height, xdg_toplevel->current.min_height);
-    }
-
     // toggle maximized if maximized
     if (maximized()) {
 #ifdef XWAYLAND
@@ -1189,7 +1178,8 @@ void Toplevel::set_maximized(const bool maximized) {
             // remove this toplevel from BSP tree
             workspace->bsp_tree->remove(this);
 
-            // immediately apply layout synchronously instead of using idle callback
+            // immediately apply layout synchronously instead of using idle
+            // callback
             workspace->bsp_tree->apply_layout(workspace->output->usable_area);
         }
     } else {

@@ -288,10 +288,14 @@ void Transaction::cleanup() {
 
 int Transaction::on_timeout(void *data) {
     Transaction *txn = static_cast<Transaction *>(data);
+    if (!txn)
+        return 0;
+
     if (txn->server->transaction_manager->current() == txn)
         txn->server->transaction_manager->active_transaction = nullptr;
 
     txn->apply();
+
     delete txn;
     return 0;
 }

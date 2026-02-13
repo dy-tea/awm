@@ -858,6 +858,11 @@ void Toplevel::set_position_size(double x, double y, int width, int height) {
         return;
 #endif
 
+    if (width <= 0 || height <= 0) {
+        width = 1;
+        height = 1;
+    }
+
     // toggle maximized if maximized
     if (maximized()) {
 #ifdef XWAYLAND
